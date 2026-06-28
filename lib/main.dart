@@ -41,7 +41,6 @@ class MirrorScorpionApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       initialRoute: '/',
-      // Missing screens: chess, rubik — routes محذوفة مؤقتاً لتجنب Build Failure
       routes: {
         '/': (context) => const HomeScreen(),
         '/translate': (context) => const TextTranslationScreen(),

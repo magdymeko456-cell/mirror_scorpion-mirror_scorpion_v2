@@ -13,6 +13,8 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "mirror_scorpion/overlay"
     private val OVERLAY_PERMISSION_REQUEST = 1001
 
+    private var _pendingStart = false
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -23,6 +25,7 @@ class MainActivity : FlutterActivity() {
                         startOverlayService()
                         result.success(true)
                     } else {
+                        _pendingStart = true
                         requestOverlayPermission()
                         result.success(false)
                     }
@@ -54,6 +57,16 @@ class MainActivity : FlutterActivity() {
                 Uri.parse("package:$packageName")
             )
             startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == OVERLAY_PERMISSION_REQUEST && _pendingStart) {
+            _pendingStart = false
+            if (hasOverlayPermission()) {
+                startOverlayService()
+            }
         }
     }
 

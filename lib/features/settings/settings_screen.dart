@@ -33,17 +33,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               gradient: const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFDAA520)]),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.verified, color: Colors.black87, size: 32),
-                const SizedBox(width: 12),
-                const Expanded(child: Text('✓ النسخة البرو مفعلة', style: TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold))),
-              ],
-            ),
+            child: Row(children: [
+              const Icon(Icons.verified, color: Colors.black87, size: 32),
+              const SizedBox(width: 12),
+              const Expanded(child: Text('✓ النسخة البرو مفعلة', style: TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold))),
+            ]),
           ),
           const SizedBox(height: 24),
 
-          // Floating Bubble Section
+          // Bubble
           const Text('الفقاعة العائمة', style: TextStyle(color: Colors.blueAccent, fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           SwitchListTile(
@@ -57,14 +55,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (bubble.isEnabled) ...[
             _buildSlider('الشفافية', bubble.opacity, 0.3, 1.0, (v) => bubble.setOpacity(v)),
             Row(children: [
-              const Text('حجم الفقاعة', style: TextStyle(color: Colors.white70, fontSize: 13)),
+              const Text('الحجم', style: TextStyle(color: Colors.white70, fontSize: 13)),
               Expanded(child: Slider(value: bubble.size.toDouble(), min: 60, max: 200, divisions: 7, activeColor: Colors.cyanAccent, inactiveColor: Colors.white12, label: '${bubble.size}', onChanged: (v) => bubble.setSize(v.toInt()))),
               Text('${bubble.size}', style: const TextStyle(color: Colors.cyanAccent, fontSize: 13)),
             ]),
           ],
           const Divider(color: Colors.white12, height: 30),
 
-          // Voice Section
+          // Voices
           const Text('اختيار الصوت', style: TextStyle(color: Colors.cyanAccent, fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           ...TTSService.availableVoices.map((voice) {
