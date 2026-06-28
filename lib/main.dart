@@ -5,24 +5,25 @@ import 'features/card1_translation/translation_screen.dart';
 import 'features/card1_translation/dialogue_screen.dart';
 import 'features/card1_translation/document_screen.dart';
 import 'features/card4_stories/stories_screen.dart';
-import 'features/games/chess_screen.dart';
-import 'features/games/rubik_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'services/language_service.dart';
-import 'services/floating_bubble_service.dart';
 import 'services/tts_service.dart';
+import 'services/floating_bubble_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   final languageService = LanguageService();
   await languageService.initialize();
+
+  final bubbleService = FloatingBubbleService();
+  await bubbleService.initialize();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: languageService),
-        ChangeNotifierProvider(create: (_) => FloatingBubbleService()),
+        ChangeNotifierProvider.value(value: bubbleService),
         ChangeNotifierProvider(create: (_) => TTSService()),
       ],
       child: const MirrorScorpionApp(),
@@ -37,19 +38,16 @@ class MirrorScorpionApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Mirror Scorpion',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       initialRoute: '/',
+      // Missing screens: chess, rubik — routes محذوفة مؤقتاً لتجنب Build Failure
       routes: {
         '/': (context) => const HomeScreen(),
         '/translate': (context) => const TextTranslationScreen(),
         '/dialogue': (context) => const DialogueScreen(),
         '/document': (context) => const DocumentScreen(),
         '/stories': (context) => const StoriesScreen(),
-        '/chess': (context) => const ChessScreen(),
-        '/rubik': (context) => const RubikScreen(),
         '/settings': (context) => const SettingsScreen(),
       },
     );
