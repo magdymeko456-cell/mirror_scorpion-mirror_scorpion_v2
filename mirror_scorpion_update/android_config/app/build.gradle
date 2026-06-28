@@ -1,0 +1,50 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace "com.tetocollctionway.mirror_scorpion_translate"
+    compileSdk 35
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    defaultConfig {
+        applicationId "com.tetocollctionway.mirror_scorpion_translate"
+        minSdk 21
+        targetSdk 35
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    lintOptions {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+            
+            // Enable ProGuard/R8 for obfuscation and code shrinking
+            minifyEnabled true
+            shrinkResources true
+            
+            // Add ProGuard rules for better protection
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            
+            // Mirror Scorpion Security: Protect against reverse engineering
+            ndk {
+                debugSymbolLevel 'NONE'
+            }
+        }
+    }
+}

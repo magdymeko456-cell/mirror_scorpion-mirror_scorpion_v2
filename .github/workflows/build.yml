@@ -1,0 +1,54 @@
+name: Mirror Scorpion Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java Environment
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+
+      - name: Patch Android v1 to v2 Embedding (Robust)
+        run: |
+          # 1. تحديث الـ Manifest: إضافة الـ v2 Embedding
+          # نتأكد أولاً إنه مش موجود عشان متتكررش
+          if ! grep -q "flutterEmbedding" android/app/src/main/AndroidManifest.xml; then
+            sed -i '/<application/a \        <meta-data\n            android:name="flutterEmbedding"\n            android:value="2" />' android/app/src/main/AndroidManifest.xml
+          fi
+          
+          # 2. تحديث الـ MainActivity: البحث في كل المجلدات (Java أو Kotlin)
+          # هيدور في أي ملف MainActivity.java أو MainActivity.kt ويحدثه
+          find android/app/src/main -type f \( -name "MainActivity.kt" -o -name "MainActivity.java" \) -exec sed -i 's/io.flutter.app.FlutterActivity/io.flutter.embedding.android.FlutterActivity/g' {} +
+          
+          echo "✅ Android embedding patched to v2 successfully!"
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: |
+          flutter build apk --release --no-tree-shake-icons
+          mkdir -p output_apk
+          cp build/app/outputs/flutter-apk/app-release.apk output_apk/mirror-scorpion.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirror-scorpion-release
+          path: output_apk/mirror-scorpion.apk
