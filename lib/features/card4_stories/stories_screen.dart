@@ -1,337 +1,281 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../services/premium_verification_service.dart';
 
 class StoriesScreen extends StatefulWidget {
   const StoriesScreen({super.key});
+
   @override
   State<StoriesScreen> createState() => _StoriesScreenState();
 }
 
 class _StoriesScreenState extends State<StoriesScreen> {
-  String _selectedCategory = 'الكل';
-  bool _isPremium = false; // يتغير من الإعدادات
+  @override
+  Widget build(BuildContext context) {
+    final premium = context.watch<PremiumVerificationService>();
+    final isPro = premium.isPremium;
 
-  final List<String> _categories = [
-    'الكل', 'قصص القرآن', 'الأمم السابقة', 'قصص الأنبياء',
-    'أسباب النزول', 'الأربعين النووية', 'أحاديث قدسية'
-  ];
-
-  // المصادر على GitHub — الروابط الحقيقية
-  static const Map<String, String> _sourceBooks = {
-    'تفسير الجلالين': 'https://github.com/magdymeko456-cell/mirror_scorpion-mirror_scorpion_v2/blob/main/assets/data/quran_stories.json',
-    'تفسير ابن كثير': 'https://github.com/magdymeko456-cell/mirror_scorpion-mirror_scorpion_v2/blob/main/assets/data/prophet_stories_ibn_kathir.json',
-    'أسباب النزول': 'https://github.com/magdymeko456-cell/mirror_scorpion-mirror_scorpion_v2/blob/main/assets/data/asbab_nuzul.json',
-    'الأربعين النووية': 'https://github.com/magdymeko456-cell/mirror_scorpion-mirror_scorpion_v2/blob/main/assets/data/arbaeen_nawawi.json',
-    'الأحاديث القدسية': 'https://github.com/magdymeko456-cell/mirror_scorpion-mirror_scorpion_v2/blob/main/assets/data/hadith_qudsi.json',
-    'الأحاديث النبوية': 'https://github.com/magdymeko456-cell/mirror_scorpion-mirror_scorpion_v2/blob/main/assets/data/hadiths.json',
-  };
-
-  final Map<String, List<Map<String, String>>> _stories = {
-    'قصص القرآن': [
-      {'title': 'قصة أصحاب الكهف', 'subtitle': 'سورة الكهف - الفتية الذين آمنوا', 'ref': 'quran_stories#kahf', 'source': 'تفسير ابن كثير'},
-      {'title': 'قصة موسى والخضر', 'subtitle': 'سورة الكهف - رحلة العلم', 'ref': 'quran_stories#musa_khidr', 'source': 'تفسير الجلالين'},
-      {'title': 'قصة ذو القرنين', 'subtitle': 'سورة الكهف - الملك الصالح', 'ref': 'quran_stories#dhulqarnain', 'source': 'تفسير ابن كثير'},
-      {'title': 'قصة سليمان والهدهد', 'subtitle': 'سورة النمل', 'ref': 'quran_stories#sulaiman', 'source': 'تفسير الجلالين'},
-      {'title': 'قصة يوسف عليه السلام', 'subtitle': 'أحسن القصص', 'ref': 'quran_stories#yusuf', 'source': 'تفسير ابن كثير'},
-      {'title': 'قصة مريم وعيسى', 'subtitle': 'سورة مريم', 'ref': 'quran_stories#maryam', 'source': 'تفسير الجلالين'},
-    ],
-    'الأمم السابقة': [
-      {'title': 'قوم نوح', 'subtitle': 'الطوفان العظيم', 'ref': 'prophet_stories#nuh', 'source': 'تفسير ابن كثير'},
-      {'title': 'قوم عاد', 'subtitle': 'قوم هود - ذات العماد', 'ref': 'prophet_stories#hud', 'source': 'تفسير ابن كثير'},
-      {'title': 'قوم ثمود', 'subtitle': 'قوم صالح - الناقة', 'ref': 'prophet_stories#salih', 'source': 'تفسير ابن كثير'},
-      {'title': 'قوم لوط', 'subtitle': 'المؤتفكات', 'ref': 'prophet_stories#lut', 'source': 'تفسير الجلالين'},
-      {'title': 'قوم فرعون', 'subtitle': 'موسى وهامان', 'ref': 'prophet_stories#firawn', 'source': 'تفسير ابن كثير'},
-      {'title': 'أصحاب الأخدود', 'subtitle': 'قصة الإيمان في النار', 'ref': 'quran_stories#ukhdud', 'source': 'تفسير الجلالين'},
-    ],
-    'قصص الأنبياء': [
-      {'title': 'آدم عليه السلام', 'subtitle': 'أبو البشر', 'ref': 'prophet_stories#adam', 'source': 'تفسير ابن كثير'},
-      {'title': 'نوح عليه السلام', 'subtitle': 'أول العزم', 'ref': 'prophet_stories#nuh_full', 'source': 'تفسير ابن كثير'},
-      {'title': 'إبراهيم عليه السلام', 'subtitle': 'خليل الرحمن', 'ref': 'prophet_stories#ibrahim', 'source': 'تفسير ابن كثير'},
-      {'title': 'موسى عليه السلام', 'subtitle': 'كليم الله', 'ref': 'prophet_stories#musa', 'source': 'تفسير ابن كثير'},
-      {'title': 'عيسى عليه السلام', 'subtitle': 'المسيح', 'ref': 'prophet_stories#isa', 'source': 'تفسير الجلالين'},
-      {'title': 'محمد ﷺ', 'subtitle': 'خاتم الأنبياء', 'ref': 'prophet_stories#muhammad', 'source': 'السيرة النبوية'},
-    ],
-    'أسباب النزول': [
-      {'title': 'سبب نزول سورة الفاتحة', 'subtitle': 'أم الكتاب', 'ref': 'asbab#fatiha', 'source': 'أسباب النزول'},
-      {'title': 'آية الكرسي', 'subtitle': 'أعظم آية', 'ref': 'asbab#kursi', 'source': 'أسباب النزول'},
-      {'title': 'سورة الإخلاص', 'subtitle': 'التوحيد الخالص', 'ref': 'asbab#ikhlas', 'source': 'أسباب النزول'},
-      {'title': 'سورة الكوثر', 'subtitle': 'نهر في الجنة', 'ref': 'asbab#kawthar', 'source': 'أسباب النزول'},
-    ],
-    'الأربعين النووية': [
-      {'title': 'الحديث الأول: الأعمال بالنيات', 'subtitle': 'حديث 1', 'ref': 'arbaeen#1', 'source': 'الأربعين النووية'},
-      {'title': 'الحديث التاسع: ما نهيتكم عنه', 'subtitle': 'حديث 9', 'ref': 'arbaeen#9', 'source': 'الأربعين النووية'},
-      {'title': 'الحديث الثالث عشر: لا يؤمن أحدكم', 'subtitle': 'حديث 13', 'ref': 'arbaeen#13', 'source': 'الأربعين النووية'},
-      {'title': 'الحديث الأربعون: كن في الدنيا', 'subtitle': 'حديث 40', 'ref': 'arbaeen#40', 'source': 'الأربعين النووية'},
-    ],
-    'أحاديث قدسية': [
-      {'title': 'أنا عند ظن عبدي بي', 'subtitle': 'الحديث القدسي', 'ref': 'qudsi#dhann', 'source': 'الأحاديث القدسية'},
-      {'title': 'يا عبادي إني حرمت الظلم', 'subtitle': 'الحديث القدسي', 'ref': 'qudsi#dhulm', 'source': 'الأحاديث القدسية'},
-      {'title': 'الرحمة تغلب الغضب', 'subtitle': 'الحديث القدسي', 'ref': 'qudsi#rahma', 'source': 'الأحاديث القدسية'},
-      {'title': 'سبقت رحمتي غضبي', 'subtitle': 'الحديث القدسي', 'ref': 'qudsi#sabaqat', 'source': 'الأحاديث القدسية'},
-    ],
-  };
-
-  void _openStory(Map<String, String> story) {
-    final ref = story['ref'] ?? '';
-    final source = story['source'] ?? '';
-
-    if (_isPremium) {
-      // 💎 PRO: تحميل على الجهاز — سيتم تخزين الملف محلياً
-      _downloadForOffline(story);
-    } else {
-      // 🔗 النسخة العادية: الرابط الخفي يفتح في المتصفح
-      _showHiddenLink(story);
-    }
-  }
-
-  void _showHiddenLink(Map<String, String> story) {
-    final bookKey = _sourceBooks.keys.firstWhere(
-      (k) => story['source']?.contains(k) ?? false,
-      orElse: () => 'تفسير الجلالين',
-    );
-    final baseUrl = _sourceBooks[bookKey] ?? 'https://github.com/magdymeko456-cell/mirror_scorpion-mirror_scorpion_v2';
-    final ref = story['ref'] ?? '';
-    final url = '$baseUrl#$ref';
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1B2838),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(children: [
-          const Icon(Icons.link, color: Colors.cyanAccent, size: 20),
-          const SizedBox(width: 8),
-          Expanded(child: Text(story['title'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 16), overflow: TextOverflow.ellipsis)),
-        ]),
-        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('📖 ${story['source'] ?? ''}', style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('🔗 الرابط الخفي:', style: TextStyle(color: Colors.white38, fontSize: 10)),
-              const SizedBox(height: 4),
-              Text(url, style: const TextStyle(color: Colors.cyanAccent, fontSize: 9), maxLines: 4, overflow: TextOverflow.ellipsis),
-            ]),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.amber.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: Row(children: [
-              const Icon(Icons.diamond, color: Colors.amber, size: 14),
-              const SizedBox(width: 6),
-              const Expanded(child: Text('💎 برو: حمِّل الكتاب كاملاً بدون إنترنت', style: TextStyle(color: Colors.amber, fontSize: 10))),
-            ]),
-          ),
-        ]),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('📖 قصص إسلامية'),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
         actions: [
-          TextButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              // محاكاة فتح الرابط
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('📖 يتم فتح "${story['title']}"...'), duration: const Duration(seconds: 2)),
-              );
-            },
-            icon: const Icon(Icons.open_in_browser, color: Colors.cyanAccent, size: 16),
-            label: const Text('فتح في المتصفح', style: TextStyle(color: Colors.cyanAccent)),
+          if (!isPro)
+            TextButton.icon(
+              onPressed: () => Navigator.pushNamed(context, '/settings'),
+              icon: const Icon(Icons.workspace_premium, color: Colors.amber),
+              label: const Text('Pro', style: TextStyle(color: Colors.amber)),
+            ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          _sourceCard(
+            context,
+            title: '📚 تفسير الجلالين',
+            subtitle: 'تفسير القرآن الكريم للجلالين',
+            stories: [
+              IslamicStory(
+                title: 'سورة الفاتحة',
+                content: isPro
+                  ? 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ (1) الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ (2) الرَّحْمَٰنِ الرَّحِيمِ (3) مَالِكِ يَوْمِ الدِّينِ (4) إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ (5) اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ (6) صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ (7)\n\nالتفسير: قوله تعالى "رب العالمين" أي مالك جميع الخلق. "الرحمن الرحيم" أي ذو الرحمة العامة والخاصة. "مالك يوم الدين" أي يوم الجزاء.'
+                  : 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ... اضغط لعرض التفسير الكامل (يتطلب Pro)',
+                icon: Icons.auto_stories,
+              ),
+              IslamicStory(
+                title: 'سورة الإخلاص',
+                content: isPro
+                  ? 'قُلْ هُوَ اللَّهُ أَحَدٌ (1) اللَّهُ الصَّمَدُ (2) لَمْ يَلِدْ وَلَمْ يُولَدْ (3) وَلَمْ يَكُن لَّهُ كُفُواً أَحَدٌ (4)\n\nالتفسير: سورة الإخلاص تعدل ثلث القرآن. "أحد" أي واحد لا شريك له. "الصمد" أي السيد الذي يُصمد إليه في الحوائج.'
+                  : 'قُلْ هُوَ اللَّهُ أَحَدٌ... التفسير الكامل للمشتركين Pro',
+                icon: Icons.mosque,
+              ),
+            ],
+          ),
+          _sourceCard(
+            context,
+            title: '📖 تفسير ابن كثير',
+            subtitle: 'قصص الأنبياء - ابن كثير',
+            stories: [
+              IslamicStory(
+                title: 'قصة آدم عليه السلام',
+                content: isPro
+                  ? 'خلق الله آدم من طين من حمأ مسنون، ثم نفخ فيه من روحه، وأمر الملائكة بالسجود له فسجدوا إلا إبليس أبى واستكبر. وأسكن الله آدم الجنة مع زوجته حواء، ونهاهما عن شجرة معينة، فأكلا منها بعد وسوسة الشيطان، فأنزلهما الله إلى الأرض.'
+                  : 'خلق الله آدم من طين... القصة الكاملة في النسخة Pro',
+                icon: Icons.person,
+              ),
+              IslamicStory(
+                title: 'قصة نوح عليه السلام',
+                content: isPro
+                  ? 'أرسل الله نوحاً إلى قومه يدعوهم لعبادة الله وحده، فكذبوه واستكبروا. فدعا ربه: "إني مغلوب فانتصر". فأمره الله ببناء السفينة، وحمله الله ومن آمن معه وأهلك الكافرين بالطوفان.'
+                  : 'أرسل الله نوحاً إلى قومه... اضغط للمشاهدة الكاملة (Pro)',
+                icon: Icons.directions_boat,
+              ),
+              IslamicStory(
+                title: 'قصة إبراهيم عليه السلام',
+                content: isPro
+                  ? 'ولد إبراهيم في أرض بابل، ورأى قومه يعبدون الأصنام فحطمها، فألقوه في النار فكانت برداً وسلاماً. هاجر إلى الشام، وبنى الكعبة مع ابنه إسماعيل، وابتاه الله بذبح ابنه ففداه بذبح عظيم.'
+                  : 'ولد إبراهيم في أرض بابل... القصة كاملة في Pro',
+                icon: Icons.shield,
+              ),
+              IslamicStory(
+                title: 'قصة موسى عليه السلام',
+                content: isPro
+                  ? 'ولد موسى في وقت كان فرعون يذبح أبناء بني إسرائيل، فألقت أمه في اليم، والتقطه آل فرعون. كبر موسى وقتل رجلاً قبطياً فهرب إلى مدين. رجع ونبأه الله، وأرسله مع أخيه هارون إلى فرعون، فأيده الله بآيات عظيمة. أنقذ الله بني إسرائيل وأغرق فرعون وجنوده.'
+                  : 'ولد موسى في وقت كان فرعون يذبح أبناء بني إسرائيل... القصة الكاملة في Pro',
+                icon: Icons.auto_stories,
+              ),
+            ],
+          ),
+          _sourceCard(
+            context,
+            title: '📜 أسباب النزول',
+            subtitle: 'أسباب نزول الآيات القرآنية',
+            stories: [
+              IslamicStory(
+                title: 'سبب نزول سورة الفيل',
+                content: isPro
+                  ? 'نزلت في قصة أبرهة الحبشي الذي جاء بهدم الكعبة بجيش عظيم معه الفيلة. أرسل الله عليهم طيراً أبابيل ترميهم بحجارة من سجيل فجعلهم كعصف مأكول.'
+                  : 'نزلت في قصة أبرهة الحبشي... للاطلاع على القصة كاملة اشترك Pro',
+                icon: Icons.terrain,
+              ),
+              IslamicStory(
+                title: 'سبب نزول آية الكرسي',
+                content: isPro
+                  ? 'نزلت آية الكرسي (اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...) وهي أعظم آية في كتاب الله. قال صلى الله عليه وسلم: "من قرأها في ليلة لم يزل عليه من الله حافظ ولا يقربه شيطان حتى يصبح".'
+                  : 'نزلت آية الكرسي وهي أعظم آية... النص الكامل في Pro',
+                icon: Icons.star,
+              ),
+              IslamicStory(
+                title: 'سبب نزول سورة الكوثر',
+                content: isPro
+                  ? 'نزلت في العاص بن وائل الذي قال عن النبي صلى الله عليه وسلم "إنه أبتر" (لا عقب له). فأنزل الله: "إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ * فَصَلِّ لِرَبِّكَ وَانْحَرْ * إِنَّ شَانِئَكَ هُوَ الْأَبْتَرُ".'
+                  : 'نزلت في العاص بن وائل... القصة كاملة في النسخة المدفوعة',
+                icon: Icons.water,
+              ),
+            ],
+          ),
+          _sourceCard(
+            context,
+            title: '🕌 الأربعون النووية',
+            subtitle: '40 حديثاً نبوياً جمعها الإمام النووي',
+            stories: [
+              IslamicStory(
+                title: 'الحديث 1 - الأعمال بالنيات',
+                content: 'عن عمر بن الخطاب رضي الله عنه قال: سمعت رسول الله صلى الله عليه وسلم يقول: "إنما الأعمال بالنيات، وإنما لكل امرئ ما نوى..."',
+                icon: Icons.format_quote,
+              ),
+              IslamicStory(
+                title: 'الحديث 2 - الإسلام والإيمان',
+                content: 'عن عمر بن الخطاب قال: بينما نحن عند رسول الله صلى الله عليه وسلم إذ طلع علينا رجل شديد بياض الثياب... فقال: "الإسلام أن تشهد أن لا إله إلا الله وأن محمداً رسول الله..."',
+                icon: Icons.format_quote,
+              ),
+              IslamicStory(
+                title: 'الحديث 3 - أركان الإسلام',
+                content: 'عن عبد الله بن عمر رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم: "بني الإسلام على خمس: شهادة أن لا إله إلا الله وأن محمداً رسول الله، وإقام الصلاة، وإيتاء الزكاة، وحج البيت، وصوم رمضان."',
+                icon: Icons.format_quote,
+              ),
+            ],
+          ),
+          _sourceCard(
+            context,
+            title: '🌟 الحديث القدسي',
+            subtitle: 'أحاديث يرويها النبي عن ربه',
+            stories: [
+              IslamicStory(
+                title: 'الحديث القدسي - أنا عند ظن عبدي بي',
+                content: 'عن أبي هريرة رضي الله عنه أن النبي صلى الله عليه وسلم قال: يقول الله تعالى: "أنا عند ظن عبدي بي، وأنا معه إذا ذكرني..."',
+                icon: Icons.star_border,
+              ),
+              IslamicStory(
+                title: 'الحديث القدسي - يا عبادي إني حرمت الظلم',
+                content: 'عن أبي ذر رضي الله عنه عن النبي صلى الله عليه وسلم فيما روى عن الله تبارك وتعالى أنه قال: "يا عبادي إني حرمت الظلم على نفسي وجعلته بينكم محرماً فلا تظالموا..."',
+                icon: Icons.star_border,
+              ),
+            ],
+          ),
+          _sourceCard(
+            context,
+            title: '📜 صحيح الأحاديث',
+            subtitle: 'مجموعة من أحاديث صحيح البخاري ومسلم',
+            stories: [
+              IslamicStory(
+                title: 'حديث - من يرد الله به خيراً',
+                content: 'عن معاوية رضي الله عنه قال: قال رسول الله صلى الله عليه وسلم: "من يرد الله به خيراً يفقهه في الدين."',
+                icon: Icons.lightbulb,
+              ),
+              IslamicStory(
+                title: 'حديث - الدنيا سجن المؤمن',
+                content: 'عن أبي هريرة رضي الله عنه قال: قال رسول الله صلى الله عليه وسلم: "الدنيا سجن المؤمن وجنة الكافر."',
+                icon: Icons.lightbulb,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  void _downloadForOffline(Map<String, String> story) {
-    // 💎 PRO: تحميل الكتاب كاملاً
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1B2838),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('💎 تحميل برو', style: TextStyle(color: Color(0xFFFFD700))),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          const LinearProgressIndicator(color: Color(0xFFFFD700), backgroundColor: Colors.white12),
-          const SizedBox(height: 12),
-          Text('📥 جاري تحميل "${story['title']}"...', style: const TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 8),
-          Text('${story['source'] ?? ''}', style: const TextStyle(color: Colors.orangeAccent, fontSize: 11)),
-          const SizedBox(height: 12),
-          const Text('سيتم حفظ الكتاب على جهازك للقراءة الأوفلاين', style: TextStyle(color: Colors.white38, fontSize: 10)),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('تم', style: TextStyle(color: Color(0xFFFFD700)))),
-        ],
+  Widget _sourceCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required List<IslamicStory> stories,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ExpansionTile(
+        leading: const Icon(Icons.auto_stories, color: Colors.teal),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+        children: stories.map((story) => ListTile(
+          leading: Icon(story.icon, color: Colors.amber.shade700, size: 28),
+          title: Text(story.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+          subtitle: Text(
+            story.content.length > 80 ? '${story.content.substring(0, 80)}...' : story.content,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: const Icon(Icons.arrow_back_ios_new, size: 16),
+          onTap: () => _openStory(context, story),
+        )).toList(),
       ),
     );
   }
+
+  void _openStory(BuildContext context, IslamicStory story) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _StoryDetailScreen(story: story),
+      ),
+    );
+  }
+}
+
+class IslamicStory {
+  final String title;
+  final String content;
+  final IconData icon;
+  const IslamicStory({
+    required this.title,
+    required this.content,
+    this.icon = Icons.auto_stories,
+  });
+}
+
+class _StoryDetailScreen extends StatelessWidget {
+  final IslamicStory story;
+  const _StoryDetailScreen({required this.story});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A),
       appBar: AppBar(
-        title: const Text('📚 قصص وإلهام', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF0D1B2A),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          // Premium badge
-          GestureDetector(
-            onTap: () => setState(() => _isPremium = !_isPremium),
-            child: Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: _isPremium ? const Color(0xFFFFD700).withOpacity(0.2) : Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _isPremium ? const Color(0xFFFFD700) : Colors.white24),
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.diamond, size: 14, color: _isPremium ? const Color(0xFFFFD700) : Colors.white38),
-                const SizedBox(width: 4),
-                Text(_isPremium ? 'برو' : 'عادي', style: TextStyle(fontSize: 11, color: _isPremium ? const Color(0xFFFFD700) : Colors.white38, fontWeight: FontWeight.bold)),
-              ]),
+        title: Text(story.title),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(story.icon, color: Colors.teal, size: 32),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    story.title,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.teal),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-      body: Column(children: [
-        // Categories
-        Container(
-          height: 50,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            children: _categories.map((cat) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: ChoiceChip(
-                label: Text(cat, style: TextStyle(color: _selectedCategory == cat ? Colors.black : Colors.white, fontSize: 13)),
-                selected: _selectedCategory == cat,
-                selectedColor: Colors.amberAccent,
-                backgroundColor: Colors.white.withOpacity(0.05),
-                onSelected: (v) => setState(() => _selectedCategory = cat),
+            const Divider(height: 32),
+            SelectableText(
+              story.content,
+              style: const TextStyle(fontSize: 16, height: 1.8, fontFamily: 'Traditional Arabic'),
+              textDirection: TextDirection.rtl,
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: IconButton(
+                icon: const Icon(Icons.copy, color: Colors.teal),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: story.content));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم نسخ المحتوى')),
+                  );
+                },
+                tooltip: 'نسخ المحتوى',
               ),
-            )).toList(),
-          ),
+            ),
+          ],
         ),
-        // Source books bar
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(children: _sourceBooks.entries.map((e) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
-                onTap: () => _showBookLink(e.key, e.value),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.03), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withOpacity(0.05))),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.menu_book, size: 12, color: Colors.orangeAccent),
-                    const SizedBox(width: 4),
-                    Text(e.key, style: const TextStyle(color: Colors.orangeAccent, fontSize: 10)),
-                  ]),
-                ),
-              ),
-            )).toList()),
-          ),
-        ),
-        const Divider(color: Colors.white12, height: 1),
-        // Stories list
-        Expanded(
-          child: _selectedCategory == 'الكل'
-              ? ListView(
-                  padding: const EdgeInsets.all(12),
-                  children: _categories.where((c) => c != 'الكل').map((cat) => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(children: [
-                          Text(cat, style: const TextStyle(color: Colors.orangeAccent, fontSize: 16, fontWeight: FontWeight.bold)),
-                          const Spacer(),
-                          Icon(Icons.link, size: 12, color: Colors.white.withOpacity(0.2)),
-                        ]),
-                      ),
-                      ...(_stories[cat] ?? []).map((story) => _buildStoryCard(story)),
-                      const SizedBox(height: 8),
-                    ],
-                  )).toList(),
-                )
-              : ListView(
-                  padding: const EdgeInsets.all(12),
-                  children: (_stories[_selectedCategory] ?? []).map((story) => _buildStoryCard(story)).toList(),
-                ),
-        ),
-      ]),
-    );
-  }
-
-  void _showBookLink(String bookName, String url) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1B2838),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('📖 $bookName', style: const TextStyle(color: Colors.orangeAccent, fontSize: 16)),
-        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('المصدر على GitHub:', style: TextStyle(color: Colors.white54, fontSize: 12)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: Text(url, style: const TextStyle(color: Colors.cyanAccent, fontSize: 9), maxLines: 4, overflow: TextOverflow.ellipsis),
-          ),
-          const SizedBox(height: 12),
-          Row(children: [
-            Icon(Icons.info_outline, color: _isPremium ? const Color(0xFFFFD700) : Colors.blueAccent, size: 14),
-            const SizedBox(width: 6),
-            Expanded(child: Text(
-              _isPremium ? '💎 برو: اضغط لتحميل الكتاب كاملاً' : '🔗 العادي: افتح الرابط في المتصفح',
-              style: const TextStyle(color: Colors.white38, fontSize: 10),
-            )),
-          ]),
-        ]),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              if (_isPremium) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('📥 جاري تحميل $bookName...')));
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('🌐 فتح $url')));
-              }
-            },
-            child: Text(_isPremium ? '📥 تحميل' : '🌐 فتح', style: TextStyle(color: _isPremium ? const Color(0xFFFFD700) : Colors.cyanAccent)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStoryCard(Map<String, String> story) {
-    final colors = [Colors.blueAccent, Colors.cyanAccent, Colors.tealAccent, Colors.orangeAccent, Colors.purpleAccent, Colors.greenAccent];
-    final color = colors[Random().nextInt(colors.length)];
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [color.withOpacity(0.08), Colors.transparent]),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Icon(Icons.auto_stories, color: color),
-        title: Text(story['title'] ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-        subtitle: Text('${story['subtitle'] ?? ''} • ${story['source'] ?? ''}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
-        trailing: Icon(
-          _isPremium ? Icons.download : Icons.link,
-          size: 18,
-          color: _isPremium ? const Color(0xFFFFD700) : Colors.white24,
-        ),
-        onTap: () => _openStory(story),
       ),
     );
   }
