@@ -11,13 +11,12 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
 import kotlin.math.pow
+import kotlin.math.sqrt
 
 class OverlayService : Service() {
     private lateinit var windowManager: WindowManager
-    private var bubbleView: View? = null
+    private var bubbleView: ImageView? = null
     private var bubbleExpanded = false
     private var initialX = 0
     private var initialY = 0
@@ -34,8 +33,7 @@ class OverlayService : Service() {
 
     private fun createBubble() {
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            150, 150,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             else
@@ -47,21 +45,21 @@ class OverlayService : Service() {
         params.x = 0
         params.y = 300
 
-        // Create bubble view
         val bubble = ImageView(this)
-        bubble.setImageResource(android.R.drawable.ic_menu_translate)
-        bubble.setBackgroundResource(android.R.drawable.ic_menu_compass)
-        bubble.alpha = 0.85f
-        bubble.scaleX = 0.8f
-        bubble.scaleY = 0.8f
 
-        // Make the bubble circular
+        // Draw circular shape programmatically — no android.R.drawable needed!
         val shape = GradientDrawable()
         shape.shape = GradientDrawable.OVAL
-        shape.setSize(120, 120)
+        shape.setSize(150, 150)
         shape.setColor(0xFF0D1B2A.toInt())
         shape.setStroke(3, 0xFF00BCD4.toInt())
         bubble.background = shape
+
+        // Use a safe built-in drawable that exists in all API levels
+        bubble.setImageResource(android.R.drawable.ic_menu_share)
+        bubble.scaleType = ImageView.ScaleType.CENTER_INSIDE
+        bubble.setColorFilter(0xFF00BCD4.toInt(), android.graphics.PorterDuff.Mode.SRC_IN)
+        bubble.alpha = 0.9f
 
         bubble.setOnTouchListener { _, event ->
             when (event.action) {
@@ -81,9 +79,8 @@ class OverlayService : Service() {
                 MotionEvent.ACTION_UP -> {
                     val dx = event.rawX - initialTouchX
                     val dy = event.rawY - initialTouchY
-                    val distance = (dx.pow(2) + dy.pow(2)).toDouble().let { kotlin.math.sqrt(it) }
-                    if (distance < 30) {
-                        // Click
+                    val distance = sqrt(dx.pow(2) + dy.pow(2))
+                    if (distance < 30f) {
                         toggleBubble()
                     }
                     // Snap to edge
@@ -104,16 +101,18 @@ class OverlayService : Service() {
 
     private fun toggleBubble() {
         bubbleExpanded = !bubbleExpanded
-        val bubble = bubbleView as? ImageView ?: return
+        val bubble = bubbleView ?: return
 
         if (bubbleExpanded) {
-            bubble.scaleX = 1.2f
-            bubble.scaleY = 1.2f
+            bubble.scaleX = 1.3f
+            bubble.scaleY = 1.3f
             bubble.alpha = 1.0f
+            bubble.setColorFilter(0xFFFFFFFF.toInt(), android.graphics.PorterDuff.Mode.SRC_IN)
         } else {
-            bubble.scaleX = 0.8f
-            bubble.scaleY = 0.8f
-            bubble.alpha = 0.85f
+            bubble.scaleX = 1.0f
+            bubble.scaleY = 1.0f
+            bubble.alpha = 0.9f
+            bubble.setColorFilter(0xFF00BCD4.toInt(), android.graphics.PorterDuff.Mode.SRC_IN)
         }
     }
 
