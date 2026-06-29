@@ -1,14 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:provider/provider.dart';
-import '../../services/translation_service.dart';
 
 class TranslationScreen extends StatefulWidget {
   const TranslationScreen({super.key});
@@ -28,31 +24,16 @@ class _TranslationScreenState extends State<TranslationScreen> {
   bool _speechAvailable = false;
   String? _detectedLanguage;
 
-  // 100 languages
   static const Map<String, String> _languages = {
     'ar': 'العربية', 'en': 'English', 'fr': 'Français', 'es': 'Español',
     'pt': 'Português', 'de': 'Deutsch', 'tr': 'Türkçe', 'fa': 'فارسی',
-    'ur': 'اردو', 'hi': 'हिन्दी', 'bn': 'বাংলা', 'pa': 'ਪੰਜਾਬੀ',
-    'gu': 'ગુજરાતી', 'mr': 'मराठी', 'ta': 'தமிழ்', 'te': 'తెలుగు',
-    'kn': 'ಕನ್ನಡ', 'ml': 'മലയാളം', 'or': 'ଓଡ଼ିଆ', 'as': 'অসমীয়া',
-    'mai': 'मैथिली', 'ne': 'नेपाली', 'si': 'සිංහල', 'th': 'ไทย',
-    'lo': 'ລາວ', 'my': 'မြန်မာ', 'km': 'ភាសាខ្មែរ', 'vi': 'Tiếng Việt',
-    'zh': '中文', 'ja': '日本語', 'ko': '한국어', 'mn': 'Монгол',
-    'ru': 'Русский', 'uk': 'Українська', 'be': 'Беларуская', 'bg': 'Български',
-    'mk': 'Македонски', 'sr': 'Српски', 'hr': 'Hrvatski', 'sl': 'Slovenščina',
-    'bs': 'Bosanski', 'sq': 'Shqip', 'ro': 'Română', 'hu': 'Magyar',
-    'pl': 'Polski', 'cs': 'Čeština', 'sk': 'Slovenčina', 'lt': 'Lietuvių',
-    'lv': 'Latviešu', 'et': 'Eesti', 'fi': 'Suomi', 'sv': 'Svenska',
-    'nb': 'Norsk', 'da': 'Dansk', 'is': 'Íslenska', 'ga': 'Gaeilge',
-    'cy': 'Cymraeg', 'gd': 'Gàidhlig', 'mt': 'Malti', 'el': 'Ελληνικά',
-    'hy': 'Հայերեն', 'ka': 'ქართული', 'az': 'Azərbaycan', 'tk': 'Türkmen',
-    'uz': 'Oʻzbek', 'kk': 'Қазақ', 'ky': 'Кыргыз', 'crh': 'Qırımtatar',
-    'sd': 'سنڌي', 'ps': 'پښتو', 'ku': 'Kurdî', 'ckb': 'کوردی',
+    'ur': 'اردو', 'hi': 'हिन्दी', 'bn': 'বাংলা', 'zh': '中文',
+    'ja': '日本語', 'ko': '한국어', 'ru': 'Русский', 'it': 'Italiano',
+    'nl': 'Nederlands', 'sv': 'Svenska', 'pl': 'Polski', 'ro': 'Română',
+    'hu': 'Magyar', 'el': 'Ελληνικά', 'cs': 'Čeština', 'th': 'ไทย',
+    'vi': 'Tiếng Việt', 'ms': 'Bahasa Melayu', 'id': 'Bahasa Indonesia',
     'sw': 'Kiswahili', 'ha': 'Hausa', 'yo': 'Yorùbá', 'ig': 'Igbo',
-    'zu': 'isiZulu', 'xh': 'isiXhosa', 'af': 'Afrikaans',
-    'am': 'አማርኛ', 'ti': 'ትግርኛ', 'om': 'Oromoo', 'so': 'Soomaali',
-    'rw': 'Kinyarwanda', 'rn': 'Ikirundi', 'lg': 'Luganda', 'ny': 'Chichewa',
-    'mg': 'Malagasy', 'eo': 'Esperanto', 'la': 'Latina',
+    'am': 'አማርኛ', 'so': 'Soomaali', 'zu': 'isiZulu',
   };
 
   @override
@@ -71,8 +52,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
   }
 
   void _onTextChanged() {
-    // Auto-detect when user types
-    if (_sourceController.text.isNotEmpty) {
+    if (_sourceController.text.isNotEmpty && _detectedLanguage == null) {
       _autoDetect();
     }
   }
@@ -87,8 +67,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes)) as List;
         if (data.isNotEmpty) {
-          final lang = data[0]['language'] as String?;
-          setState(() => _detectedLanguage = lang);
+          setState(() => _detectedLanguage = data[0]['language'] as String?);
         }
       }
     } catch (_) {}
@@ -116,7 +95,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
         }
       }
     } catch (e) {
-      setState(() => _translatedController.text = '⚠️ خطأ: $e');
+      setState(() => _translatedController.text = 'Error: ${e.toString()}');
     }
     setState(() => _isTranslating = false);
   }
@@ -144,11 +123,9 @@ class _TranslationScreenState extends State<TranslationScreen> {
 
   void _copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('📋 تم النسخ')));
-  }
-
-  void _share(String text) {
-    Share.share(text);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم النسخ')),
+    );
   }
 
   @override
@@ -163,30 +140,12 @@ class _TranslationScreenState extends State<TranslationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('ترجمة ${_languages[_selectedLanguage] ?? _selectedLanguage}'),
+        title: Text('ترجمة إلى ${_languages[_selectedLanguage] ?? _selectedLanguage}'),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.auto_awesome, color: Colors.amber),
-            tooltip: 'AI Language Merger',
-            onSelected: (v) {
-              if (v == 'merge' && _sourceController.text.isNotEmpty) {
-                _translateText();
-              } else if (v == 'dialects') {
-                _showDialectInfo();
-              }
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(value: 'merge', child: Text('🧠 AI Smart Translate', style: TextStyle(color: Colors.amber))),
-              const PopupMenuItem(value: 'dialects', child: Text('🔍 عرض اللهجات المتقاربة', style: TextStyle(color: Colors.cyanAccent))),
-            ],
-          ),
-        ],
       ),
       body: Column(
         children: [
-          // Source text
           Expanded(
             child: Container(
               margin: const EdgeInsets.all(8),
@@ -210,10 +169,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
                               color: Colors.teal.shade50,
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(
-                              '🌐 ${_languages[_detectedLanguage] ?? _detectedLanguage}',
-                              style: const TextStyle(fontSize: 12, color: Colors.teal),
-                            ),
+                            child: Text(_detectedLanguage!, style: const TextStyle(fontSize: 12, color: Colors.teal)),
                           ),
                       ],
                     ),
@@ -228,19 +184,15 @@ class _TranslationScreenState extends State<TranslationScreen> {
                       ),
                       maxLines: null,
                       expands: true,
-                      textAlign: TextAlign.start,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-
-          // Controls
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Language selector
               SizedBox(
                 width: 150,
                 child: DropdownButtonFormField<String>(
@@ -260,7 +212,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
                   },
                 ),
               ),
-              // Translate button
               ElevatedButton.icon(
                 onPressed: _isTranslating ? null : _translateText,
                 icon: _isTranslating
@@ -269,7 +220,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
                 label: const Text('ترجمة'),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
               ),
-              // Mic
               IconButton(
                 icon: Icon(_isRecording ? Icons.mic : Icons.mic_none, color: Colors.teal),
                 onPressed: _startRecording,
@@ -277,8 +227,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
               ),
             ],
           ),
-
-          // Translated text
           Expanded(
             child: Container(
               margin: const EdgeInsets.all(8),
@@ -296,26 +244,15 @@ class _TranslationScreenState extends State<TranslationScreen> {
                         Text('الترجمة إلى ${_languages[_selectedLanguage] ?? _selectedLanguage}',
                             style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
                         const Spacer(),
-                        // Copy
                         IconButton(
                           icon: const Icon(Icons.copy, size: 18),
                           onPressed: () => _copyToClipboard(_translatedController.text),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                         ),
-                        const SizedBox(width: 4),
-                        // Speak
                         IconButton(
                           icon: const Icon(Icons.volume_up, size: 18),
                           onPressed: () => _speak(_translatedController.text, _selectedLanguage),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        const SizedBox(width: 4),
-                        // Share
-                        IconButton(
-                          icon: const Icon(Icons.share, size: 18),
-                          onPressed: () => _share(_translatedController.text),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                         ),
@@ -340,53 +277,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showDialectInfo() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.language, color: Colors.teal),
-            SizedBox(width: 8),
-            Text('اللغات المتقاربة'),
-          ],
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              _clusterTile('🇸🇦 العربية', '10 لهجات: مصري، شامي، عراقي، مغربي...'),
-              _clusterTile('🇬🇧 English', '10 لهجات: US, UK, AU, CA, IN...'),
-              _clusterTile('🇹🇷 Türkçe', '10 لغات: أذري، تركمان، أوزبكي...'),
-              _clusterTile('🇮🇳 الهندية', '10 لغات: أردو، بنغالي، بنجابي...'),
-              _clusterTile('🇨🇳 الصينية', '8 لهجات: كانتونيز، هوكيين، هاكا...'),
-              _clusterTile('🇪🇸 Español', '7 لهجات: مكسيكي، أرجنتيني...'),
-              _clusterTile('🇧🇷 Português', '4 لهجات: برازيلي، أوروبي...'),
-              _clusterTile('🇫🇷 Français', '4 لهجات: كيبيك، بلجيكي...'),
-              _clusterTile('🇩🇪 Deutsch', '3 لهجات: نمساوي، سويسري...'),
-              _clusterTile('🇮🇷 فارسی', '5 لهجات: تاجیکی، گیلکی...'),
-              _clusterTile('🇮🇳 درافيدية', '4 لغات: تاميل، تيلوغو...'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('حسناً')),
-        ],
-      ),
-    );
-  }
-
-  Widget _clusterTile(String title, String subtitle) {
-    return Card(
-      child: ListTile(
-        title: Text(title),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
-        leading: const Icon(Icons.auto_awesome, color: Colors.amber),
       ),
     );
   }

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,7 +27,9 @@ class TranslationService extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> detectLanguage(String text) async {
-    if (text.trim().isEmpty) return {'language': 'unknown', 'confidence': 0.0};
+    if (text.trim().isEmpty) {
+      return {'language': 'unknown', 'confidence': 0.0};
+    }
     try {
       final response = await http.post(
         Uri.parse('https://libretranslate.com/detect'),
@@ -36,25 +37,19 @@ class TranslationService extends ChangeNotifier {
         body: jsonEncode({'q': text}),
       ).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes)) as List;
-        if (data.isNotEmpty) {
-          return {'language': data[0]['language'], 'confidence': data[0]['confidence']};
+        final list = jsonDecode(utf8.decode(response.bodyBytes)) as List;
+        if (list.isNotEmpty) {
+          return {'language': list[0]['language'] ?? 'unknown', 'confidence': (list[0]['confidence'] ?? 0.0).toDouble()};
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Detect error: $e');
+    }
     return {'language': 'ar', 'confidence': 0.0};
   }
 
-  Future<String> translate(String text, String target, {String? source}) async {
-    if (text.trim().isEmpty) return '';
-
-    // إضافة توقيع
-    final translated = await _callTranslate(text, target, source: source);
-    final signed = '$translated\n\n🦂 ترجمة Mirror Scorpion';
-    return signed;
-  }
-
   Future<String> _callTranslate(String text, String target, {String? source}) async {
+    if (text.trim().isEmpty) return '';
     try {
       final response = await http.post(
         Uri.parse('https://libretranslate.com/translate'),
@@ -66,31 +61,19 @@ class TranslationService extends ChangeNotifier {
           'format': 'text',
         }),
       ).timeout(const Duration(seconds: 10));
-
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         return (data['translatedText'] as String?) ?? text;
       }
     } catch (e) {
-      debugPrint('Translation error: $e');
+      debugPrint('Translate error: $e');
     }
     return text;
   }
 
-  Future<String> translateWithSignature(String text, String target, {String? source}) async {
+  Future<String> translate(String text, String target, {String? source}) async {
     final result = await _callTranslate(text, target, source: source);
-    return '$result\n\n🦂 ترجمة Mirror Scorpion';
-  }
-
-  Future<String> batchTranslate(List<String> texts, String target, {String? source}) async {
-    if (texts.isEmpty) return '';
-    final results = <String>[];
-    for (final text in texts) {
-      final result = await _callTranslate(text, target, source: source);
-      results.add(result);
-    }
-    final joined = results.join('\n---\n');
-    return '$joined\n\n🦂 ترجمة Mirror Scorpion';
+    return result;
   }
 
   Future<bool> testConnection() async {
@@ -102,17 +85,5 @@ class TranslationService extends ChangeNotifier {
     } catch (_) {
       return false;
     }
-  }
-
-  Future<List<Map<String, dynamic>>> getLanguages() async {
-    try {
-      final response = await http.get(
-        Uri.parse('https://libretranslate.com/languages'),
-      ).timeout(const Duration(seconds: 10));
-      if (response.statusCode == 200) {
-        return List<Map<String, dynamic>>.from(jsonDecode(utf8.decode(response.bodyBytes)));
-      }
-    } catch (_) {}
-    return [];
   }
 }

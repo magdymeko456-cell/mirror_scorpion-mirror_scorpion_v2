@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mirror_scorpion_v2/features/card1_translation/translation_screen.dart';
 import 'package:provider/provider.dart';
 import 'features/home_screen.dart';
 import 'features/card1_translation/translation_screen.dart';

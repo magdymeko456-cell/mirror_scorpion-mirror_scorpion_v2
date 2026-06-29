@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,13 +8,14 @@ class PremiumVerificationService extends ChangeNotifier {
   bool _isPremium = false;
   String _deviceId = '';
   String _activationPatch = '';
+  final Random _random = Random();
 
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
     _isPremium = _prefs.getBool('is_premium') ?? false;
     _deviceId = _prefs.getString('device_id') ?? _generateDeviceId();
     _activationPatch = _prefs.getString('activation_patch') ?? '';
-    if (_deviceId.isNotEmpty) {
+    if (_prefs.getString('device_id') == null) {
       await _prefs.setString('device_id', _deviceId);
     }
     notifyListeners();
@@ -26,44 +27,35 @@ class PremiumVerificationService extends ChangeNotifier {
 
   String _generateDeviceId() {
     final now = DateTime.now().millisecondsSinceEpoch;
-    final hash = now ^ 0x5C4A3B2D; // XOR مع ثابت
-    return 'MS-${hash.toRadixString(16).toUpperCase()}-${DateTime.now().second}';
+    final randomPart = _random.nextInt(99999);
+    final hash = (now ^ randomPart).toRadixString(16).toUpperCase();
+    return 'MS-$hash-${now % 10000}';
   }
 
-  /// تشفير device ID (للإرسال إلى الخادم)
   String encryptDeviceId() {
-    // مفتاح تشفير بسيط (في الإنتاج يستخدم RSA)
-    const key = 'MS_DEVICE_KEY_2026_';
-    final bytes = utf8.encode('$_deviceId:$key');
-    return base64Encode(bytes);
+    try {
+      final bytes = utf8.encode('MS_DEVICE:$_deviceId');
+      return base64Encode(bytes);
+    } catch (e) {
+      return 'ERROR';
+    }
   }
 
-  /// التحقق من patch التفعيل
   bool verifyActivationPatch(String patch) {
     if (patch.isEmpty) return false;
     try {
-      // فك التشفير
       final decoded = utf8.decode(base64Decode(patch));
       final parts = decoded.split(':');
       if (parts.length < 2) return false;
-
       final patchDeviceId = parts[0];
-      final timestamp = parts[1];
-
-      // التحقق من device ID
+      final timestampStr = parts[1];
+      final timestamp = int.tryParse(timestampStr);
+      if (timestamp == null) return false;
       if (patchDeviceId != _deviceId) return false;
-
-      // التحقق من الصلاحية (30 يوم من timestamp)
-      final patchTime = int.tryParse(timestamp);
-      if (patchTime == null) return false;
-
       final now = DateTime.now().millisecondsSinceEpoch;
-      final diff = now - patchTime;
+      final diff = now - timestamp;
       const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-
       if (diff > thirtyDays) return false;
-
-      // حفظ patch
       _activationPatch = patch;
       _prefs.setString('activation_patch', patch);
       _isPremium = true;
@@ -71,25 +63,22 @@ class PremiumVerificationService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('Patch verification error: $e');
+      debugPrint('Premium verify error: $e');
       return false;
     }
   }
 
-  /// إنشاء patch جديد (للخادم فقط — للعرض)
   String generatePatchForDevice(String deviceId) {
     final now = DateTime.now().millisecondsSinceEpoch;
     final raw = '$deviceId:$now';
     return base64Encode(utf8.encode(raw));
   }
 
-  /// نسخ الـ ID للتسجيل
   String getFormattedDeviceId() {
     final encrypted = encryptDeviceId();
-    return '📱 Device ID: $_deviceId\n🔐 Encrypted: $encrypted';
+    return 'Device ID: $_deviceId\nEncrypted: $encrypted';
   }
 
-  /// إلغاء التفعيل
   Future<void> deactivate() async {
     _isPremium = false;
     _activationPatch = '';
@@ -98,24 +87,17 @@ class PremiumVerificationService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// التحقق من صلاحية التفعيل (يسمى يومياً)
   Future<bool> validateSubscription() async {
-    if (!_isPremium) return false;
-    if (_activationPatch.isEmpty) return false;
-
+    if (!_isPremium || _activationPatch.isEmpty) return false;
     try {
       final decoded = utf8.decode(base64Decode(_activationPatch));
       final parts = decoded.split(':');
       if (parts.length < 2) return false;
-
-      final timestamp = parts[1];
-      final activationTime = int.tryParse(timestamp);
-      if (activationTime == null) return false;
-
+      final timestamp = int.tryParse(parts[1]);
+      if (timestamp == null) return false;
       final now = DateTime.now().millisecondsSinceEpoch;
-      final diff = now - activationTime;
+      final diff = now - timestamp;
       const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-
       if (diff > thirtyDays) {
         _isPremium = false;
         await _prefs.setBool('is_premium', false);
@@ -128,6 +110,5 @@ class PremiumVerificationService extends ChangeNotifier {
     }
   }
 
-  /// رقم الإصدار للتحقق
   String get version => '1.0.0';
 }
