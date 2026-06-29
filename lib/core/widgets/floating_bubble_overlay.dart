@@ -125,7 +125,7 @@ class _FloatingBubbleOverlayState extends State<FloatingBubbleOverlay> {
                     Navigator.pushNamed(context, '/dialogue');
                   }),
                   _bubbleAction(Icons.close, 'إغلاق', () {
-                    service.toggleBubble(context, false);
+                    service.toggle();
                     Navigator.pop(ctx);
                   }),
                 ],

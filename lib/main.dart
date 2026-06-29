@@ -43,7 +43,7 @@ class MirrorScorpionApp extends StatelessWidget {
         routes: {
           '/splash': (context) => const SplashScreen(),
           '/': (context) => const HomeScreen(),
-          '/translate': (context) => const TextTranslationScreen(),
+          '/translate': (context) => const TranslationScreen(),
           '/dialogue': (context) => const DialogueScreen(),
           '/document': (context) => const DocumentScreen(),
           '/stories': (context) => const StoriesScreen(),
