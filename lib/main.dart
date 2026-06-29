@@ -9,6 +9,8 @@ import 'features/settings/settings_screen.dart';
 import 'services/language_service.dart';
 import 'services/tts_service.dart';
 import 'services/floating_bubble_service.dart';
+import 'services/ai_service.dart';
+import 'services/offline_translation_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,11 +21,19 @@ void main() async {
   final bubbleService = FloatingBubbleService();
   await bubbleService.initialize();
 
+  final aiService = AIService();
+  await aiService.initialize();
+
+  final offlineTranslation = OfflineTranslationService();
+  await offlineTranslation.initialize();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: languageService),
         ChangeNotifierProvider.value(value: bubbleService),
+        ChangeNotifierProvider.value(value: aiService),
+        ChangeNotifierProvider.value(value: offlineTranslation),
         ChangeNotifierProvider(create: (_) => TTSService()),
       ],
       child: const MirrorScorpionApp(),

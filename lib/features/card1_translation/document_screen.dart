@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../services/tts_service.dart';
 
@@ -13,12 +11,12 @@ class DocumentScreen extends StatefulWidget {
 }
 
 class _DocumentScreenState extends State<DocumentScreen> {
-  File? _selectedImage;
   String _extractedText = '';
   String _translatedText = '';
   String _targetLang = 'ar';
   bool _isProcessing = false;
   bool _isTranslating = false;
+  String? _fileName;
 
   final _langs = {
     'ar': 'العربية', 'en': 'English', 'fr': 'Français',
@@ -27,39 +25,30 @@ class _DocumentScreenState extends State<DocumentScreen> {
   };
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1200);
-    if (image != null) {
-      setState(() {
-        _selectedImage = File(image.path);
-        _extractedText = '';
-        _translatedText = '';
-      });
-      _extractTextFromImage();
-    }
+    setState(() {
+      _fileName = 'تم اختيار صورة (تجريبي)';
+      _extractedText = '';
+      _translatedText = '';
+    });
+    _extractTextFromImage();
   }
 
   Future<void> _captureWithCamera() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.camera, maxWidth: 1200);
-    if (image != null) {
-      setState(() {
-        _selectedImage = File(image.path);
-        _extractedText = '';
-        _translatedText = '';
-      });
-      _extractTextFromImage();
-    }
+    setState(() {
+      _fileName = 'تم التقاط صورة (تجريبي)';
+      _extractedText = '';
+      _translatedText = '';
+    });
+    _extractTextFromImage();
   }
 
   Future<void> _extractTextFromImage() async {
     setState(() => _isProcessing = true);
-    // محاكاة استخراج نص — في الإصدار الكامل سيستخدم Google ML Kit
     await Future.delayed(const Duration(seconds: 2));
     setState(() {
       _extractedText = 'نص تجريبي مستخرج من الصورة:\n\n'
-          'هذا نص تجريبي للترجمة. في الإصدار الكامل سيتم استخدام Google ML Kit '
-          'لاستخراج النص من الصورة وترجمته إلى اللغة المطلوبة.';
+          'هذا نص تجريبي. في الإصدار الكامل سيتم استخدام Google ML Kit '
+          'لاستخراج النص تلقائياً من الصورة وترجمته.';
       _isProcessing = false;
     });
   }
@@ -101,7 +90,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Image preview or placeholder
+          // Preview area
           Container(
             width: double.infinity,
             height: 200,
@@ -110,10 +99,13 @@ class _DocumentScreenState extends State<DocumentScreen> {
               border: Border.all(color: Colors.white12),
               color: Colors.white.withOpacity(0.02),
             ),
-            child: _selectedImage != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.file(_selectedImage!, fit: BoxFit.cover, width: double.infinity),
+            child: _fileName != null
+                ? Center(
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(Icons.check_circle, size: 40, color: Colors.greenAccent.withOpacity(0.6)),
+                      const SizedBox(height: 8),
+                      Text(_fileName!, style: const TextStyle(color: Colors.white54)),
+                    ]),
                   )
                 : Center(
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -133,13 +125,10 @@ class _DocumentScreenState extends State<DocumentScreen> {
           ]),
           const SizedBox(height: 16),
 
-          // Target language
+          // Language selector
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(30),
-            ),
+            decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(30)),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _targetLang,
@@ -153,12 +142,10 @@ class _DocumentScreenState extends State<DocumentScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Processing indicator
           if (_isProcessing)
             const LinearProgressIndicator(backgroundColor: Colors.white12, valueColor: AlwaysStoppedAnimation<Color>(Colors.tealAccent)),
           if (_isProcessing) const SizedBox(height: 8),
 
-          // Extracted text
           if (_extractedText.isNotEmpty) ...[
             const Text('النص المستخرج:', style: TextStyle(color: Colors.white70, fontSize: 13)),
             const SizedBox(height: 8),
@@ -169,8 +156,6 @@ class _DocumentScreenState extends State<DocumentScreen> {
               child: Text(_extractedText, style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5)),
             ),
             const SizedBox(height: 12),
-
-            // Translate button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -189,7 +174,6 @@ class _DocumentScreenState extends State<DocumentScreen> {
             ),
           ],
 
-          // Translated text
           if (_translatedText.isNotEmpty) ...[
             const SizedBox(height: 16),
             const Text('النص المترجم:', style: TextStyle(color: Colors.amberAccent, fontSize: 13)),
@@ -219,11 +203,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-          color: color.withOpacity(0.05),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.3)), color: color.withOpacity(0.05)),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(icon, color: color, size: 22),
           const SizedBox(width: 8),
