@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:provider/provider.dart';
+import '../../services/ai_language_merger.dart';
 import '../../services/tts_service.dart';
 
 class DialogueScreen extends StatefulWidget {
@@ -146,6 +147,21 @@ class _DialogueScreenState extends State<DialogueScreen> {
             style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF0D1B2A),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.auto_awesome, color: Colors.amber),
+            tooltip: 'AI Language Merger',
+            onSelected: (v) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('🧠 AI Merger نشط — سيتم كشف اللهجة تلقائياً')),
+              );
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'merge', child: Text('🧠 AI Smart Translate', style: TextStyle(color: Colors.amber))),
+              const PopupMenuItem(value: 'dialects', child: Text('🔍 عرض اللهجات المتقاربة', style: TextStyle(color: Colors.cyanAccent))),
+            ],
+          ),
+        ],
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.language, color: Colors.cyanAccent),

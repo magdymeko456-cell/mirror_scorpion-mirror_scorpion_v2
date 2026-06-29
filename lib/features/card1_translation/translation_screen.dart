@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../services/ai_language_merger.dart';
 import '../../services/tts_service.dart';
 import '../../services/language_service.dart';
 
@@ -191,6 +192,26 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
         elevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.auto_awesome, color: Colors.amber),
+            tooltip: 'AI Language Merger',
+            onSelected: (v) async {
+              final merger = AILanguageMerger();
+              if (_sourceController.text.isNotEmpty) {
+                final result = await merger.smartTranslate(
+                  _sourceController.text,
+                  _selectedLanguage,
+                );
+                _translatedController.text = result;
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'merge', child: Text('🧠 AI Smart Translate', style: TextStyle(color: Colors.amber))),
+              const PopupMenuItem(value: 'detect', child: Text('🔍 Detect Dialect', style: TextStyle(color: Colors.cyanAccent))),
+            ],
+          ),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
