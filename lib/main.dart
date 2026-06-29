@@ -33,17 +33,14 @@ class MirrorScorpionApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FloatingBubbleService()..initialize()),
         ChangeNotifierProvider(create: (_) => AIService()..initialize()),
         ChangeNotifierProvider(create: (_) => OfflineTranslationService()..initialize()),
-        ChangeNotifierProvider(create: (_) => TTSService()..initialize()),
+        ChangeNotifierProvider(create: (_) => TTSService()),
         ChangeNotifierProvider(create: (_) => PremiumVerificationService()..initialize()),
         ChangeNotifierProvider(create: (_) => TranslationService()..initialize()),
       ],
       child: MaterialApp(
         title: '🦂 Mirror Scorpion',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-          useMaterial3: true,
-        ),
+        theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal), useMaterial3: true),
         initialRoute: '/',
         routes: {
           '/': (context) => const HomeScreen(),

@@ -6,18 +6,21 @@ class TTSService extends ChangeNotifier {
   bool _isSpeaking = false;
   bool _isPaused = false;
   String _selectedVoice = 'voice_salma';
+  double _speed = 0.5;
 
   static const List<Map<String, String>> availableVoices = [
-    {'id': 'voice_seif', 'name': 'سيف', 'desc': 'خشن/عميق'},
+    {'id': 'voice_seif',  'name': 'سيف', 'desc': 'خشن/عميق'},
     {'id': 'voice_salma', 'name': 'سلمى', 'desc': 'متزن'},
-    {'id': 'voice_sama', 'name': 'سما', 'desc': 'دافئ/ناعم'},
-    {'id': 'voice_sara', 'name': 'سارة', 'desc': 'رقيق'},
-    {'id': 'voice_user', 'name': 'صوت المستخدم', 'desc': 'مميز (Pro)'},
+    {'id': 'voice_sama',  'name': 'سما',  'desc': 'دافئ/ناعم'},
+    {'id': 'voice_sara',  'name': 'سارة', 'desc': 'رقيق'},
+    {'id': 'voice_user',  'name': 'صوت المستخدم', 'desc': 'مميز (Pro)'},
   ];
 
   bool get isSpeaking => _isSpeaking;
   bool get isPaused => _isPaused;
   String get selectedVoice => _selectedVoice;
+  double get speed => _speed;
+  List<Map<String, String>> get voices => availableVoices;
 
   TTSService() { _initTts(); }
 
@@ -29,29 +32,20 @@ class TTSService extends ChangeNotifier {
     _flutterTts.setErrorHandler((msg) { _isSpeaking = false; debugPrint('TTS Error: $msg'); notifyListeners(); });
   }
 
+  void setSpeed(double value) {
+    _speed = value;
+    _flutterTts.setSpeechRate(value);
+    notifyListeners();
+  }
+
   Future<void> setVoice(String voiceId) async {
     _selectedVoice = voiceId;
     switch (voiceId) {
-      case 'voice_seif': // سيف - خشن/عميق
-        await _flutterTts.setPitch(0.7);
-        await _flutterTts.setSpeechRate(0.4);
-        break;
-      case 'voice_salma': // سلمى - متزن
-        await _flutterTts.setPitch(1.0);
-        await _flutterTts.setSpeechRate(0.5);
-        break;
-      case 'voice_sama': // سما - دافئ/ناعم
-        await _flutterTts.setPitch(1.2);
-        await _flutterTts.setSpeechRate(0.42);
-        break;
-      case 'voice_sara': // سارة - رقيق
-        await _flutterTts.setPitch(1.5);
-        await _flutterTts.setSpeechRate(0.48);
-        break;
-      case 'voice_user': // صوت المستخدم - Pro
-        await _flutterTts.setPitch(1.0);
-        await _flutterTts.setSpeechRate(0.5);
-        break;
+      case 'voice_seif':  await _flutterTts.setPitch(0.7); await _flutterTts.setSpeechRate(0.4); break;
+      case 'voice_salma': await _flutterTts.setPitch(1.0); await _flutterTts.setSpeechRate(0.5); break;
+      case 'voice_sama':  await _flutterTts.setPitch(1.2); await _flutterTts.setSpeechRate(0.42); break;
+      case 'voice_sara':  await _flutterTts.setPitch(1.5); await _flutterTts.setSpeechRate(0.48); break;
+      case 'voice_user':  await _flutterTts.setPitch(1.0); await _flutterTts.setSpeechRate(0.5); break;
     }
     notifyListeners();
   }
@@ -64,35 +58,12 @@ class TTSService extends ChangeNotifier {
     await _flutterTts.speak(text);
   }
 
-  Future<void> speakQuran(String ayah, {String? language}) async {
-    await speak(ayah, language: language ?? 'ar');
-  }
+  Future<void> stop() async { await _flutterTts.stop(); _isSpeaking = false; _isPaused = false; notifyListeners(); }
+  Future<void> pause() async { await _flutterTts.pause(); _isPaused = true; notifyListeners(); }
+  Future<void> resume() async { _isPaused = false; notifyListeners(); }
 
-  Future<void> stop() async {
-    await _flutterTts.stop();
-    _isSpeaking = false;
-    _isPaused = false;
-    notifyListeners();
-  }
-
-  Future<void> pause() async {
-    await _flutterTts.pause();
-    _isPaused = true;
-    notifyListeners();
-  }
-
-  Future<void> resume() async {
-    _isPaused = false;
-    notifyListeners();
-  }
-
-  Future<List<String>> getAvailableLanguages() async {
-    return await _flutterTts.getLanguages;
-  }
+  Future<List<dynamic>> getAvailableLanguages() async => await _flutterTts.getLanguages;
 
   @override
-  void dispose() {
-    _flutterTts.stop();
-    super.dispose();
-  }
+  void dispose() { _flutterTts.stop(); super.dispose(); }
 }
