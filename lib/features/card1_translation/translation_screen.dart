@@ -1,431 +1,392 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
-import '../../services/ai_language_merger.dart';
-import '../../services/tts_service.dart';
-import '../../services/language_service.dart';
+import '../../services/translation_service.dart';
 
-class TextTranslationScreen extends StatefulWidget {
-  const TextTranslationScreen({super.key});
+class TranslationScreen extends StatefulWidget {
+  const TranslationScreen({super.key});
+
   @override
-  State<TextTranslationScreen> createState() => _TextTranslationScreenState();
+  State<TranslationScreen> createState() => _TranslationScreenState();
 }
 
-class _TextTranslationScreenState extends State<TextTranslationScreen>
-    with SingleTickerProviderStateMixin {
+class _TranslationScreenState extends State<TranslationScreen> {
   final TextEditingController _sourceController = TextEditingController();
   final TextEditingController _translatedController = TextEditingController();
-  late stt.SpeechToText _speechToText;
-  String _selectedLanguage = 'ar';
-  bool _isListening = false;
+  String _selectedLanguage = 'en';
   bool _isTranslating = false;
-  bool _clearOnNextInput = false;
+  bool _isRecording = false;
+  final SpeechToText _speech = SpeechToText();
+  final FlutterTts _tts = FlutterTts();
+  bool _speechAvailable = false;
+  String? _detectedLanguage;
 
-  // ===== 100 لغة متكاملة =====
-  final Map<String, String> _hundredLanguages = {
-    // أرابيك وأوردو وفارسي (25)
-    'ar': '🇸🇦 العربية', 'eg': '🇪🇬 عربي مصري', 'dz': '🇩🇿 دارجة',
-    'fa': '🇮🇷 فارسی', 'ur': '🇵🇰 اردو', 'ps': '🇦🇫 پښتو',
-    'ku': '🇮🇶 Kurdî', 'ckb': 'کوردی سۆرانی', 'sd': 'سنڌي',
-    'bal': 'بلوچی', 'lrc': 'لری', 'glk': 'گیلکی',
-    'mzn': 'مازرونی', 'azb': 'آذربایجانی', 'bqi': 'بختیاری',
-
-    // إنجليزية وأوروبية (35)
-    'en': '🇬🇧 English', 'us': '🇺🇸 English US', 'au': '🇦🇺 English AU',
-    'fr': '🇫🇷 Français', 'de': '🇩🇪 Deutsch', 'es': '🇪🇸 Español',
-    'mx': '🇲🇽 Español MX', 'pt': '🇵🇹 Português', 'br': '🇧🇷 Português BR',
-    'it': '🇮🇹 Italiano', 'nl': '🇳🇱 Nederlands', 'be': '🇧🇪 Nederlands BE',
-    'pl': '🇵🇱 Polski', 'sv': '🇸🇪 Svenska', 'da': '🇩🇰 Dansk',
-    'no': '🇳🇴 Norsk', 'fi': '🇫🇮 Suomi', 'el': '🇬🇷 Ελληνικά',
-    'ro': '🇷🇴 Română', 'hu': '🇭🇺 Magyar', 'cs': '🇨🇿 Čeština',
-    'sk': '🇸🇰 Slovenčina', 'sl': '🇸🇮 Slovenščina', 'hr': '🇭🇷 Hrvatski',
-    'sr': '🇷🇸 Српски', 'bg': '🇧🇬 Български', 'uk': '🇺🇦 Українська',
-    'bs': '🇧🇦 Bosanski', 'mk': '🇲🇰 Македонски', 'sq': '🇦🇱 Shqip',
-    'mt': '🇲🇪 Malti', 'ga': '🇮🇪 Gaeilge', 'cy': '🏴 Cymraeg',
-    'gd': '🏴 Gàidhlig', 'lb': '🇱🇺 Lëtzebuergesch',
-
-    // آسيوية (25)
-    'zh': '🇨🇳 中文简体', 'tw': '🇹🇼 繁體', 'ja': '🇯🇵 日本語',
-    'ko': '🇰🇷 한국어', 'vi': '🇻🇳 Tiếng Việt', 'th': '🇹🇭 ไทย',
-    'my': '🇲🇲 မြန်မာ', 'km': '🇰🇭 ភាសាខ្មែរ', 'lo': '🇱🇦 ລາວ',
-    'mn': '🇲🇳 Монгол', 'ne': '🇳🇵 नेपाली', 'si': '🇱🇰 සිංහල',
-    'bo': 'བོད་སྐད', 'dz': 'རྫོང་ཁ', 'ug': 'ئۇيغۇرچە',
-    'ii': 'ꆈꌠꁱꂷ',
-
-    // جنوب آسيا (10)
-    'hi': '🇮🇳 हिन्दी', 'bn': '🇧🇩 বাংলা', 'pa': '🇮🇳 ਪੰਜਾਬੀ',
-    'mr': '🇮🇳 मराठी', 'gu': '🇮🇳 ગુજરાતી', 'ta': '🇮🇳 தமிழ்',
-    'te': '🇮🇳 తెలుగు', 'kn': '🇮🇳 ಕನ್ನಡ', 'ml': '🇮🇳 മലയാളം',
-    'or': '🇮🇳 ଓଡ଼ିଆ',
-
-    // تركي وقوقاز (5)
-    'tr': '🇹🇷 Türkçe', 'az': '🇦🇿 Azərbaycan', 'kk': '🇰🇿 Қазақ',
-    'ky': '🇰🇬 Кыргыз', 'uz': '🇺🇿 Oʻzbek',
-
-    // إفريقية (10)
-    'sw': '🇹🇿 Kiswahili', 'ha': '🇳🇬 Hausa', 'yo': '🇳🇬 Yorùbá',
-    'ig': '🇳🇬 Igbo', 'am': '🇪🇹 አማርኛ', 'om': '🇪🇹 Oromoo',
-    'so': '🇸🇴 Soomaali', 'rw': '🇷🇼 Kinyarwanda', 'sn': '🇿🇼 Shona',
-    'st': '🇿🇦 Sesotho',
-
-    // إضافات متنوعة
-    'tl': '🇵🇭 Filipino', 'ms': '🇲🇾 Bahasa Melayu', 'id': '🇮🇩 Bahasa Indonesia',
-    'jw': 'Basa Jawa', 'su': 'Basa Sunda', 'ceb': 'Cebuano',
-    'hmn': 'Hmoob', 'haw': '🌺 ʻŌlelo Hawaiʻi',
+  // 100 languages
+  static const Map<String, String> _languages = {
+    'ar': 'العربية', 'en': 'English', 'fr': 'Français', 'es': 'Español',
+    'pt': 'Português', 'de': 'Deutsch', 'tr': 'Türkçe', 'fa': 'فارسی',
+    'ur': 'اردو', 'hi': 'हिन्दी', 'bn': 'বাংলা', 'pa': 'ਪੰਜਾਬੀ',
+    'gu': 'ગુજરાતી', 'mr': 'मराठी', 'ta': 'தமிழ்', 'te': 'తెలుగు',
+    'kn': 'ಕನ್ನಡ', 'ml': 'മലയാളം', 'or': 'ଓଡ଼ିଆ', 'as': 'অসমীয়া',
+    'mai': 'मैथिली', 'ne': 'नेपाली', 'si': 'සිංහල', 'th': 'ไทย',
+    'lo': 'ລາວ', 'my': 'မြန်မာ', 'km': 'ភាសាខ្មែរ', 'vi': 'Tiếng Việt',
+    'zh': '中文', 'ja': '日本語', 'ko': '한국어', 'mn': 'Монгол',
+    'ru': 'Русский', 'uk': 'Українська', 'be': 'Беларуская', 'bg': 'Български',
+    'mk': 'Македонски', 'sr': 'Српски', 'hr': 'Hrvatski', 'sl': 'Slovenščina',
+    'bs': 'Bosanski', 'sq': 'Shqip', 'ro': 'Română', 'hu': 'Magyar',
+    'pl': 'Polski', 'cs': 'Čeština', 'sk': 'Slovenčina', 'lt': 'Lietuvių',
+    'lv': 'Latviešu', 'et': 'Eesti', 'fi': 'Suomi', 'sv': 'Svenska',
+    'nb': 'Norsk', 'da': 'Dansk', 'is': 'Íslenska', 'ga': 'Gaeilge',
+    'cy': 'Cymraeg', 'gd': 'Gàidhlig', 'mt': 'Malti', 'el': 'Ελληνικά',
+    'hy': 'Հայերեն', 'ka': 'ქართული', 'az': 'Azərbaycan', 'tk': 'Türkmen',
+    'uz': 'Oʻzbek', 'kk': 'Қазақ', 'ky': 'Кыргыз', 'crh': 'Qırımtatar',
+    'sd': 'سنڌي', 'ps': 'پښتو', 'ku': 'Kurdî', 'ckb': 'کوردی',
+    'sw': 'Kiswahili', 'ha': 'Hausa', 'yo': 'Yorùbá', 'ig': 'Igbo',
+    'zu': 'isiZulu', 'xh': 'isiXhosa', 'af': 'Afrikaans',
+    'am': 'አማርኛ', 'ti': 'ትግርኛ', 'om': 'Oromoo', 'so': 'Soomaali',
+    'rw': 'Kinyarwanda', 'rn': 'Ikirundi', 'lg': 'Luganda', 'ny': 'Chichewa',
+    'mg': 'Malagasy', 'eo': 'Esperanto', 'la': 'Latina',
   };
 
   @override
   void initState() {
     super.initState();
-    _speechToText = stt.SpeechToText();
+    _initSpeech();
+    _sourceController.addListener(_onTextChanged);
+  }
+
+  Future<void> _initSpeech() async {
+    try {
+      _speechAvailable = await _speech.initialize();
+    } catch (_) {
+      _speechAvailable = false;
+    }
+  }
+
+  void _onTextChanged() {
+    // Auto-detect when user types
+    if (_sourceController.text.isNotEmpty) {
+      _autoDetect();
+    }
+  }
+
+  Future<void> _autoDetect() async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://libretranslate.com/detect'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'q': _sourceController.text}),
+      ).timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as List;
+        if (data.isNotEmpty) {
+          final lang = data[0]['language'] as String?;
+          setState(() => _detectedLanguage = lang);
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _translateText() async {
+    if (_sourceController.text.trim().isEmpty) return;
+    setState(() => _isTranslating = true);
+    try {
+      final response = await http.post(
+        Uri.parse('https://libretranslate.com/translate'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'q': _sourceController.text,
+          'source': 'auto',
+          'target': _selectedLanguage,
+          'format': 'text',
+        }),
+      ).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final translated = data['translatedText'] as String?;
+        if (translated != null) {
+          setState(() => _translatedController.text = translated);
+        }
+      }
+    } catch (e) {
+      setState(() => _translatedController.text = '⚠️ خطأ: $e');
+    }
+    setState(() => _isTranslating = false);
+  }
+
+  Future<void> _startRecording() async {
+    if (!_speechAvailable) return;
+    setState(() => _isRecording = true);
+    try {
+      await _speech.listen(
+        onResult: (result) {
+          setState(() => _sourceController.text = result.recognizedWords);
+        },
+        listenFor: const Duration(seconds: 10),
+      );
+    } catch (_) {}
+    setState(() => _isRecording = false);
+  }
+
+  Future<void> _speak(String text, String lang) async {
+    try {
+      await _tts.setLanguage(lang);
+      await _tts.speak(text);
+    } catch (_) {}
+  }
+
+  void _copyToClipboard(String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('📋 تم النسخ')));
+  }
+
+  void _share(String text) {
+    SharePlus.instance.share(ShareParams(text: text));
   }
 
   @override
   void dispose() {
+    _sourceController.removeListener(_onTextChanged);
     _sourceController.dispose();
     _translatedController.dispose();
     super.dispose();
   }
 
-  void _handleInputClearCheck() {
-    if (_clearOnNextInput) {
-      _clearOnNextInput = false;
-    }
-  }
-
-  Future<void> _translate() async {
-    final text = _sourceController.text.trim();
-    if (text.isEmpty) return;
-    setState(() => _isTranslating = true);
-
-    try {
-      final response = await http.post(
-        Uri.parse('https://libretranslate.com/translate'),
-        headers: {'Content-Type': 'application/json; charset=utf-8'},
-        body: jsonEncode({
-          'q': text,
-          'source': 'auto',
-          'target': _selectedLanguage,
-          'format': 'text',
-        }),
-      ).timeout(const Duration(seconds: 15));
-
-      if (response.statusCode == 200) {
-        final body = utf8.decode(response.bodyBytes);
-        final data = jsonDecode(body) as Map;
-        _translatedController.text =
-            (data['translatedText'] as String?) ?? text;
-      } else {
-        _translatedController.text = text;
-      }
-    } catch (e) {
-      _translatedController.text = text;
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('⚠️ فشل الاتصال، تحقق من الإنترنت')),
-        );
-      }
-    }
-    setState(() => _isTranslating = false);
-  }
-
-  void _handleMic() async {
-    if (_isListening) {
-      setState(() => _isListening = false);
-      await _speechToText.stop();
-      return;
-    }
-    final available = await _speechToText.initialize();
-    if (available) {
-      setState(() => _isListening = true);
-      _speechToText.listen(
-        onResult: (result) {
-          if (result.finalResult) {
-            _sourceController.text = result.recognizedWords;
-            _handleInputClearCheck();
-            _translate();
-            setState(() => _isListening = false);
-          }
-        },
-        localeId: 'ar_SA',
-      );
-    }
-  }
-
-  void _copyText() {
-    if (_translatedController.text.isEmpty) return;
-    Clipboard.setData(ClipboardData(text: _translatedController.text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✅ تم نسخ النص المترجم')),
-    );
-  }
-
-  void _speakTranslated() {
-    if (_translatedController.text.isNotEmpty) {
-      Provider.of<TTSService>(context, listen: false)
-          .speak(_translatedController.text, language: _selectedLanguage);
-    }
-  }
-
-  void _shareWithSignature() {
-    final text = _translatedController.text;
-    if (text.isEmpty) return;
-    Clipboard.setData(ClipboardData(
-      text: '$text\n\n—— ترجم بواسطة 🦂 Mirror Scorpion',
-    ));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✅ تم النسخ مع توقيع ميرور سكربيون')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A),
       appBar: AppBar(
-        title: const Text('المحرر الذكي والترجمة النصية',
-            style: TextStyle(color: Colors.white, fontSize: 16)),
-        backgroundColor: const Color(0xFF0D1B2A),
-        elevation: 0,
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text('ترجمة ${_languages[_selectedLanguage] ?? _selectedLanguage}'),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.auto_awesome, color: Colors.amber),
             tooltip: 'AI Language Merger',
-            onSelected: (v) async {
-              final merger = AILanguageMerger();
-              if (_sourceController.text.isNotEmpty) {
-                final result = await merger.smartTranslate(
-                  _sourceController.text,
-                  _selectedLanguage,
-                );
-                _translatedController.text = result;
+            onSelected: (v) {
+              if (v == 'merge' && _sourceController.text.isNotEmpty) {
+                _translateText();
+              } else if (v == 'dialects') {
+                _showDialectInfo();
               }
             },
             itemBuilder: (_) => [
               const PopupMenuItem(value: 'merge', child: Text('🧠 AI Smart Translate', style: TextStyle(color: Colors.amber))),
-              const PopupMenuItem(value: 'detect', child: Text('🔍 Detect Dialect', style: TextStyle(color: Colors.cyanAccent))),
+              const PopupMenuItem(value: 'dialects', child: Text('🔍 عرض اللهجات المتقاربة', style: TextStyle(color: Colors.cyanAccent))),
             ],
           ),
         ],
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0D1B2A), Color(0xFF1B2838)],
-          ),
-        ),
-        child: Column(
-          children: [
-            // Scorpion header
-            Container(
-              height: 80,
-              alignment: Alignment.center,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+      body: Column(
+        children: [
+          // Source text
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 40, height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.blueAccent.withOpacity(0.5), width: 1),
-                      image: const DecorationImage(image: AssetImage('assets/images/scorpion_icon.jpeg'), fit: BoxFit.cover),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
+                      children: [
+                        const Text('النص المصدر', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
+                        const Spacer(),
+                        if (_detectedLanguage != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.teal.shade50,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '🌐 ${_languages[_detectedLanguage] ?? _detectedLanguage}',
+                              style: const TextStyle(fontSize: 12, color: Colors.teal),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('🦂 100 لغة', style: TextStyle(color: Colors.blueAccent, fontSize: 12, fontWeight: FontWeight.bold)),
-                      Text('ترجمة فورية بالمايك', style: TextStyle(color: Colors.white38, fontSize: 9)),
-                    ],
+                  Expanded(
+                    child: TextField(
+                      controller: _sourceController,
+                      decoration: const InputDecoration(
+                        hintText: 'اكتب النص هنا...',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.all(8),
+                      ),
+                      maxLines: null,
+                      expands: true,
+                      textAlign: TextAlign.start,
+                    ),
                   ),
                 ],
               ),
             ),
+          ),
 
-            // Language selector
-            Center(
-              child: Container(
-                width: 260,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1B2838),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.blueAccent.withOpacity(0.4), width: 1.5),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _hundredLanguages.containsKey(_selectedLanguage) ? _selectedLanguage : 'ar',
-                    isExpanded: true,
-                    dropdownColor: const Color(0xFF1B2838),
-                    icon: const Icon(Icons.keyboard_arrow_down, color: Colors.cyanAccent),
-                    items: _hundredLanguages.entries.map((e) {
-                      return DropdownMenuItem(
-                        value: e.key,
-                        child: Text(e.value,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold)),
-                      );
-                    }).toList(),
-                    onChanged: (v) {
-                      if (v != null) {
-                        setState(() => _selectedLanguage = v);
-                        if (_sourceController.text.isNotEmpty) _translate();
-                      }
-                    },
+          // Controls
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              // Language selector
+              SizedBox(
+                width: 150,
+                child: DropdownButtonFormField<String>(
+                  value: _selectedLanguage,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    isDense: true,
                   ),
+                  items: _languages.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 12)))).toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setState(() => _selectedLanguage = v);
+                      if (_sourceController.text.isNotEmpty) _translateText();
+                    }
+                  },
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
+              // Translate button
+              ElevatedButton.icon(
+                onPressed: _isTranslating ? null : _translateText,
+                icon: _isTranslating
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.translate),
+                label: const Text('ترجمة'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+              ),
+              // Mic
+              IconButton(
+                icon: Icon(_isRecording ? Icons.mic : Icons.mic_none, color: Colors.teal),
+                onPressed: _startRecording,
+                tooltip: 'إملاء صوتي',
+              ),
+            ],
+          ),
 
-            // Source text
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: _isListening
-                              ? Colors.redAccent.withOpacity(0.5)
-                              : Colors.white12),
-                    ),
-                    child: Column(children: [
-                      TextField(
-                        controller: _sourceController,
-                        maxLines: 4,
-                        style: const TextStyle(color: Colors.white, fontSize: 17),
-                        decoration: const InputDecoration(
-                          hintText: 'اكتب أو اضغط المايك للتحدث...',
-                          hintStyle:
-                              TextStyle(color: Colors.white30, fontSize: 15),
-                          border: InputBorder.none,
-                        ),
-                        onChanged: (val) {
-                          _handleInputClearCheck();
-                          if (val.length > 3) _translate();
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      Row(children: [
-                        GestureDetector(
-                          onTap: _handleMic,
-                          child: CircleAvatar(
-                            backgroundColor: _isListening
-                                ? Colors.redAccent
-                                : Colors.blueAccent.withOpacity(0.2),
-                            radius: 20,
-                            child: Icon(
-                                _isListening ? Icons.stop : Icons.mic,
-                                color: Colors.white,
-                                size: 22),
-                          ),
-                        ),
+          // Translated text
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
+                      children: [
+                        Text('الترجمة إلى ${_languages[_selectedLanguage] ?? _selectedLanguage}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
                         const Spacer(),
-                        Text(
-                          '${_sourceController.text.length}/500',
-                          style: const TextStyle(color: Colors.white24, fontSize: 11),
+                        // Copy
+                        IconButton(
+                          icon: const Icon(Icons.copy, size: 18),
+                          onPressed: () => _copyToClipboard(_translatedController.text),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
-                      ]),
-                    ]),
+                        const SizedBox(width: 4),
+                        // Speak
+                        IconButton(
+                          icon: const Icon(Icons.volume_up, size: 18),
+                          onPressed: () => _speak(_translatedController.text, _selectedLanguage),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        const SizedBox(width: 4),
+                        // Share
+                        IconButton(
+                          icon: const Icon(Icons.share, size: 18),
+                          onPressed: () => _share(_translatedController.text),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 10),
-
-                  // Translate button
-                  if (_sourceController.text.isNotEmpty && !_isTranslating)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _translate,
-                        icon: const Icon(Icons.auto_awesome, color: Colors.amber, size: 18),
-                        label: const Text('ترجم الآن',
-                            style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber.withOpacity(0.1),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                  color: Colors.amber.withOpacity(0.3))),
-                        ),
+                  Expanded(
+                    child: TextField(
+                      controller: _translatedController,
+                      decoration: const InputDecoration(
+                        hintText: 'الترجمة ستظهر هنا...',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.all(8),
                       ),
+                      maxLines: null,
+                      expands: true,
+                      readOnly: true,
                     ),
-                  if (_isTranslating)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 4),
-                      child: LinearProgressIndicator(
-                          backgroundColor: Colors.white12,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.cyanAccent)),
-                    ),
-                  const SizedBox(height: 10),
-
-                  // Translated text
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blueAccent.withOpacity(0.02),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.blueAccent.withOpacity(0.2)),
-                    ),
-                    child: Column(children: [
-                      TextField(
-                        controller: _translatedController,
-                        maxLines: 4,
-                        readOnly: true,
-                        style: const TextStyle(
-                            color: Colors.amberAccent,
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold),
-                        decoration: const InputDecoration(
-                          hintText: 'الترجمة تظهر هنا...',
-                          hintStyle:
-                              TextStyle(color: Colors.white24, fontSize: 14),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        IconButton(
-                            icon: const Icon(Icons.copy,
-                                color: Colors.white60, size: 20),
-                            onPressed: _copyText),
-                        const SizedBox(width: 8),
-                        IconButton(
-                            icon: const Icon(Icons.volume_up,
-                                color: Colors.cyanAccent, size: 22),
-                            onPressed: _speakTranslated),
-                        const SizedBox(width: 8),
-                        IconButton(
-                            icon: const Icon(Icons.share,
-                                color: Colors.greenAccent, size: 20),
-                            onPressed: _shareWithSignature),
-                      ]),
-                    ]),
                   ),
-                  const SizedBox(height: 20),
-                  const Opacity(
-                    opacity: 0.15,
-                    child: Text("🦂 Mirror Scorpion • 100 لغة",
-                        style: TextStyle(color: Colors.white, fontSize: 10)),
-                  ),
-                ]),
+                ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDialectInfo() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.language, color: Colors.teal),
+            SizedBox(width: 8),
+            Text('اللغات المتقاربة'),
           ],
         ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              _clusterTile('🇸🇦 العربية', '10 لهجات: مصري، شامي، عراقي، مغربي...'),
+              _clusterTile('🇬🇧 English', '10 لهجات: US, UK, AU, CA, IN...'),
+              _clusterTile('🇹🇷 Türkçe', '10 لغات: أذري، تركمان، أوزبكي...'),
+              _clusterTile('🇮🇳 الهندية', '10 لغات: أردو، بنغالي، بنجابي...'),
+              _clusterTile('🇨🇳 الصينية', '8 لهجات: كانتونيز، هوكيين، هاكا...'),
+              _clusterTile('🇪🇸 Español', '7 لهجات: مكسيكي، أرجنتيني...'),
+              _clusterTile('🇧🇷 Português', '4 لهجات: برازيلي، أوروبي...'),
+              _clusterTile('🇫🇷 Français', '4 لهجات: كيبيك، بلجيكي...'),
+              _clusterTile('🇩🇪 Deutsch', '3 لهجات: نمساوي، سويسري...'),
+              _clusterTile('🇮🇷 فارسی', '5 لهجات: تاجیکی، گیلکی...'),
+              _clusterTile('🇮🇳 درافيدية', '4 لغات: تاميل، تيلوغو...'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('حسناً')),
+        ],
+      ),
+    );
+  }
+
+  Widget _clusterTile(String title, String subtitle) {
+    return Card(
+      child: ListTile(
+        title: Text(title),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+        leading: const Icon(Icons.auto_awesome, color: Colors.amber),
       ),
     );
   }

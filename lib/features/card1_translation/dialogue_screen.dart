@@ -1,160 +1,189 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
-import '../../services/ai_language_merger.dart';
-import '../../services/tts_service.dart';
+import '../../services/ai_service.dart';
+import '../../services/language_service.dart';
+import '../../services/premium_verification_service.dart';
 
 class DialogueScreen extends StatefulWidget {
   const DialogueScreen({super.key});
+
   @override
   State<DialogueScreen> createState() => _DialogueScreenState();
 }
 
 class _DialogueScreenState extends State<DialogueScreen> {
-  final List<Map<String, dynamic>> _messages = [];
-  final TextEditingController _msgController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  late stt.SpeechToText _speech;
-  String _targetLang = 'en';
-  bool _isListening = false;
+  // ... (keep all existing variables and methods as they were)
+  final TextEditingController _myMessageController = TextEditingController();
+  final TextEditingController _partnerMessageController = TextEditingController();
+  final List<Map<String, String>> _conversation = [];
+  String _selectedMyLanguage = 'ar';
+  String _selectedPartnerLanguage = 'en';
+  bool _isRecording = false;
   bool _isTranslating = false;
+  final SpeechToText _speech = SpeechToText();
+  final FlutterTts _tts = FlutterTts();
+  bool _speechAvailable = false;
 
-  // نفس الـ 100 لغة
-  static const Map<String, String> _langs = {
-    'ar': '🇸🇦 العربية', 'en': '🇬🇧 English', 'fr': '🇫🇷 Français',
-    'de': '🇩🇪 Deutsch', 'es': '🇪🇸 Español', 'pt': '🇵🇹 Português',
-    'it': '🇮🇹 Italiano', 'nl': '🇳🇱 Nederlands', 'pl': '🇵🇱 Polski',
-    'sv': '🇸🇪 Svenska', 'da': '🇩🇰 Dansk', 'no': '🇳🇴 Norsk',
-    'fi': '🇫🇮 Suomi', 'el': '🇬🇷 Ελληνικά', 'ro': '🇷🇴 Română',
-    'hu': '🇭🇺 Magyar', 'cs': '🇨🇿 Čeština', 'sk': '🇸🇰 Slovenčina',
-    'hr': '🇭🇷 Hrvatski', 'sr': '🇷🇸 Српски', 'bg': '🇧🇬 Български',
-    'uk': '🇺🇦 Українська', 'sq': '🇦🇱 Shqip', 'bs': '🇧🇦 Bosanski',
-    'mk': '🇲🇰 Македонски', 'zh': '🇨🇳 中文', 'ja': '🇯🇵 日本語',
-    'ko': '🇰🇷 한국어', 'vi': '🇻🇳 Tiếng Việt', 'th': '🇹🇭 ไทย',
-    'my': '🇲🇲 မြန်မာ', 'km': '🇰🇭 ភាសាខ្មែរ', 'lo': '🇱🇦 ລາວ',
-    'mn': '🇲🇳 Монгол', 'ne': '🇳🇵 नेपाली', 'si': '🇱🇰 සිංහල',
-    'hi': '🇮🇳 हिन्दी', 'bn': '🇧🇩 বাংলা', 'pa': '🇮🇳 ਪੰਜਾਬੀ',
-    'mr': '🇮🇳 मराठी', 'gu': '🇮🇳 ગુજરાતી', 'ta': '🇮🇳 தமிழ்',
-    'te': '🇮🇳 తెలుగు', 'kn': '🇮🇳 ಕನ್ನಡ', 'ml': '🇮🇳 മലയാളം',
-    'tr': '🇹🇷 Türkçe', 'az': '🇦🇿 Azərbaycan', 'kk': '🇰🇿 Қазақ',
-    'uz': '🇺🇿 Oʻzbek', 'fa': '🇮🇷 فارسی', 'ur': '🇵🇰 اردو',
-    'ps': '🇦🇫 پښتو', 'ku': '🇮🇶 Kurdî', 'sd': 'سنڌي',
-    'sw': '🇹🇿 Kiswahili', 'ha': '🇳🇬 Hausa', 'yo': '🇳🇬 Yorùbá',
-    'ig': '🇳🇬 Igbo', 'am': '🇪🇹 አማርኛ', 'so': '🇸🇴 Soomaali',
-    'tl': '🇵🇭 Filipino', 'ms': '🇲🇾 Bahasa Melayu', 'id': '🇮🇩 Bahasa Indonesia',
-    'jw': 'Basa Jawa', 'su': 'Basa Sunda',
+  // 100 languages
+  static const Map<String, String> _languages = {
+    'ar': 'العربية', 'en': 'English', 'fr': 'Français', 'es': 'Español',
+    'pt': 'Português', 'de': 'Deutsch', 'tr': 'Türkçe', 'fa': 'فارسی',
+    'ur': 'اردو', 'hi': 'हिन्दी', 'bn': 'বাংলা', 'pa': 'ਪੰਜਾਬੀ',
+    'gu': 'ગુજરાતી', 'mr': 'मराठी', 'ta': 'தமிழ்', 'te': 'తెలుగు',
+    'kn': 'ಕನ್ನಡ', 'ml': 'മലയാളം', 'or': 'ଓଡ଼ିଆ', 'as': 'অসমীয়া',
+    'mai': 'मैथिली', 'ne': 'नेपाली', 'si': 'සිංහල', 'th': 'ไทย',
+    'lo': 'ລາວ', 'my': 'မြန်မာ', 'km': 'ភាសាខ្មែរ', 'vi': 'Tiếng Việt',
+    'zh': '中文', 'ja': '日本語', 'ko': '한국어', 'mn': 'Монгол',
+    'ru': 'Русский', 'uk': 'Українська', 'be': 'Беларуская', 'bg': 'Български',
+    'mk': 'Македонски', 'sr': 'Српски', 'hr': 'Hrvatski', 'sl': 'Slovenščina',
+    'bs': 'Bosanski', 'sq': 'Shqip', 'ro': 'Română', 'hu': 'Magyar',
+    'pl': 'Polski', 'cs': 'Čeština', 'sk': 'Slovenčina', 'lt': 'Lietuvių',
+    'lv': 'Latviešu', 'et': 'Eesti', 'fi': 'Suomi', 'sv': 'Svenska',
+    'nb': 'Norsk', 'da': 'Dansk', 'is': 'Íslenska', 'ga': 'Gaeilge',
+    'cy': 'Cymraeg', 'gd': 'Gàidhlig', 'mt': 'Malti', 'el': 'Ελληνικά',
+    'hy': 'Հայերեն', 'ka': 'ქართული', 'az': 'Azərbaycan', 'tk': 'Türkmen',
+    'uz': 'Oʻzbek', 'kk': 'Қазақ', 'ky': 'Кыргыз', 'crh': 'Qırımtatar',
+    'sd': 'سنڌي', 'ps': 'پښتو', 'ku': 'Kurdî', 'ckb': 'کوردی',
+    'sw': 'Kiswahili', 'ha': 'Hausa', 'yo': 'Yorùbá', 'ig': 'Igbo',
+    'zu': 'isiZulu', 'xh': 'isiXhosa', 'af': 'Afrikaans',
+    'am': 'አማርኛ', 'ti': 'ትግርኛ', 'om': 'Oromoo', 'so': 'Soomaali',
+    'rw': 'Kinyarwanda', 'rn': 'Ikirundi', 'lg': 'Luganda', 'ny': 'Chichewa',
+    'mg': 'Malagasy', 'eo': 'Esperanto', 'la': 'Latina',
   };
 
   @override
   void initState() {
     super.initState();
-    _speech = stt.SpeechToText();
+    _initSpeech();
   }
 
-  @override
-  void dispose() {
-    _msgController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _addMessage(String text, {bool isUser = true, String? translated}) {
-    setState(() => _messages.add({
-      'text': text,
-      'isUser': isUser,
-      'translated': translated,
-      'time': DateTime.now().toString().substring(11, 16),
-    }));
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
-  Future<void> _translateAndRespond(String text) async {
-    if (text.trim().isEmpty) return;
-    _addMessage(text, isUser: true);
-    setState(() => _isTranslating = true);
-
+  Future<void> _initSpeech() async {
     try {
-      final resp = await http.post(
+      _speechAvailable = await _speech.initialize();
+    } catch (_) {
+      _speechAvailable = false;
+    }
+  }
+
+  String _getLanguageName(String code) {
+    return _languages[code] ?? code;
+  }
+
+  Future<String> _translate(String text, String target) async {
+    if (text.trim().isEmpty) return '';
+    setState(() => _isTranslating = true);
+    try {
+      final response = await http.post(
         Uri.parse('https://libretranslate.com/translate'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'q': text,
           'source': 'auto',
-          'target': _targetLang,
+          'target': target,
           'format': 'text',
         }),
       ).timeout(const Duration(seconds: 10));
-
-      if (resp.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(resp.bodyBytes));
-        final translated = data['translatedText'] as String? ?? text;
-        _addMessage(translated, isUser: false, translated: text);
-        Provider.of<TTSService>(context, listen: false)
-            .speak(translated, language: _targetLang);
-      } else {
-        _addMessage('⚠️ ${resp.statusCode}', isUser: false);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        return (data['translatedText'] as String?) ?? text;
       }
-    } catch (_) {
-      _addMessage('⚠️ خطأ في الاتصال', isUser: false);
-    }
+    } catch (_) {}
     setState(() => _isTranslating = false);
+    return text;
   }
 
-  void _handleMic() async {
-    if (_isListening) {
-      setState(() => _isListening = false);
-      await _speech.stop();
-      return;
-    }
-    final available = await _speech.initialize();
-    if (available) {
-      setState(() => _isListening = true);
-      _speech.listen(
-        onResult: (result) {
-          if (result.finalResult) {
-            _translateAndRespond(result.recognizedWords);
-            setState(() => _isListening = false);
+  Future<void> _startRecording(String forWho) async {
+    if (!_speechAvailable) return;
+    setState(() => _isRecording = true);
+    try {
+      await _speech.listen(
+        onResult: (result) async {
+          final spoken = result.recognizedWords;
+          if (spoken.isNotEmpty) {
+            if (forWho == 'me') {
+              _myMessageController.text = spoken;
+            } else {
+              _partnerMessageController.text = spoken;
+            }
           }
         },
+        listenFor: const Duration(seconds: 10),
+        localeId: _selectedMyLanguage,
       );
-    }
+    } catch (_) {}
+    setState(() => _isRecording = false);
   }
 
-  void _sendText() {
-    final text = _msgController.text.trim();
-    if (text.isNotEmpty) {
-      _msgController.clear();
-      _translateAndRespond(text);
+  Future<void> _sendMessage() async {
+    final myText = _myMessageController.text.trim();
+    final partnerText = _partnerMessageController.text.trim();
+    if (myText.isEmpty && partnerText.isEmpty) return;
+
+    setState(() => _isTranslating = true);
+
+    String translatedToPartner = myText;
+    String translatedToMe = partnerText;
+
+    if (myText.isNotEmpty) {
+      translatedToPartner = await _translate(myText, _selectedPartnerLanguage);
     }
+    if (partnerText.isNotEmpty) {
+      translatedToMe = await _translate(partnerText, _selectedMyLanguage);
+    }
+
+    setState(() {
+      _conversation.add({
+        'me': myText,
+        'me_translated': translatedToPartner,
+        'partner': partnerText,
+        'partner_translated': translatedToMe,
+      });
+      _myMessageController.clear();
+      _partnerMessageController.clear();
+      _isTranslating = false;
+    });
+  }
+
+  Future<void> _speak(String text, String lang) async {
+    try {
+      await _tts.setLanguage(lang);
+      await _tts.speak(text);
+    } catch (_) {}
+  }
+
+  void _sendScreenshot() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('📸 تم إرسال المحادثة كصورة — قريباً')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A),
       appBar: AppBar(
-        title: const Text('محادثة مترجمة 💬 100 لغة',
-            style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF0D1B2A),
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('حوار مترجم'),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.auto_awesome, color: Colors.amber),
             tooltip: 'AI Language Merger',
             onSelected: (v) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('🧠 AI Merger نشط — سيتم كشف اللهجة تلقائياً')),
-              );
+              if (v == 'merge') {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('🧠 AI Merger نشط — سيتم كشف اللهجة تلقائياً')),
+                );
+              } else if (v == 'dialects') {
+                _showDialectInfo();
+              }
             },
             itemBuilder: (_) => [
               const PopupMenuItem(value: 'merge', child: Text('🧠 AI Smart Translate', style: TextStyle(color: Colors.amber))),
@@ -162,112 +191,103 @@ class _DialogueScreenState extends State<DialogueScreen> {
             ],
           ),
         ],
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.language, color: Colors.cyanAccent),
-            onSelected: (v) => setState(() => _targetLang = v),
-            itemBuilder: (_) => _langs.entries
-                .map((e) => PopupMenuItem(
-                      value: e.key,
-                      child: Text(e.value,
-                          style: TextStyle(
-                              color: _targetLang == e.key
-                                  ? Colors.amber
-                                  : Colors.white)),
-                    ))
-                .toList(),
-          ),
-        ],
       ),
       body: Column(
         children: [
-          // Messages
+          // Language selectors
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.teal.shade50,
+              border: Border(bottom: BorderSide(color: Colors.teal.shade200)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _languageDropdown('لغتي', _selectedMyLanguage, (v) {
+                    setState(() => _selectedMyLanguage = v ?? 'ar');
+                  }),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Icon(Icons.compare_arrows, color: Colors.teal, size: 28),
+                ),
+                Expanded(
+                  child: _languageDropdown('لغة الشريك', _selectedPartnerLanguage, (v) {
+                    setState(() => _selectedPartnerLanguage = v ?? 'en');
+                  }),
+                ),
+              ],
+            ),
+          ),
+
+          // Conversation
           Expanded(
-            child: _messages.isEmpty
-                ? Center(
+            child: _conversation.isEmpty
+                ? const Center(
                     child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                        Icon(Icons.forum,
-                            size: 60,
-                            color: Colors.cyanAccent.withOpacity(0.3)),
-                        const SizedBox(height: 12),
-                        const Text('ابدأ المحادثة بالكتابة أو المايك',
-                            style: TextStyle(color: Colors.white38, fontSize: 14)),
-                        Text('الهدف: ${_langs[_targetLang] ?? 'English'}',
-                            style: TextStyle(
-                                color: Colors.cyanAccent.withOpacity(0.5),
-                                fontSize: 12)),
-                        const SizedBox(height: 8),
-                        const Text('💡 النسخة العادية: كل رسالة تفتح رابطاً خفياً',
-                            style: TextStyle(color: Colors.white24, fontSize: 10)),
-                      ]),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.chat_bubble_outline, size: 64, color: Colors.teal),
+                        SizedBox(height: 16),
+                        Text('ابدأ المحادثة', style: TextStyle(fontSize: 18, color: Colors.teal)),
+                        SizedBox(height: 8),
+                        Text('اكتب أو استخدم الميكروفون', style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
                   )
                 : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length,
+                    padding: const EdgeInsets.all(8),
+                    itemCount: _conversation.length,
                     itemBuilder: (_, i) {
-                      final msg = _messages[i];
-                      final isUser = msg['isUser'] as bool;
-                      return GestureDetector(
-                        onLongPress: () => _showHiddenLink(msg),
-                        child: Align(
-                          alignment: isUser
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: isUser
-                                  ? Colors.blueAccent.withOpacity(0.15)
-                                  : Colors.cyanAccent.withOpacity(0.08),
-                              borderRadius: BorderRadius.only(
-                                topLeft: const Radius.circular(16),
-                                topRight: const Radius.circular(16),
-                                bottomLeft: Radius.circular(isUser ? 16 : 4),
-                                bottomRight: Radius.circular(isUser ? 4 : 16),
-                              ),
-                              border: Border.all(
-                                  color: (isUser
-                                          ? Colors.blueAccent
-                                          : Colors.cyanAccent)
-                                      .withOpacity(0.2)),
-                            ),
-                            constraints: BoxConstraints(
-                                maxWidth:
-                                    MediaQuery.of(context).size.width * 0.75),
-                            child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                      final msg = _conversation[i];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // My message
+                              Row(
                                 children: [
-                                Text(msg['text'] as String,
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 15)),
-                                if (msg['translated'] != null) ...[
-                                  const SizedBox(height: 4),
-                                  Container(height: 1, color: Colors.white12),
-                                  const SizedBox(height: 4),
-                                  Text(msg['translated'] as String,
-                                      style: TextStyle(
-                                          color:
-                                              Colors.cyanAccent.withOpacity(0.6),
-                                          fontSize: 12,
-                                          fontStyle: FontStyle.italic)),
+                                  Icon(Icons.person, size: 18, color: Colors.teal),
+                                  const SizedBox(width: 4),
+                                  Expanded(child: Text(msg['me'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  IconButton(
+                                    icon: const Icon(Icons.volume_up, size: 16),
+                                    onPressed: () => _speak(msg['me'] ?? '', _selectedMyLanguage),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
                                 ],
-                                const SizedBox(height: 4),
-                                Row(children: [
-                                  Text(msg['time'] as String,
-                                      style: TextStyle(
-                                          color: Colors.white.withOpacity(0.3),
-                                          fontSize: 10)),
-                                  const Spacer(),
-                                  Icon(Icons.link,
-                                      size: 10,
-                                      color: Colors.white.withOpacity(0.15)),
-                                ]),
-                              ]),
+                              ),
+                              if (msg['me_translated'] != msg['me'])
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 22),
+                                  child: Text(msg['me_translated'] ?? '', style: TextStyle(color: Colors.teal.shade600, fontSize: 13)),
+                                ),
+                              const Divider(),
+                              // Partner message
+                              Row(
+                                children: [
+                                  Icon(Icons.person_outline, size: 18, color: Colors.orange),
+                                  const SizedBox(width: 4),
+                                  Expanded(child: Text(msg['partner'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  IconButton(
+                                    icon: const Icon(Icons.volume_up, size: 16),
+                                    onPressed: () => _speak(msg['partner'] ?? '', _selectedPartnerLanguage),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                ],
+                              ),
+                              if (msg['partner_translated'] != msg['partner'])
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 22),
+                                  child: Text(msg['partner_translated'] ?? '', style: TextStyle(color: Colors.orange.shade600, fontSize: 13)),
+                                ),
+                            ],
                           ),
                         ),
                       );
@@ -275,107 +295,156 @@ class _DialogueScreenState extends State<DialogueScreen> {
                   ),
           ),
 
-          if (_isTranslating)
-            const LinearProgressIndicator(
-                backgroundColor: Colors.white12,
-                valueColor:
-                    AlwaysStoppedAnimation<Color>(Colors.cyanAccent)),
-
-          // Input
+          // Input area
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF1B2838),
-              border: Border(
-                  top: BorderSide(color: Colors.white.withOpacity(0.05))),
+              color: Colors.grey.shade100,
+              border: Border(top: BorderSide(color: Colors.grey.shade300)),
             ),
-            child: Row(children: [
-              GestureDetector(
-                onTap: _handleMic,
-                child: CircleAvatar(
-                  radius: 22,
-                  backgroundColor: _isListening
-                      ? Colors.redAccent
-                      : Colors.blueAccent.withOpacity(0.2),
-                  child: Icon(_isListening ? Icons.stop : Icons.mic,
-                      color: Colors.white, size: 22),
+            child: Column(
+              children: [
+                // My input
+                Row(
+                  children: [
+                    Icon(Icons.person, size: 16, color: Colors.teal),
+                    const SizedBox(width: 4),
+                    Text('أنا', style: TextStyle(color: Colors.teal.shade700)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _myMessageController,
+                        decoration: const InputDecoration(
+                          hintText: 'اكتب رسالتك...',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          isDense: true,
+                        ),
+                        textDirection: TextDirection.rtl,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(_isRecording ? Icons.mic : Icons.mic_none, color: Colors.teal),
+                      onPressed: () => _startRecording('me'),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: _msgController,
-                  style: const TextStyle(color: Colors.white, fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: 'اكتب رسالتك...',
-                    hintStyle:
-                        TextStyle(color: Colors.white.withOpacity(0.3)),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                  ),
-                  onSubmitted: (_) => _sendText(),
+                const SizedBox(height: 4),
+                // Partner input
+                Row(
+                  children: [
+                    Icon(Icons.person_outline, size: 16, color: Colors.orange),
+                    const SizedBox(width: 4),
+                    Text('الشريك', style: TextStyle(color: Colors.orange.shade700)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _partnerMessageController,
+                        decoration: const InputDecoration(
+                          hintText: 'رسالة الشريك...',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(_isRecording ? Icons.mic : Icons.mic_none, color: Colors.orange),
+                      onPressed: () => _startRecording('partner'),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: _sendText,
-                child: CircleAvatar(
-                  radius: 22,
-                  backgroundColor: Colors.cyanAccent.withOpacity(0.2),
-                  child: const Icon(Icons.send_rounded,
-                      color: Colors.cyanAccent, size: 22),
+                const SizedBox(height: 8),
+                // Send + screenshot
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _isTranslating ? null : _sendMessage,
+                      icon: _isTranslating
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.send),
+                      label: const Text('إرسال'),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.camera_alt),
+                      onPressed: _sendScreenshot,
+                      tooltip: 'إرسال صورة المحادثة',
+                    ),
+                  ],
                 ),
-              ),
-            ]),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _showHiddenLink(Map<String, dynamic> msg) {
-    // الرابط الخفي — في النسخة العادية يفتح القصة في المتصفح
-    final text = msg['text'] as String;
-    final encoded = Uri.encodeComponent(text.substring(0, text.length > 30 ? 30 : text.length));
-    final url = 'https://github.com/magdymeko456-cell/mirror_scorpion-mirror_scorpion_v2/blob/main/assets/data/stories.json#$encoded';
+  Widget _languageDropdown(String label, String value, ValueChanged<String?> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        DropdownButtonFormField<String>(
+          value: value,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            isDense: true,
+          ),
+          items: _languages.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 13)))).toList(),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
 
+  void _showDialectInfo() {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1B2838),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('🔗 الرابط الخفي', style: TextStyle(color: Colors.white54, fontSize: 14)),
-        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('اضغط لفتح القصة في المتصفح:', style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () {
-              // استخدام url_launcher — في الإصدار الكامل
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('📖 سيتم فتح: $url')),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-              child: Text(url, style: const TextStyle(color: Colors.cyanAccent, fontSize: 10), maxLines: 3, overflow: TextOverflow.ellipsis),
-            ),
+      builder: (_) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.language, color: Colors.teal),
+            SizedBox(width: 8),
+            Text('اللغات المتقاربة'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              _clusterTile('🇸🇦 العربية', '10 لهجات: مصري، شامي، عراقي، مغربي...'),
+              _clusterTile('🇬🇧 English', '10 لهجات: US, UK, AU, CA, IN...'),
+              _clusterTile('🇹🇷 Türkçe', '10 لغات: أذري، تركمان، أوزبكي...'),
+              _clusterTile('🇮🇳 الهندية', '10 لغات: أردو، بنغالي، بنجابي...'),
+              _clusterTile('🇨🇳 الصينية', '8 لهجات: كانتونيز، هوكيين، هاكا...'),
+              _clusterTile('🇪🇸 Español', '7 لهجات: مكسيكي، أرجنتيني...'),
+              _clusterTile('🇧🇷 Português', '4 لهجات: برازيلي، أوروبي...'),
+              _clusterTile('🇫🇷 Français', '4 لهجات: كيبيك، بلجيكي...'),
+              _clusterTile('🇩🇪 Deutsch', '3 لهجات: نمساوي، سويسري...'),
+              _clusterTile('🇮🇷 فارسی', '5 لهجات: تاجیکی، گیلکی...'),
+              _clusterTile('🇮🇳 درافيدية', '4 لغات: تاميل، تيلوغو...'),
+            ],
           ),
-          const SizedBox(height: 12),
-          Row(children: [
-            const Icon(Icons.info_outline, color: Colors.amber, size: 14),
-            const SizedBox(width: 6),
-            const Expanded(child: Text('💎 النسخة البرو: حمِّل الكتاب كاملاً', style: TextStyle(color: Colors.white38, fontSize: 11))),
-          ]),
-        ]),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('تم', style: TextStyle(color: Colors.cyanAccent))),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('حسناً')),
         ],
+      ),
+    );
+  }
+
+  Widget _clusterTile(String title, String subtitle) {
+    return Card(
+      child: ListTile(
+        title: Text(title),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+        leading: const Icon(Icons.auto_awesome, color: Colors.amber),
       ),
     );
   }
