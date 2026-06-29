@@ -35,11 +35,8 @@ class PremiumVerificationService extends ChangeNotifier {
       for (final response in responses) {
         if (response.statusCode == 200) {
           final data = jsonDecode(utf8.decode(response.bodyBytes));
-          if (data['utc_datetime'] != null) {
-            return DateTime.tryParse(data['utc_datetime'] as String);
-          } else if (data['dateTime'] != null) {
-            return DateTime.tryParse(data['dateTime'] as String);
-          }
+          if (data['utc_datetime'] != null) return DateTime.tryParse(data['utc_datetime'] as String);
+          else if (data['dateTime'] != null) return DateTime.tryParse(data['dateTime'] as String);
         }
       }
     } catch (_) {}
@@ -53,41 +50,25 @@ class PremiumVerificationService extends ChangeNotifier {
       final durationStr = parts[parts.length - 2];
       final months = int.tryParse(durationStr) ?? 0;
       if (months <= 0 || months > 60) return false;
-
       DateTime now;
       final networkTime = await _fetchNetworkTime();
-      if (networkTime != null) {
-        now = networkTime;
-      } else {
-        now = DateTime.now();
-        debugPrint('⚠️ استخدام الوقت المحلي');
-      }
-
+      if (networkTime != null) { now = networkTime; }
+      else { now = DateTime.now(); debugPrint('⚠️ استخدام الوقت المحلي'); }
       final expiry = DateTime(now.year, now.month + months, now.day);
-      _isPremium = true;
-      _expiryDate = expiry;
+      _isPremium = true; _expiryDate = expiry;
       await _prefs.setBool('is_pro_version', true);
       await _prefs.setString('pro_expiry_date', expiry.toIso8601String());
       await _prefs.setString('pro_activation_patch', patch);
       notifyListeners();
       return true;
-    } catch (_) {
-      return false;
-    }
+    } catch (_) { return false; }
   }
 
   Future<void> deactivate() async {
-    _isPremium = false;
-    _expiryDate = null;
+    _isPremium = false; _expiryDate = null;
     await _prefs.setBool('is_pro_version', false);
     await _prefs.remove('pro_expiry_date');
     await _prefs.remove('pro_activation_patch');
     notifyListeners();
-  }
-
-  bool hasFeature(String feature) {
-    if (!_isPremium) return false;
-    if (_expiryDate != null && _expiryDate!.isBefore(DateTime.now())) return false;
-    return true;
   }
 }

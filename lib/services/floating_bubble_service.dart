@@ -23,59 +23,31 @@ class FloatingBubbleService extends ChangeNotifier {
     _opacity = _prefs?.getDouble('floating_bubble_opacity') ?? 0.85;
     _size = (_prefs?.getDouble('floating_bubble_size') ?? 55);
     if (_isEnabled && _isStarted) {
-      try {
-        await _channel.invokeMethod('createFloatingBubble');
-      } catch (_) {}
+      try { await _channel.invokeMethod('createFloatingBubble'); } catch (_) {}
     }
     notifyListeners();
   }
 
   void toggle() {
-    if (_isEnabled) {
-      stopBubble();
-    } else {
-      startBubble();
-    }
+    if (_isEnabled) { stopBubble(); } else { startBubble(); }
   }
 
   Future<bool> startBubble() async {
-    _isEnabled = true;
-    _isStarted = true;
+    _isEnabled = true; _isStarted = true;
     await _prefs?.setBool('floating_bubble_enabled', true);
     notifyListeners();
     try {
       final result = await _channel.invokeMethod<bool>('createFloatingBubble');
-      if (result == false) {
-        await _channel.invokeMethod('requestOverlayPermission');
-      }
+      if (result == false) { await _channel.invokeMethod('requestOverlayPermission'); }
       return true;
-    } catch (e) {
-      debugPrint('Bubble start error: $e');
-      return false;
-    }
+    } catch (e) { debugPrint('Bubble error: $e'); return false; }
   }
 
   Future<bool> stopBubble() async {
-    _isEnabled = false;
-    _isStarted = false;
+    _isEnabled = false; _isStarted = false;
     await _prefs?.setBool('floating_bubble_enabled', false);
     notifyListeners();
-    try {
-      await _channel.invokeMethod('destroyFloatingBubble');
-      return true;
-    } catch (e) {
-      debugPrint('Bubble stop error: $e');
-      return false;
-    }
-  }
-
-  bool hasOverlayPermission() {
-    try {
-      final result = _channel.invokeMethod<bool>('hasOverlayPermission');
-      return result as bool? ?? false;
-    } catch (_) {
-      return true;
-    }
+    try { await _channel.invokeMethod('destroyFloatingBubble'); return true; } catch (e) { return false; }
   }
 
   Future<void> setOpacity(double v) async {
