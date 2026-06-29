@@ -18,6 +18,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final languageService = LanguageService();
   await languageService.initialize();
+
   runApp(
     MultiProvider(
       providers: [
@@ -32,16 +33,20 @@ void main() async {
 
 class MirrorScorpionApp extends StatelessWidget {
   const MirrorScorpionApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return FloatingBubbleOverlay(
       child: MaterialApp(
         title: 'Mirror Scorpion',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-        initialRoute: '/splash',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          useMaterial3: true,
+          scaffoldBackgroundColor: const Color(0xFF0D1B2A),
+        ),
+        initialRoute: '/',
         routes: {
-          '/splash': (context) => const SplashScreen(),
           '/': (context) => const HomeScreen(),
           '/translate': (context) => const TranslationScreen(),
           '/dialogue': (context) => const DialogueScreen(),

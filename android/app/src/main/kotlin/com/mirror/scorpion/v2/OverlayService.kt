@@ -2,8 +2,10 @@ package com.mirror.scorpion.v2
 
 import android.app.Service
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
+import android.graphics.PorterDuff
 import android.os.Build
 import android.os.IBinder
 import android.view.Gravity
@@ -32,8 +34,10 @@ class OverlayService : Service() {
     }
 
     private fun createBubble() {
+        val bubbleSize = 140
+
         val params = WindowManager.LayoutParams(
-            150, 150,
+            bubbleSize, bubbleSize,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             else
@@ -47,19 +51,29 @@ class OverlayService : Service() {
 
         val bubble = ImageView(this)
 
-        // Draw circular shape programmatically — no android.R.drawable needed!
-        val shape = GradientDrawable()
-        shape.shape = GradientDrawable.OVAL
-        shape.setSize(150, 150)
-        shape.setColor(0xFF0D1B2A.toInt())
-        shape.setStroke(3, 0xFF00BCD4.toInt())
-        bubble.background = shape
+        // دائرة متدرجة أنيقة
+        val bgShape = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(0xFF0D1B2A, 0xFF1B2838)
+        )
+        bgShape.shape = GradientDrawable.OVAL
+        bgShape.setSize(bubbleSize, bubbleSize)
+        bgShape.setStroke(3, 0xFF00BCD4.toInt())
 
-        // Use a safe built-in drawable that exists in all API levels
-        bubble.setImageResource(android.R.drawable.ic_menu_share)
-        bubble.scaleType = ImageView.ScaleType.CENTER_INSIDE
-        bubble.setColorFilter(0xFF00BCD4.toInt(), android.graphics.PorterDuff.Mode.SRC_IN)
-        bubble.alpha = 0.9f
+        // طبقة خارجية متوهجة
+        val outerGlow = GradientDrawable()
+        outerGlow.shape = GradientDrawable.OVAL
+        outerGlow.setSize(bubbleSize + 8, bubbleSize + 8)
+        outerGlow.setColor(Color.TRANSPARENT)
+        outerGlow.setStroke(2, 0x3300BCD4.toInt())
+
+        bubble.background = bgShape
+
+        // أيقونة ترجمة آمنة (موجودة في كل API levels)
+        bubble.setImageResource(android.R.drawable.ic_menu_rotate)
+        bubble.scaleType = ImageView.ScaleType.CENTER
+        bubble.setColorFilter(0xFF00BCD4.toInt(), PorterDuff.Mode.SRC_IN)
+        bubble.alpha = 0.92f
 
         bubble.setOnTouchListener { _, event ->
             when (event.action) {
@@ -68,6 +82,9 @@ class OverlayService : Service() {
                     initialY = params.y
                     initialTouchX = event.rawX
                     initialTouchY = event.rawY
+                    bubble.alpha = 1.0f
+                    bubble.scaleX = 1.15f
+                    bubble.scaleY = 1.15f
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
@@ -83,12 +100,15 @@ class OverlayService : Service() {
                     if (distance < 30f) {
                         toggleBubble()
                     }
-                    // Snap to edge
+                    // Snap to edge مع أنيميشن
                     val display = windowManager.defaultDisplay
                     val size = android.graphics.Point()
                     display.getSize(size)
-                    params.x = if (params.x < size.x / 2) 0 else size.x - 150
+                    params.x = if (params.x < size.x / 2) 0 else size.x - bubbleSize
                     windowManager.updateViewLayout(bubble, params)
+                    bubble.alpha = 0.92f
+                    bubble.scaleX = 1.0f
+                    bubble.scaleY = 1.0f
                     true
                 }
                 else -> false
@@ -104,20 +124,36 @@ class OverlayService : Service() {
         val bubble = bubbleView ?: return
 
         if (bubbleExpanded) {
-            bubble.scaleX = 1.3f
-            bubble.scaleY = 1.3f
+            // حالة التوسع — فتح القائمة
+            bubble.scaleX = 1.4f
+            bubble.scaleY = 1.4f
             bubble.alpha = 1.0f
-            bubble.setColorFilter(0xFFFFFFFF.toInt(), android.graphics.PorterDuff.Mode.SRC_IN)
+            bubble.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+            bubble.setBackgroundColor(0xFF00BCD4.toInt())
         } else {
+            // حالة التصغير
             bubble.scaleX = 1.0f
             bubble.scaleY = 1.0f
-            bubble.alpha = 0.9f
-            bubble.setColorFilter(0xFF00BCD4.toInt(), android.graphics.PorterDuff.Mode.SRC_IN)
+            bubble.alpha = 0.92f
+            bubble.setColorFilter(0xFF00BCD4.toInt(), PorterDuff.Mode.SRC_IN)
+            // إعادة الخلفية المتدرجة
+            val bgShape = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(0xFF0D1B2A, 0xFF1B2838)
+            )
+            bgShape.shape = GradientDrawable.OVAL
+            bgShape.setSize(140, 140)
+            bgShape.setStroke(3, 0xFF00BCD4.toInt())
+            bubble.background = bgShape
         }
     }
 
     override fun onDestroy() {
-        bubbleView?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
+        bubbleView?.let {
+            if (it.isAttachedToWindow) {
+                try { windowManager.removeView(it) } catch (_: Exception) {}
+            }
+        }
         super.onDestroy()
     }
 

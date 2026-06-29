@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/floating_bubble_service.dart';
 import '../services/tts_service.dart';
-import '../services/premium_verification_service.dart';
+import '../services/language_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -13,79 +14,287 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  late AnimationController _glowController;
+  late Animation<double> _glowAnimation;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
-    _pulseAnimation = Tween(begin: 1.0, end: 1.05).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _glowAnimation = Tween<double>(begin: 0.3, end: 0.7).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
   }
 
   @override
-  void dispose() { _pulseController.dispose(); super.dispose(); }
+  void dispose() {
+    _pulseController.dispose();
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  void _toggleBubble() {
+    final service = Provider.of<FloatingBubbleService>(context, listen: false);
+    service.toggle();
+  }
 
   @override
   Widget build(BuildContext context) {
     final bubbleService = context.watch<FloatingBubbleService>();
-    final premium = context.watch<PremiumVerificationService>();
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0D1B2A),
       appBar: AppBar(
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('🦂 Mirror Scorpion', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text(premium.isPremium ? '⭐ Pro Member' : 'نسخة مجانية', style: TextStyle(fontSize: 12, color: premium.isPremium ? Colors.amber : Colors.white70)),
-        ]),
-        backgroundColor: Colors.teal, foregroundColor: Colors.white,
+        title: const Text('🦂 Mirror Scorpion',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        backgroundColor: const Color(0xFF0D1B2A),
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(bubbleService.isEnabled ? Icons.bubble_chart : Icons.bubble_chart_outlined, color: bubbleService.isEnabled ? Colors.amber : Colors.white54),
-            onPressed: () => bubbleService.toggle(),
+            icon: Icon(
+              bubbleService.isEnabled ? Icons.bubble_chart : Icons.bubble_chart_outlined,
+              color: bubbleService.isEnabled ? Colors.amber : Colors.white54,
+            ),
+            onPressed: _toggleBubble,
             tooltip: 'الفقاعة العائمة',
           ),
-          IconButton(icon: const Icon(Icons.settings), onPressed: () => Navigator.pushNamed(context, '/settings')),
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white54),
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
+          ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.teal.shade50, Colors.white])),
-        child: Column(children: [
-          // Banner
-          Container(margin: const EdgeInsets.all(12), padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.teal.shade700, Colors.teal.shade500]), borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.teal.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]),
-            child: const Column(children: [
-              Icon(Icons.auto_stories, color: Colors.white, size: 28),
-              SizedBox(height: 8),
-              Text('إِنَّ مَعَ الْعُسْرِ يُسْرًا', style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Traditional Arabic'), textDirection: TextDirection.rtl),
-              SizedBox(height: 4),
-              Text('سورة الشرح (الآية 6)', style: TextStyle(color: Colors.white70, fontSize: 12)),
-            ]),
+      body: CustomScrollView(
+        slivers: [
+          // Scorpion Logo + Banner
+          SliverToBoxAdapter(
+            child: AnimatedBuilder(
+              animation: _glowAnimation,
+              builder: (context, child) {
+                return Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFF0D1B2A),
+                        const Color(0xFF1B2838).withOpacity(0.8),
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AnimatedBuilder(
+                        animation: _pulseAnimation,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _pulseAnimation.value,
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF00BCD4), Color(0xFF0097A7)],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF00BCD4).withOpacity(_glowAnimation.value),
+                                    blurRadius: 20,
+                                    spreadRadius: 5,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(Icons.translate, color: Colors.white, size: 40),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'إِنَّ مَعَ الْعُسْرِ يُسْرًا',
+                        style: TextStyle(
+                          fontSize: 22,
+                          color: Colors.white.withOpacity(0.9),
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Traditional Arabic',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'سورة الشرح (الآية 6)',
+                        style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
-          // Cards Grid
-          Expanded(child: GridView.count(crossAxisCount: 2, padding: const EdgeInsets.all(12), mainAxisSpacing: 12, crossAxisSpacing: 12, children: [
-            _card(context, icon: Icons.translate, title: 'ترجمة', subtitle: 'نصوص - حوار - مستندات', color: Colors.blue, route: '/translate'),
-            _card(context, icon: Icons.menu_book, title: 'قصص إسلامية', subtitle: '6 مصادر إسلامية', color: Colors.green, route: '/stories'),
-            _card(context, icon: Icons.lightbulb, title: 'إلهام يومي', subtitle: 'آية + تفسير', color: Colors.amber, route: '/inspiration'),
-            _card(context, icon: Icons.extension, title: 'ألعاب ذكية', subtitle: 'شطرنج - روبيك', color: Colors.purple, route: '/chess'),
-            _card(context, icon: Icons.settings, title: 'الإعدادات', subtitle: 'فقاعة - Pro - صوت', color: Colors.grey, route: '/settings'),
-            _card(context, icon: Icons.workspace_premium, title: premium.isPremium ? 'Pro نشط' : 'ترقية Pro', subtitle: premium.isPremium ? 'جميع الميزات مفعلة' : 'فتح جميع الميزات', color: Colors.amber, route: '/settings'),
-          ])),
-        ]),
+
+          // 6 Cards Grid
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.9,
+              ),
+              delegate: SliverChildListDelegate([
+                _buildCard(
+                  icon: Icons.translate,
+                  title: 'ترجمة نصوص',
+                  subtitle: 'نصوص - حوار - مستندات',
+                  color: Colors.blue,
+                  onTap: () => Navigator.pushNamed(context, '/translate'),
+                ),
+                _buildCard(
+                  icon: Icons.forum,
+                  title: 'حوار مترجم',
+                  subtitle: 'ترجمة فورية للمحادثات',
+                  color: Colors.teal,
+                  onTap: () => Navigator.pushNamed(context, '/dialogue'),
+                ),
+                _buildCard(
+                  icon: Icons.description,
+                  title: 'مستندات وعدسة',
+                  subtitle: 'ترجمة مستندات + عدسة',
+                  color: Colors.orange,
+                  onTap: () => Navigator.pushNamed(context, '/document'),
+                ),
+                _buildCard(
+                  icon: Icons.menu_book,
+                  title: 'قصص وأحاديث',
+                  subtitle: 'أحاديث - قصص - إلهام',
+                  color: Colors.green,
+                  onTap: () => Navigator.pushNamed(context, '/stories'),
+                ),
+                _buildCard(
+                  icon: Icons.extension,
+                  title: 'ألعاب ذكية',
+                  subtitle: 'شطرنج 3D - روبيك 3D',
+                  color: Colors.purple,
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: const Color(0xFF1B2838),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      ),
+                      builder: (ctx) => Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('اختر اللعبة',
+                              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 20),
+                            ListTile(
+                              leading: const Icon(Icons.grid_view, color: Colors.purpleAccent, size: 32),
+                              title: const Text('مكعب روبيك 3D', style: TextStyle(color: Colors.white)),
+                              subtitle: const Text('جميع طرق الحل', style: TextStyle(color: Colors.white54)),
+                              onTap: () { Navigator.pop(ctx); Navigator.pushNamed(context, '/rubik'); },
+                            ),
+                            const Divider(color: Colors.white24),
+                            ListTile(
+                              leading: const Icon(Icons.castle, color: Colors.purpleAccent, size: 32),
+                              title: const Text('شطرنج 3D', style: TextStyle(color: Colors.white)),
+                              subtitle: const Text('لعبة شطرنج ثلاثية الأبعاد', style: TextStyle(color: Colors.white54)),
+                              onTap: () { Navigator.pop(ctx); Navigator.pushNamed(context, '/chess'); },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                _buildCard(
+                  icon: Icons.workspace_premium,
+                  title: 'الإعدادات',
+                  subtitle: 'فقاعة - Pro - صوت',
+                  color: Colors.amber,
+                  onTap: () => Navigator.pushNamed(context, '/settings'),
+                ),
+              ]),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _card(BuildContext context, {required IconData icon, required String title, required String subtitle, required Color color, required String route}) {
-    return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, route),
-      child: Container(decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 2))]),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 32)),
-          const SizedBox(height: 12),
-          Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
-          const SizedBox(height: 4),
-          Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade600), textAlign: TextAlign.center),
-        ]),
+  Widget _buildCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: const Color(0xFF1B2838),
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color.withOpacity(0.3), width: 1),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [color.withOpacity(0.1), Colors.transparent],
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 40, color: color),
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(fontSize: 11, color: Colors.white54),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
