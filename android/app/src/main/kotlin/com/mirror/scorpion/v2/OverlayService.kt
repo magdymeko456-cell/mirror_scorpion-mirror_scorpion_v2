@@ -1,242 +1,130 @@
 package com.mirror.scorpion.v2
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.graphics.PixelFormat
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.IBinder
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.app.NotificationCompat
-import kotlin.math.abs
-import kotlin.math.sqrt
+import kotlin.math.pow
 
 class OverlayService : Service() {
     private lateinit var windowManager: WindowManager
-    private var bubbleView: FrameLayout? = null
-    private var expandedView: FrameLayout? = null
-    private var isExpanded = false
-    private var initialX = 0f
-    private var initialY = 0f
-    private var lastX = 0f
-    private var lastY = 0f
-    private var isDragging = false
+    private var bubbleView: View? = null
+    private var bubbleExpanded = false
+    private var initialX = 0
+    private var initialY = 0
+    private var initialTouchX = 0f
+    private var initialTouchY = 0f
 
-    companion object {
-        private const val CHANNEL_ID = "mirror_scorpion_overlay"
-        private const val NOTIFICATION_ID = 1001
-    }
+    override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
+        createBubble()
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        showBubble()
-        return START_STICKY
-    }
-
-    override fun onBind(intent: Intent?): IBinder? = null
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "فقاعة الترجمة",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "خدمة الفقاعة العائمة للترجمة"
-            }
-            val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
-        }
-    }
-
-    private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("🦂 Mirror Scorpion")
-            .setContentText("فقاعة الترجمة مفعلة")
-            .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)
-            .build()
-    }
-
-    private fun showBubble() {
-        if (bubbleView != null) return
-
-        val density = resources.displayMetrics.density
-        val bubbleSize = (60 * density).toInt()
-
-        bubbleView = FrameLayout(this).apply {
-            layoutParams = FrameLayout.LayoutParams(bubbleSize, bubbleSize)
-
-            val imageView = ImageView(this@OverlayService).apply {
-                setImageResource(android.R.drawable.ic_menu_translate)
-                scaleType = ImageView.ScaleType.CENTER_INSIDE
-                setPadding(10, 10, 10, 10)
-                setBackgroundColor(0xCC2196F3.toInt())
-                alpha = 0.9f
-            }
-            addView(imageView)
-
-            setOnTouchListener { _, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        initialX = event.rawX
-                        initialY = event.rawY
-                        lastX = event.rawX
-                        lastY = event.rawY
-                        isDragging = false
-                        true
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        val dx = event.rawX - lastX
-                        val dy = event.rawY - lastY
-                        if (abs(dx) > 5 || abs(dy) > 5) isDragging = true
-                        val params = layoutParams as WindowManager.LayoutParams
-                        params.x += dx.toInt()
-                        params.y += dy.toInt()
-                        windowManager.updateViewLayout(this, params)
-                        lastX = event.rawX
-                        lastY = event.rawY
-                        true
-                    }
-                    MotionEvent.ACTION_UP -> {
-                        val distance = sqrt(
-                            (event.rawX - initialX).toDouble().pow(2) +
-                            (event.rawY - initialY).toDouble().pow(2)
-                        )
-                        if (!isDragging && distance < 20) {
-                            toggleExpanded()
-                        }
-                        true
-                    }
-                    else -> false
-                }
-            }
-        }
-
-        val params = WindowManager.LayoutParams().apply {
-            type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+    private fun createBubble() {
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             else
-                WindowManager.LayoutParams.TYPE_PHONE
-            format = PixelFormat.TRANSLUCENT
-            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-            width = bubbleSize
-            height = bubbleSize
-            x = 50
-            y = 200
-            gravity = Gravity.TOP or Gravity.START
+                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
+        )
+        params.gravity = Gravity.TOP or Gravity.START
+        params.x = 0
+        params.y = 300
+
+        // Create bubble view
+        val bubble = ImageView(this)
+        bubble.setImageResource(android.R.drawable.ic_menu_translate)
+        bubble.setBackgroundResource(android.R.drawable.ic_menu_compass)
+        bubble.alpha = 0.85f
+        bubble.scaleX = 0.8f
+        bubble.scaleY = 0.8f
+
+        // Make the bubble circular
+        val shape = GradientDrawable()
+        shape.shape = GradientDrawable.OVAL
+        shape.setSize(120, 120)
+        shape.setColor(0xFF0D1B2A.toInt())
+        shape.setStroke(3, 0xFF00BCD4.toInt())
+        bubble.background = shape
+
+        bubble.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    initialX = params.x
+                    initialY = params.y
+                    initialTouchX = event.rawX
+                    initialTouchY = event.rawY
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    params.x = initialX + (event.rawX - initialTouchX).toInt()
+                    params.y = initialY + (event.rawY - initialTouchY).toInt()
+                    windowManager.updateViewLayout(bubble, params)
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    val dx = event.rawX - initialTouchX
+                    val dy = event.rawY - initialTouchY
+                    val distance = (dx.pow(2) + dy.pow(2)).toDouble().let { kotlin.math.sqrt(it) }
+                    if (distance < 30) {
+                        // Click
+                        toggleBubble()
+                    }
+                    // Snap to edge
+                    val display = windowManager.defaultDisplay
+                    val size = android.graphics.Point()
+                    display.getSize(size)
+                    params.x = if (params.x < size.x / 2) 0 else size.x - 150
+                    windowManager.updateViewLayout(bubble, params)
+                    true
+                }
+                else -> false
+            }
         }
 
-        windowManager.addView(bubbleView, params)
+        bubbleView = bubble
+        windowManager.addView(bubble, params)
     }
 
-    private fun toggleExpanded() {
-        if (isExpanded) {
-            hideExpanded()
+    private fun toggleBubble() {
+        bubbleExpanded = !bubbleExpanded
+        val bubble = bubbleView as? ImageView ?: return
+
+        if (bubbleExpanded) {
+            bubble.scaleX = 1.2f
+            bubble.scaleY = 1.2f
+            bubble.alpha = 1.0f
         } else {
-            showExpanded()
+            bubble.scaleX = 0.8f
+            bubble.scaleY = 0.8f
+            bubble.alpha = 0.85f
         }
-    }
-
-    private fun showExpanded() {
-        if (expandedView != null) return
-        val density = resources.displayMetrics.density
-        val width = (300 * density).toInt()
-        val height = (200 * density).toInt()
-
-        expandedView = FrameLayout(this).apply {
-            layoutParams = FrameLayout.LayoutParams(width, height)
-            setBackgroundColor(0xE0000000.toInt())
-
-            val textView = TextView(this@OverlayService).apply {
-                text = "🦂 Mirror Scorpion\nاضغط للترجمة\nاسحب للتحريك"
-                textSize = 16f
-                setTextColor(android.graphics.Color.WHITE)
-                gravity = Gravity.CENTER
-            }
-            addView(textView)
-
-            setOnTouchListener { _, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        lastX = event.rawX
-                        lastY = event.rawY
-                        true
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        val dx = event.rawX - lastX
-                        val dy = event.rawY - lastY
-                        val params = layoutParams as WindowManager.LayoutParams
-                        params.x += dx.toInt()
-                        params.y += dy.toInt()
-                        windowManager.updateViewLayout(this, params)
-                        lastX = event.rawX
-                        lastY = event.rawY
-                        true
-                    }
-                    MotionEvent.ACTION_UP -> {
-                        val distance = sqrt(
-                            (event.rawX - lastX).toDouble().pow(2) +
-                            (event.rawY - lastY).toDouble().pow(2)
-                        )
-                        if (distance < 10) {
-                            // Tap anywhere on expanded view to close
-                            hideExpanded()
-                        }
-                        true
-                    }
-                    else -> false
-                }
-            }
-        }
-
-        val bubbleParams = bubbleView?.layoutParams as? WindowManager.LayoutParams
-        val params = WindowManager.LayoutParams().apply {
-            type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else
-                WindowManager.LayoutParams.TYPE_PHONE
-            format = PixelFormat.TRANSLUCENT
-            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-            width = width
-            height = height
-            x = (bubbleParams?.x ?: 50) - 50
-            y = (bubbleParams?.y ?: 200) - 50
-            gravity = Gravity.TOP or Gravity.START
-        }
-
-        windowManager.addView(expandedView, params)
-        isExpanded = true
-    }
-
-    private fun hideExpanded() {
-        expandedView?.let { windowManager.removeView(it) }
-        expandedView = null
-        isExpanded = false
     }
 
     override fun onDestroy() {
-        hideExpanded()
-        bubbleView?.let { windowManager.removeView(it) }
-        bubbleView = null
+        bubbleView?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
         super.onDestroy()
+    }
+
+    companion object {
+        fun stop(context: android.content.Context) {
+            context.stopService(Intent(context, OverlayService::class.java))
+        }
     }
 }
