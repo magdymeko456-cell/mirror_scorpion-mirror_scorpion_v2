@@ -1,151 +1,214 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:speech_to_text/speech_to_text.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
 
 class DialogueScreen extends StatefulWidget {
-  const DialogueScreen({super.key});
+  final String initialText;
+  const DialogueScreen({super.key, this.initialText = ''});
   @override
   State<DialogueScreen> createState() => _DialogueScreenState();
 }
 
 class _DialogueScreenState extends State<DialogueScreen> {
-  final TextEditingController _myMessageController = TextEditingController();
-  final TextEditingController _partnerMessageController = TextEditingController();
-  final List<Map<String, String>> _conversation = [];
-  String _selectedMyLanguage = 'ar';
-  String _selectedPartnerLanguage = 'en';
-  bool _isRecording = false;
+  final TextEditingController _inputController = TextEditingController();
+  final TextEditingController _outputController = TextEditingController();
+  String _fromLanguage = 'ar';
+  String _toLanguage = 'en';
   bool _isTranslating = false;
-  final SpeechToText _speech = SpeechToText();
-  final FlutterTts _tts = FlutterTts();
-  bool _speechAvailable = false;
+  String _pickedFileName = '';
 
-  static const Map<String, String> _languages = {
-    'ar': 'العربية', 'en': 'English', 'fr': 'Français', 'es': 'Español',
-    'pt': 'Português', 'de': 'Deutsch', 'tr': 'Türkçe', 'fa': 'فارسی',
-    'ur': 'اردو', 'hi': 'हिन्दी', 'bn': 'বাংলা', 'zh': '中文',
-    'ja': '日本語', 'ko': '한국어', 'ru': 'Русский', 'it': 'Italiano',
-    'nl': 'Nederlands', 'sv': 'Svenska', 'pl': 'Polski', 'ro': 'Română',
+  static const Map<String, String> _langs = {
+    'ar': 'العربية', 'en': 'English', 'fr': 'Français',
+    'es': 'Español', 'de': 'Deutsch', 'tr': 'Türkçe',
+    'fa': 'فارسی', 'ur': 'اردو', 'hi': 'हिन्दी',
+    'zh': '中文', 'ja': '日本語', 'ko': '한국어',
   };
 
   @override
-  void initState() { super.initState(); _initSpeech(); }
-  Future<void> _initSpeech() async { try { _speechAvailable = await _speech.initialize(); } catch (_) { _speechAvailable = false; } }
+  void initState() {
+    super.initState();
+    if (widget.initialText.isNotEmpty) {
+      _inputController.text = widget.initialText;
+    }
+  }
 
-  Future<String> _translate(String text, String target) async {
-    if (text.trim().isEmpty) return '';
+  @override
+  void dispose() {
+    _inputController.dispose();
+    _outputController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFile() async {
     try {
-      final resp = await http.post(
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['txt', 'doc', 'docx', 'pdf', 'json', 'csv', 'xml', 'html'],
+      );
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        final content = await file.readAsString();
+        setState(() {
+          _pickedFileName = result.files.single.name;
+          _inputController.text = content.length > 5000 ? content.substring(0, 5000) : content;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('✅ تم رفع الملف: $_pickedFileName')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _translate() async {
+    final text = _inputController.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _isTranslating = true);
+    try {
+      final response = await http.post(
         Uri.parse('https://libretranslate.com/translate'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'q': text, 'source': 'auto', 'target': target, 'format': 'text'}),
-      ).timeout(const Duration(seconds: 10));
-      if (resp.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(resp.bodyBytes));
-        return data['translatedText'] as String? ?? text;
+        body: jsonEncode({
+          'q': text.length > 2000 ? text.substring(0, 2000) : text,
+          'source': _fromLanguage,
+          'target': _toLanguage,
+          'format': 'text',
+        }),
+      ).timeout(const Duration(seconds: 20));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        setState(() => _outputController.text = data['translatedText'] ?? '❌ فشلت الترجمة');
+      } else {
+        setState(() => _outputController.text = '⚠️ تعذر الاتصال بالخادم');
       }
-    } catch (_) {}
-    return text;
+    } catch (e) {
+      setState(() => _outputController.text = '⚠️ خطأ: $e');
+    }
+    setState(() => _isTranslating = false);
   }
 
-  Future<void> _startRecording(String who) async {
-    if (!_speechAvailable) return;
-    setState(() => _isRecording = true);
-    try {
-      await _speech.listen(onResult: (result) {
-        setState(() {
-          if (who == 'me') _myMessageController.text = result.recognizedWords;
-          else _partnerMessageController.text = result.recognizedWords;
-        });
-      }, listenFor: const Duration(seconds: 8));
-    } catch (_) {}
-    setState(() => _isRecording = false);
-  }
-
-  Future<void> _sendMessage() async {
-    final myText = _myMessageController.text.trim();
-    final partnerText = _partnerMessageController.text.trim();
-    if (myText.isEmpty && partnerText.isEmpty) return;
-    setState(() => _isTranslating = true);
-    String translatedToPartner = myText;
-    String translatedToMe = partnerText;
-    if (myText.isNotEmpty) translatedToPartner = await _translate(myText, _selectedPartnerLanguage);
-    if (partnerText.isNotEmpty) translatedToMe = await _translate(partnerText, _selectedMyLanguage);
+  void _swapLanguages() {
     setState(() {
-      _conversation.add({'me': myText, 'me_translated': translatedToPartner, 'partner': partnerText, 'partner_translated': translatedToMe});
-      _myMessageController.clear();
-      _partnerMessageController.clear();
-      _isTranslating = false;
+      final temp = _fromLanguage;
+      _fromLanguage = _toLanguage;
+      _toLanguage = temp;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('حوار مترجم'), backgroundColor: Colors.teal, foregroundColor: Colors.white),
-      body: Column(children: [
-        // Language selectors
-        Container(padding: const EdgeInsets.all(8), color: Colors.teal.shade50,
-          child: Row(children: [
-            Expanded(child: _langDropdown('لغتي', _selectedMyLanguage, (v) => setState(() => _selectedMyLanguage = v ?? 'ar'))),
-            IconButton(icon: const Icon(Icons.swap_horiz, color: Colors.teal), onPressed: () {
-              setState(() { final t = _selectedMyLanguage; _selectedMyLanguage = _selectedPartnerLanguage; _selectedPartnerLanguage = t; });
-            }),
-            Expanded(child: _langDropdown('لغة الشريك', _selectedPartnerLanguage, (v) => setState(() => _selectedPartnerLanguage = v ?? 'en'))),
-          ]),
-        ),
-        // Conversation
-        Expanded(child: _conversation.isEmpty
-          ? const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.chat_bubble_outline, size: 64, color: Colors.teal),
-              SizedBox(height: 16), Text('ابدأ المحادثة', style: TextStyle(fontSize: 18, color: Colors.teal)),
-            ]))
-          : ListView.builder(padding: const EdgeInsets.all(8), itemCount: _conversation.length, itemBuilder: (_, i) {
-            final msg = _conversation[i];
-            return Card(margin: const EdgeInsets.symmetric(vertical: 4), child: Padding(padding: const EdgeInsets.all(12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [Icon(Icons.person, size: 18, color: Colors.teal), const SizedBox(width: 4), Expanded(child: Text(msg['me'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold))),
-                  IconButton(icon: const Icon(Icons.volume_up, size: 16), onPressed: () async { await _tts.setLanguage(_selectedMyLanguage); await _tts.speak(msg['me'] ?? ''); }, padding: EdgeInsets.zero, constraints: const BoxConstraints())]),
-                if (msg['me_translated'] != msg['me']) Padding(padding: const EdgeInsets.only(left: 22), child: Text(msg['me_translated'] ?? '', style: TextStyle(color: Colors.teal.shade600, fontSize: 13))),
-                const Divider(),
-                Row(children: [Icon(Icons.person_outline, size: 18, color: Colors.orange), const SizedBox(width: 4), Expanded(child: Text(msg['partner'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold))),
-                  IconButton(icon: const Icon(Icons.volume_up, size: 16), onPressed: () async { await _tts.setLanguage(_selectedPartnerLanguage); await _tts.speak(msg['partner'] ?? ''); }, padding: EdgeInsets.zero, constraints: const BoxConstraints())]),
-                if (msg['partner_translated'] != msg['partner']) Padding(padding: const EdgeInsets.only(left: 22), child: Text(msg['partner_translated'] ?? '', style: TextStyle(color: Colors.orange.shade600, fontSize: 13))),
-              ]),
-            ));
-          }),
-        ),
-        // Input area
-        Container(padding: const EdgeInsets.all(8), color: Colors.grey.shade100,
-          child: Column(children: [
-            Row(children: [
-              Icon(Icons.person, size: 16, color: Colors.teal), const SizedBox(width: 4),
-              Expanded(child: TextField(controller: _myMessageController, decoration: const InputDecoration(hintText: 'رسالتك...', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), isDense: true))),
-              IconButton(icon: Icon(Icons.mic, color: Colors.teal), onPressed: () => _startRecording('me')),
-            ]),
-            const SizedBox(height: 4),
-            Row(children: [
-              Icon(Icons.person_outline, size: 16, color: Colors.orange), const SizedBox(width: 4),
-              Expanded(child: TextField(controller: _partnerMessageController, decoration: const InputDecoration(hintText: 'رسالة الشريك...', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), isDense: true))),
-              IconButton(icon: Icon(Icons.mic, color: Colors.orange), onPressed: () => _startRecording('partner')),
-            ]),
-            const SizedBox(height: 8),
-            ElevatedButton.icon(onPressed: _isTranslating ? null : _sendMessage, icon: _isTranslating ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.send), label: const Text('ترجمة وإرسال'), style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white)),
-          ]),
-        ),
-      ]),
+      appBar: AppBar(
+        title: const Text('🌐 ترجمة نصوص'),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(icon: const Icon(Icons.attach_file), onPressed: _pickFile, tooltip: 'رفع ملف'),
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+            color: Colors.teal.withOpacity(0.05),
+            child: const Text('🦂 Mirror Scorpion — ترجم هذا بواسطه ميرور اسكربيون', style: TextStyle(fontSize: 10, color: Colors.teal), textAlign: TextAlign.center),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(child: DropdownButtonFormField<String>(value: _fromLanguage, items: _langs.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(), onChanged: (v) => setState(() => _fromLanguage = v ?? 'ar'), decoration: const InputDecoration(labelText: 'من', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)))),
+                IconButton(onPressed: _swapLanguages, icon: const Icon(Icons.swap_horiz, color: Colors.teal)),
+                Expanded(child: DropdownButtonFormField<String>(value: _toLanguage, items: _langs.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(), onChanged: (v) => setState(() => _toLanguage = v ?? 'en'), decoration: const InputDecoration(labelText: 'إلى', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)))),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    color: Colors.grey.shade100,
+                    child: Row(
+                      children: [
+                        const Text('📝 النص الأصلي', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        const Spacer(),
+                        if (_pickedFileName.isNotEmpty) Text(_pickedFileName, style: TextStyle(fontSize: 11, color: Colors.teal.shade700)),
+                        if (_pickedFileName.isNotEmpty)
+                          IconButton(icon: const Icon(Icons.clear, size: 16), onPressed: () { setState(() { _inputController.clear(); _pickedFileName = ''; }); }, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _inputController,
+                      decoration: const InputDecoration(hintText: 'اكتب النص هنا أو ارفع ملفاً...', border: InputBorder.none, contentPadding: EdgeInsets.all(12)),
+                      maxLines: null, expands: true, textDirection: TextDirection.rtl,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isTranslating ? null : _translate,
+                icon: _isTranslating
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.translate),
+                label: Text(_isTranslating ? 'جاري الترجمة...' : '🔄 ترجمة'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 4,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    color: Colors.teal.shade50,
+                    child: Row(
+                      children: [
+                        const Text('🌐 الترجمة', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        const Spacer(),
+                        IconButton(icon: const Icon(Icons.copy, size: 18, color: Colors.teal), onPressed: () { Clipboard.setData(ClipboardData(text: _outputController.text)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم النسخ'))); }, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+                        IconButton(icon: const Icon(Icons.share, size: 18, color: Colors.teal), onPressed: () { Clipboard.setData(ClipboardData(text: '${_outputController.text}\n\n— تمت الترجمة بواسطة ميرور سكربيون 🦂')); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم التجهيز للمشاركة مع توقيع التطبيق'))); }, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _outputController,
+                      decoration: const InputDecoration(hintText: 'الترجمة...', border: InputBorder.none, contentPadding: EdgeInsets.all(12)),
+                      maxLines: null, expands: true, readOnly: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
-  }
-
-  Widget _langDropdown(String label, String value, ValueChanged<String?> onChanged) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      DropdownButtonFormField<String>(value: value, isExpanded: true, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), isDense: true),
-        items: _languages.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 13)))).toList(), onChanged: onChanged),
-    ]);
   }
 }

@@ -9,11 +9,11 @@ class TTSService extends ChangeNotifier {
   double _speed = 0.5;
 
   static const List<Map<String, String>> availableVoices = [
-    {'id': 'voice_seif',  'name': 'سيف', 'desc': 'خشن/عميق'},
-    {'id': 'voice_salma', 'name': 'سلمى', 'desc': 'متزن'},
-    {'id': 'voice_sama',  'name': 'سما',  'desc': 'دافئ/ناعم'},
-    {'id': 'voice_sara',  'name': 'سارة', 'desc': 'رقيق'},
-    {'id': 'voice_user',  'name': 'صوت المستخدم', 'desc': 'مميز (Pro)'},
+    {'id': 'voice_seif',  'name': 'سيف',    'desc': 'خشن/عميق — مناسب للأخبار'},
+    {'id': 'voice_salma', 'name': 'سلمى',   'desc': 'متزن — مناسب للترجمة العامة'},
+    {'id': 'voice_sama',  'name': 'سما',    'desc': 'دافئ/ناعم — مناسب للقصص'},
+    {'id': 'voice_sara',  'name': 'سارة',   'desc': 'رقيق — مناسب للمستندات'},
+    {'id': 'voice_user',  'name': 'صوت المستخدم', 'desc': 'مميز (Pro) — استنساخ بصوتك'},
   ];
 
   bool get isSpeaking => _isSpeaking;
@@ -22,48 +22,71 @@ class TTSService extends ChangeNotifier {
   double get speed => _speed;
   List<Map<String, String>> get voices => availableVoices;
 
-  TTSService() { _initTts(); }
+  TTSService() {
+    _initTts();
+  }
 
   Future<void> _initTts() async {
     await _flutterTts.setLanguage('ar');
-    await _flutterTts.setSpeechRate(0.5);
     await _flutterTts.setPitch(1.0);
-    _flutterTts.setCompletionHandler(() { _isSpeaking = false; notifyListeners(); });
-    _flutterTts.setErrorHandler((msg) { _isSpeaking = false; debugPrint('TTS Error: $msg'); notifyListeners(); });
+    await _flutterTts.setSpeechRate(_speed);
+    _flutterTts.setCompletionHandler(() {
+      _isSpeaking = false;
+      _isPaused = false;
+      notifyListeners();
+    });
   }
 
-  void setSpeed(double value) {
-    _speed = value;
-    _flutterTts.setSpeechRate(value);
-    notifyListeners();
-  }
-
-  Future<void> setVoice(String voiceId) async {
+  void setVoice(String voiceId) {
     _selectedVoice = voiceId;
-    switch (voiceId) {
-      case 'voice_seif':  await _flutterTts.setPitch(0.7); await _flutterTts.setSpeechRate(0.4); break;
-      case 'voice_salma': await _flutterTts.setPitch(1.0); await _flutterTts.setSpeechRate(0.5); break;
-      case 'voice_sama':  await _flutterTts.setPitch(1.2); await _flutterTts.setSpeechRate(0.42); break;
-      case 'voice_sara':  await _flutterTts.setPitch(1.5); await _flutterTts.setSpeechRate(0.48); break;
-      case 'voice_user':  await _flutterTts.setPitch(1.0); await _flutterTts.setSpeechRate(0.5); break;
-    }
     notifyListeners();
+    if (voiceId == 'voice_seif') {
+      _flutterTts.setPitch(0.8);
+      _flutterTts.setSpeechRate(_speed + 0.2);
+    } else if (voiceId == 'voice_salma') {
+      _flutterTts.setPitch(1.0);
+      _flutterTts.setSpeechRate(_speed);
+    } else if (voiceId == 'voice_sama') {
+      _flutterTts.setPitch(1.2);
+      _flutterTts.setSpeechRate(_speed - 0.1);
+    } else if (voiceId == 'voice_sara') {
+      _flutterTts.setPitch(1.4);
+      _flutterTts.setSpeechRate(_speed - 0.15);
+    } else if (voiceId == 'voice_user') {
+      _flutterTts.setPitch(1.0);
+      _flutterTts.setSpeechRate(_speed);
+    }
   }
 
-  Future<void> speak(String text, {String? language}) async {
-    if (_isSpeaking) await stop();
+  Future<void> speak(String text) async {
     _isSpeaking = true;
+    _isPaused = false;
     notifyListeners();
-    await _flutterTts.setLanguage(language ?? 'ar');
     await _flutterTts.speak(text);
   }
 
-  Future<void> stop() async { await _flutterTts.stop(); _isSpeaking = false; _isPaused = false; notifyListeners(); }
-  Future<void> pause() async { await _flutterTts.pause(); _isPaused = true; notifyListeners(); }
-  Future<void> resume() async { _isPaused = false; notifyListeners(); }
+  Future<void> stop() async {
+    await _flutterTts.stop();
+    _isSpeaking = false;
+    _isPaused = false;
+    notifyListeners();
+  }
 
-  Future<List<dynamic>> getAvailableLanguages() async => await _flutterTts.getLanguages;
+  Future<void> pause() async {
+    await _flutterTts.pause();
+    _isPaused = true;
+    notifyListeners();
+  }
 
-  @override
-  void dispose() { _flutterTts.stop(); super.dispose(); }
+  Future<void> resume() async {
+    await _flutterTts.speak('');
+    _isPaused = false;
+    notifyListeners();
+  }
+
+  void setSpeed(double val) {
+    _speed = val;
+    _flutterTts.setSpeechRate(val);
+    notifyListeners();
+  }
 }

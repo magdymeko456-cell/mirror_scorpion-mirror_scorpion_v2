@@ -1,114 +1,93 @@
-import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class PremiumVerificationService extends ChangeNotifier {
   late SharedPreferences _prefs;
   bool _isPremium = false;
-  String _deviceId = '';
-  String _activationPatch = '';
-  final Random _random = Random();
+  DateTime? _expiryDate;
+
+  bool get isPremium => _isPremium;
+  DateTime? get expiryDate => _expiryDate;
 
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
-    _isPremium = _prefs.getBool('is_premium') ?? false;
-    _deviceId = _prefs.getString('device_id') ?? _generateDeviceId();
-    _activationPatch = _prefs.getString('activation_patch') ?? '';
-    if (_prefs.getString('device_id') == null) {
-      await _prefs.setString('device_id', _deviceId);
+    _isPremium = _prefs.getBool('is_pro_version') ?? false;
+    final expiryStr = _prefs.getString('pro_expiry_date');
+    if (expiryStr != null) {
+      _expiryDate = DateTime.tryParse(expiryStr);
+      if (_expiryDate != null && _expiryDate!.isBefore(DateTime.now())) {
+        _isPremium = false;
+        await _prefs.setBool('is_pro_version', false);
+        await _prefs.remove('pro_expiry_date');
+      }
     }
     notifyListeners();
   }
 
-  bool get isPremium => _isPremium;
-  String get deviceId => _deviceId;
-  String get activationPatch => _activationPatch;
-
-  String _generateDeviceId() {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final randomPart = _random.nextInt(99999);
-    final hash = (now ^ randomPart).toRadixString(16).toUpperCase();
-    return 'MS-$hash-${now % 10000}';
+  Future<DateTime?> _fetchNetworkTime() async {
+    try {
+      final responses = await Future.wait([
+        http.get(Uri.parse('https://worldtimeapi.org/api/ip')).timeout(const Duration(seconds: 5)),
+        http.get(Uri.parse('https://timeapi.io/api/Time/current/zone?timeZone=UTC')).timeout(const Duration(seconds: 5)),
+      ]);
+      for (final response in responses) {
+        if (response.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          if (data['utc_datetime'] != null) {
+            return DateTime.tryParse(data['utc_datetime'] as String);
+          } else if (data['dateTime'] != null) {
+            return DateTime.tryParse(data['dateTime'] as String);
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
-  String encryptDeviceId() {
+  Future<bool> activateWithPatch(String patch) async {
     try {
-      final bytes = utf8.encode('MS_DEVICE:$_deviceId');
-      return base64Encode(bytes);
-    } catch (e) {
-      return 'ERROR';
-    }
-  }
+      final parts = patch.split('-');
+      if (parts.length < 3) return false;
+      final durationStr = parts[parts.length - 2];
+      final months = int.tryParse(durationStr) ?? 0;
+      if (months <= 0 || months > 60) return false;
 
-  bool verifyActivationPatch(String patch) {
-    if (patch.isEmpty) return false;
-    try {
-      final decoded = utf8.decode(base64Decode(patch));
-      final parts = decoded.split(':');
-      if (parts.length < 2) return false;
-      final patchDeviceId = parts[0];
-      final timestampStr = parts[1];
-      final timestamp = int.tryParse(timestampStr);
-      if (timestamp == null) return false;
-      if (patchDeviceId != _deviceId) return false;
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final diff = now - timestamp;
-      const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-      if (diff > thirtyDays) return false;
-      _activationPatch = patch;
-      _prefs.setString('activation_patch', patch);
+      DateTime now;
+      final networkTime = await _fetchNetworkTime();
+      if (networkTime != null) {
+        now = networkTime;
+      } else {
+        now = DateTime.now();
+        debugPrint('⚠️ استخدام الوقت المحلي');
+      }
+
+      final expiry = DateTime(now.year, now.month + months, now.day);
       _isPremium = true;
-      _prefs.setBool('is_premium', true);
+      _expiryDate = expiry;
+      await _prefs.setBool('is_pro_version', true);
+      await _prefs.setString('pro_expiry_date', expiry.toIso8601String());
+      await _prefs.setString('pro_activation_patch', patch);
       notifyListeners();
       return true;
-    } catch (e) {
-      debugPrint('Premium verify error: $e');
+    } catch (_) {
       return false;
     }
-  }
-
-  String generatePatchForDevice(String deviceId) {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final raw = '$deviceId:$now';
-    return base64Encode(utf8.encode(raw));
-  }
-
-  String getFormattedDeviceId() {
-    final encrypted = encryptDeviceId();
-    return 'Device ID: $_deviceId\nEncrypted: $encrypted';
   }
 
   Future<void> deactivate() async {
     _isPremium = false;
-    _activationPatch = '';
-    await _prefs.setBool('is_premium', false);
-    await _prefs.setString('activation_patch', '');
+    _expiryDate = null;
+    await _prefs.setBool('is_pro_version', false);
+    await _prefs.remove('pro_expiry_date');
+    await _prefs.remove('pro_activation_patch');
     notifyListeners();
   }
 
-  Future<bool> validateSubscription() async {
-    if (!_isPremium || _activationPatch.isEmpty) return false;
-    try {
-      final decoded = utf8.decode(base64Decode(_activationPatch));
-      final parts = decoded.split(':');
-      if (parts.length < 2) return false;
-      final timestamp = int.tryParse(parts[1]);
-      if (timestamp == null) return false;
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final diff = now - timestamp;
-      const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-      if (diff > thirtyDays) {
-        _isPremium = false;
-        await _prefs.setBool('is_premium', false);
-        notifyListeners();
-        return false;
-      }
-      return true;
-    } catch (e) {
-      return false;
-    }
+  bool hasFeature(String feature) {
+    if (!_isPremium) return false;
+    if (_expiryDate != null && _expiryDate!.isBefore(DateTime.now())) return false;
+    return true;
   }
-
-  String get version => '1.0.0';
 }

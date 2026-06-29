@@ -22,6 +22,11 @@ class FloatingBubbleService extends ChangeNotifier {
     _isStarted = _isEnabled;
     _opacity = _prefs?.getDouble('floating_bubble_opacity') ?? 0.85;
     _size = (_prefs?.getDouble('floating_bubble_size') ?? 55);
+    if (_isEnabled && _isStarted) {
+      try {
+        await _channel.invokeMethod('createFloatingBubble');
+      } catch (_) {}
+    }
     notifyListeners();
   }
 
@@ -39,7 +44,10 @@ class FloatingBubbleService extends ChangeNotifier {
     await _prefs?.setBool('floating_bubble_enabled', true);
     notifyListeners();
     try {
-      await _channel.invokeMethod('createFloatingBubble');
+      final result = await _channel.invokeMethod<bool>('createFloatingBubble');
+      if (result == false) {
+        await _channel.invokeMethod('requestOverlayPermission');
+      }
       return true;
     } catch (e) {
       debugPrint('Bubble start error: $e');
@@ -58,6 +66,15 @@ class FloatingBubbleService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Bubble stop error: $e');
       return false;
+    }
+  }
+
+  bool hasOverlayPermission() {
+    try {
+      final result = _channel.invokeMethod<bool>('hasOverlayPermission');
+      return result as bool? ?? false;
+    } catch (_) {
+      return true;
     }
   }
 
