@@ -145,10 +145,7 @@ class _StoriesScreenState extends State<StoriesScreen> with SingleTickerProvider
                 child: Row(
                   children: [
                     Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-                    IconButton(
-                      icon: const Icon(Icons.volume_up, size: 20),
-                      onPressed: () => _speakStory(title, content),
-                    ),
+                    IconButton(icon: const Icon(Icons.volume_up, size: 20), onPressed: () => _speakStory(title, content)),
                   ],
                 ),
               ),
@@ -176,10 +173,7 @@ class _StoriesScreenState extends State<StoriesScreen> with SingleTickerProvider
               ),
               Padding(
                 padding: const EdgeInsets.all(8),
-                child: TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('إغلاق'),
-                ),
+                child: TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('إغلاق')),
               ),
             ],
           ),

@@ -1,0 +1,61 @@
+name: 🦂 Build Mirror Scorpion APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🔽 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ☕ Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: 📱 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🔧 Clean project
+        run: flutter clean
+
+      - name: 🏗️ Build APK Release
+        run: flutter build apk --release
+
+      - name: 📤 Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirror_scorpion_apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 90
+
+      - name: 📝 Generate Build Info
+        run: |
+          echo "## ✅ Build Complete" > build_info.md
+          echo "" >> build_info.md
+          echo "- **تاريخ البناء:** $(date '+%Y-%m-%d %H:%M:%S')" >> build_info.md
+          echo "- **النسخة:** 1.2.0" >> build_info.md
+          echo "- **الـ Commit:** ${{ github.sha }}" >> build_info.md
+          echo "- **APK:** [تحميل APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> build_info.md
+
+      - name: 📎 Attach Build Info
+        uses: actions/upload-artifact@v4
+        with:
+          name: build_info
+          path: build_info.md
