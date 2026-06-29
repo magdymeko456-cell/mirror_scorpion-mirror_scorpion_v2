@@ -421,7 +421,9 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                 Row(
                   children: [
                     _buildIconButton(Icons.copy, () {
-                      Clipboard.setData(ClipboardData(text: hadith.text));
+                      Clipboard.setData(ClipboardData(text: hadith.text + "
+
+— Mirror Scorpion 🦂"));
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('تم نسخ الحديث')),
                       );
@@ -988,7 +990,9 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildActionButton(Icons.content_copy, 'نسخ', () {
-                  Clipboard.setData(ClipboardData(text: quote.text));
+                  Clipboard.setData(ClipboardData(text: quote.text + "
+
+— Mirror Scorpion 🦂"));
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ الاقتباس')));
                 }),
                 _buildActionButton(Icons.bookmark_add, 'حفظ', _saveQuote),

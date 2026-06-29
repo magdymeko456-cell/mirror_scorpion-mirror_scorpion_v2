@@ -7,7 +7,8 @@ import 'ai_service.dart';
 class OverlayService extends ChangeNotifier {
   final AIService aiService;
   late SharedPreferences _prefs;
-  
+  static const _channel = MethodChannel('mirror_scorpion/overlay');
+
   bool _isOverlayActive = false;
   String _sourceLanguage = 'en';
   String _targetLanguage = 'ar';
@@ -37,16 +38,95 @@ class OverlayService extends ChangeNotifier {
 
   void toggleOverlay() {
     _isOverlayActive = !_isOverlayActive;
+    if (_isOverlayActive && _isFloatingBubbleEnabled) {
+      createFloatingBubble();
+    } else {
+      destroyFloatingBubble();
+    }
     notifyListeners();
   }
 
   Future toggleFloatingBubble() async {
     _isFloatingBubbleEnabled = !_isFloatingBubbleEnabled;
     await _prefs.setBool('floating_bubble_enabled', _isFloatingBubbleEnabled);
+    if (_isFloatingBubbleEnabled && _isOverlayActive) {
+      await createFloatingBubble();
+    } else {
+      await destroyFloatingBubble();
+    }
     notifyListeners();
   }
 
-  Future<String> getSpiritualSupport() async {
+  /// إنشاء الفقاعة العائمة عبر القناة الأصلية (تظهر فوق كل التطبيقات)
+  Future<bool> createFloatingBubble() async {
+    try {
+      final result = await _channel.invokeMethod('createFloatingBubble', {
+        'sourceLanguage': _sourceLanguage,
+        'targetLanguage': _targetLanguage,
+        'voice': _selectedVoice,
+      });
+      return result == true;
+    } catch (e) {
+      debugPrint('Floating bubble creation error: $e');
+      return false;
+    }
+  }
+
+  /// إزالة الفقاعة العائمة
+  Future<bool> destroyFloatingBubble() async {
+    try {
+      final result = await _channel.invokeMethod('destroyFloatingBubble');
+      return result == true;
+    } catch (e) {
+      debugPrint('Floating bubble destruction error: $e');
+      return false;
+    }
+  }
+
+  /// التحقق من إذن SYSTEM_ALERT_WINDOW
+  Future<bool> hasOverlayPermission() async {
+    try {
+      final result = await _channel.invokeMethod('hasOverlayPermission');
+      return result == true;
+    } catch (e) {
+      debugPrint('Overlay permission check error: $e');
+      return false;
+    }
+  }
+
+  /// طلب إذن SYSTEM_ALERT_WINDOW
+  Future<bool> requestOverlayPermission() async {
+    try {
+      final result = await _channel.invokeMethod('requestOverlayPermission');
+      return result == true;
+    } catch (e) {
+      debugPrint('Overlay permission request error: $e');
+      return false;
+    }
+  }
+
+  Future getSpiritualSupport() async {
+    final text = await translateFromClipboard();
+    if (text.isNotEmpty) {
+      return AIService.recommendMode(text);
+    }
+    return "استعن بالله، فأنت في حفظه.";
+  }
+
+  Future<String> translateFromClipboard() async {
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      if (clipboardData?.text != null) return clipboardData!.text!;
+    } catch (e) {
+      debugPrint('Clipboard error: $e');
+# ─── 5. تحديث overlay_service.dart (متابعة) ─────────────────────────
+
+  String addSignatureToTranslation(String translated) {
+    if (translated.contains('Mirror Scorpion')) return translated;
+    return '$translated\n\n— Mirror Scorpion 🦂';
+  }
+
+  Future getSpiritualSupport() async {
     final text = await translateFromClipboard();
     if (text.isNotEmpty) {
       return AIService.recommendMode(text);
@@ -98,21 +178,9 @@ class OverlayService extends ChangeNotifier {
 
   void deactivateOverlay() {
     _isOverlayActive = false;
+    destroyFloatingBubble();
     _selectedApp = null;
     notifyListeners();
-  }
-
-  Future createFloatingBubble() async {
-    const channel = MethodChannel('mirror_scorpion/overlay');
-    try {
-      await channel.invokeMethod('createFloatingBubble', {
-        'sourceLanguage': _sourceLanguage,
-        'targetLanguage': _targetLanguage,
-        'voice': _selectedVoice,
-      });
-    } catch (e) {
-      debugPrint('Floating bubble error: $e');
-    }
   }
 
   Map<String, dynamic> getStatus() {

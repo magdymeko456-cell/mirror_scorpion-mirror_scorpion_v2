@@ -228,7 +228,9 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
                         children: [
                           TextButton.icon(
                             onPressed: () {
-                              Clipboard.setData(ClipboardData(text: _generatedCodeController.text));
+                              Clipboard.setData(ClipboardData(text: _generatedCodeController.text + "
+
+— Mirror Scorpion 🦂"));
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text("✅ تم نسخ الكود")),
                               );
@@ -261,7 +263,9 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
                   trailing: IconButton(
                     icon: const Icon(Icons.copy, color: Colors.white38, size: 16),
                     onPressed: () {
-                      Clipboard.setData(ClipboardData(text: key['code']!));
+                      Clipboard.setData(ClipboardData(text: key['code']! + "
+
+— Mirror Scorpion 🦂"));
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("✅ تم نسخ الكود")),
                       );

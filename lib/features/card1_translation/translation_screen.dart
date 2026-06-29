@@ -115,9 +115,13 @@ class _TranslationScreenState extends State<TranslationScreen> {
               Padding(padding: const EdgeInsets.all(8), child: Row(children: [
                 Text('الترجمة', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
                 const Spacer(),
-                IconButton(icon: const Icon(Icons.copy, size: 18), onPressed: () { Clipboard.setData(ClipboardData(text: _translatedController.text)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم النسخ'))); }, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+                IconButton(icon: const Icon(Icons.copy, size: 18), onPressed: () { Clipboard.setData(ClipboardData(text: _translatedController.text)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم النسخ'))); }, padding: EdgeInsets.zero, constraints: const BoxConstraints( + "
+
+— Mirror Scorpion 🦂")),
                 IconButton(icon: const Icon(Icons.volume_up, size: 18), onPressed: () => _speak(_translatedController.text, _selectedLanguage), padding: EdgeInsets.zero, constraints: const BoxConstraints()),
-                IconButton(icon: const Icon(Icons.share, size: 18), onPressed: () { Clipboard.setData(ClipboardData(text: '$_lastTranslatedText\n\n- Mirror Scorpion')); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم النسخ للمشاركة'))); }, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+                IconButton(icon: const Icon(Icons.share, size: 18), onPressed: () { Clipboard.setData(ClipboardData(text: '$_lastTranslatedText\n\n- Mirror Scorpion')); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم النسخ للمشاركة'))); }, padding: EdgeInsets.zero, constraints: const BoxConstraints( + "
+
+— Mirror Scorpion 🦂")),
               ])),
               Expanded(child: TextField(controller: _translatedController, decoration: const InputDecoration(hintText: 'الترجمة ستظهر هنا...', border: InputBorder.none, contentPadding: EdgeInsets.all(8)), maxLines: null, expands: true, readOnly: true)),
             ]),

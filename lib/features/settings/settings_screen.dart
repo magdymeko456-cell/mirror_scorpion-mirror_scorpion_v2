@@ -79,7 +79,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(decoration: BoxDecoration(border: Border.all(color: Colors.amber.shade300), borderRadius: BorderRadius.circular(8)),
                   child: Row(children: [
                     Expanded(child: Padding(padding: const EdgeInsets.all(12), child: Text('ID: $deviceId', style: const TextStyle(fontSize: 11, fontFamily: 'monospace')))),
-                    IconButton(icon: const Icon(Icons.copy, color: Colors.amber), onPressed: () { Clipboard.setData(ClipboardData(text: deviceId)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم نسخ معرف الجهاز'))); }),
+                    IconButton(icon: const Icon(Icons.copy, color: Colors.amber), onPressed: () { Clipboard.setData(ClipboardData(text: deviceId)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم نسخ معرف الجهاز') + "
+
+— Mirror Scorpion 🦂")); }),
                   ]),
                 ),
                 const SizedBox(height: 8),

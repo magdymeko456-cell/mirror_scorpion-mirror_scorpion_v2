@@ -121,8 +121,12 @@ class _DialogueScreenState extends State<DialogueScreen> {
               Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), color: Colors.teal.shade50,
                 child: Row(children: [
                   const Text('🌐 الترجمة', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)), const Spacer(),
-                  IconButton(icon: const Icon(Icons.copy, size: 18, color: Colors.teal), onPressed: () { Clipboard.setData(ClipboardData(text: _outputController.text)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم النسخ'))); }, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
-                  IconButton(icon: const Icon(Icons.share, size: 18, color: Colors.teal), onPressed: () { Clipboard.setData(ClipboardData(text: '${_outputController.text}\n\n— تمت الترجمة بواسطة ميرور سكربيون 🦂')); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم التجهيز للمشاركة مع توقيع التطبيق'))); }, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+                  IconButton(icon: const Icon(Icons.copy, size: 18, color: Colors.teal), onPressed: () { Clipboard.setData(ClipboardData(text: _outputController.text)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم النسخ'))); }, padding: EdgeInsets.zero, constraints: const BoxConstraints( + "
+
+— Mirror Scorpion 🦂")),
+                  IconButton(icon: const Icon(Icons.share, size: 18, color: Colors.teal), onPressed: () { Clipboard.setData(ClipboardData(text: '${_outputController.text}\n\n— تمت الترجمة بواسطة ميرور سكربيون 🦂')); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم التجهيز للمشاركة مع توقيع التطبيق'))); }, padding: EdgeInsets.zero, constraints: const BoxConstraints( + "
+
+— Mirror Scorpion 🦂")),
                 ]),
               ),
               Expanded(child: TextField(controller: _outputController, decoration: const InputDecoration(hintText: 'الترجمة...', border: InputBorder.none, contentPadding: EdgeInsets.all(12)), maxLines: null, expands: true, readOnly: true)),
