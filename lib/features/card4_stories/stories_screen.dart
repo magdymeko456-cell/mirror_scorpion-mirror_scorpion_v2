@@ -40,7 +40,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
       {'title': 'قوم عاد', 'subtitle': 'قوم هود - ذات العماد', 'ref': 'prophet_stories#hud', 'source': 'تفسير ابن كثير'},
       {'title': 'قوم ثمود', 'subtitle': 'قوم صالح - الناقة', 'ref': 'prophet_stories#salih', 'source': 'تفسير ابن كثير'},
       {'title': 'قوم لوط', 'subtitle': 'المؤتفكات', 'ref': 'prophet_stories#lut', 'source': 'تفسير الجلالين'},
-      {'title': 'قوم فرعون', 'subtitle': 'موسى وهامان', 'ref': 'prophet_stories#fir'awn', 'source': 'تفسير ابن كثير'},
+      {'title': 'قوم فرعون', 'subtitle': 'موسى وهامان', 'ref': 'prophet_stories#firawn', 'source': 'تفسير ابن كثير'},
       {'title': 'أصحاب الأخدود', 'subtitle': 'قصة الإيمان في النار', 'ref': 'quran_stories#ukhdud', 'source': 'تفسير الجلالين'},
     ],
     'قصص الأنبياء': [
