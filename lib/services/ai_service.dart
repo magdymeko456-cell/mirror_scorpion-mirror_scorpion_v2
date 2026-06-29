@@ -1,141 +1,134 @@
+import 'dart:math';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-class AIService {
-  static const String _apiEndpoint = 'https://api.openai.com/v1/chat/completions';
-  static const String _modelName = 'gpt-3.5-turbo';
+class AIService extends ChangeNotifier {
+  late SharedPreferences _prefs;
+  String _apiKey = '';
+  String _selectedModel = 'gemini-pro';
+  bool _isProcessing = false;
+  String _lastResponse = '';
 
-  static const String MODE_SPIRITUAL = 'خواطر روحانية';
-  static const String MODE_AYAH = 'آيات مناسبات';
-  static const String MODE_DUA = 'أدعية مأثورة';
+  bool get isProcessing => _isProcessing;
+  String get selectedModel => _selectedModel;
+  String get lastResponse => _lastResponse;
 
-  static final List<String> _spiritualThoughts = [
-    'تأمل في خلق الله.. كل شيء حولك يسبح بحمده',
-    'الدنيا ساعة فاجعلها طاعة، والقلب إذا تعلق بالله هانت عليه الدنيا',
-    'ما من شيء أحب إلى الله من التوكل عليه وحسن الظن به',
-    'الليل والنهار يعملان فيك فاعمل فيهما، والموت يأتي بغتة فاستعد له',
-    'إذا ضاقت بك الدنيا فاعلم أن فرج الله قريب، مع العسر يسراً',
-    'سبحان الله وبحمده.. عدد خلقه ورضا نفسه وزنة عرشه ومداد كلماته',
-    'القلب السليم هو الذي يرى الله في كل شيء',
-    'الدنيا متاع الغرور، والآخرة خير وأبقى، فاعمل لآخرتك',
-    'الصلاة عماد الدين، فحافظ عليها تكن من الفائزين',
-    'لا تحزن إن الله معنا، السكينة تنزل مع الذكر',
+  // قاعدة بيانات الإلهام المحلية (مصادر إسلامية موثوقة)
+  static final List<Map<String, String>> _inspirationDB = [
+    {'text': 'وَمَا تَدْرِي نَفْسٌ مَّاذَا تَكْسِبُ غَدًا ۖ', 'source': 'سورة لقمان — 34'},
+    {'text': 'فَإِنَّ مَعَ الْعُسْرِ يُسْرًا إِنَّ مَعَ الْعُسْرِ يُسْرًا', 'source': 'سورة الشرح — 5-6'},
+    {'text': 'لَا تَحْزَنْ إِنَّ اللَّهَ مَعَنَا', 'source': 'سورة التوبة — 40'},
+    {'text': 'وَعَسَىٰ أَن تَكْرَهُوا شَيْئًا وَهُوَ خَيْرٌ لَّكُمْ', 'source': 'سورة البقرة — 216'},
+    {'text': 'إِنَّ اللَّهَ لَا يُغَيِّرُ مَا بِقَوْمٍ حَتَّىٰ يُغَيِّرُوا مَا بِأَنفُسِهِمْ', 'source': 'سورة الرعد — 11'},
+    {'text': 'رَّبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي', 'source': 'سورة طه — 25-26'},
+    {'text': 'أَحْسِنِ الظَّنَّ بِاللَّهِ', 'source': 'حديث قدسي — متفق عليه'},
+    {'text': 'اليوم أنت أقوى مما كنت أمس، وغداً ستكون أقوى', 'source': 'إلهام ميرور'},
+    {'text': 'البدايات الصغيرة تصنع نهايات عظيمة', 'source': 'إلهام ميرور'},
+    {'text': 'الفشل ليس النهاية، بل درس جديد', 'source': 'إلهام ميرور'},
+    {'text': 'الوقت هو أثمن ما تملك — استثمره', 'source': 'إلهام ميرور'},
+    {'text': 'كل لحظة هي فرصة لبداية جديدة', 'source': 'إلهام ميرور'},
   ];
 
-  static final List<Map<String, String>> _occasionAyahs = [
-    {'occasion': 'عند الحزن', 'ayah': 'إِنَّ مَعَ الْعُسْرِ يُسْرًا', 'surah': 'الشرح: 6'},
-    {'occasion': 'عند الخوف', 'ayah': 'حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ', 'surah': 'آل عمران: 173'},
-    {'occasion': 'عند الذنب', 'ayah': 'وَإِنِّي لَغَفَّارٌ لِّمَن تَابَ وَآمَنَ وَعَمِلَ صَالِحًا', 'surah': 'طه: 82'},
-    {'occasion': 'عند الضيق', 'ayah': 'فَإِنَّ مَعَ الْعُسْرِ يُسْرًا إِنَّ مَعَ الْعُسْرِ يُسْرًا', 'surah': 'الشرح: 5-6'},
-    {'occasion': 'عند النعمة', 'ayah': 'وَأَمَّا بِنِعْمَةِ رَبِّكَ فَحَدِّثْ', 'surah': 'الضحى: 11'},
-    {'occasion': 'عند السفر', 'ayah': 'سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَٰذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ', 'surah': 'الزخرف: 13'},
-  ];
-
-  static final List<Map<String, String>> _authenticDuas = [
-    {'dua': 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ', 'source': 'البقرة: 201'},
-    {'dua': 'رَبَّنَا لَا تُؤَاخِذْنَا إِن نَّسِينَا أَوْ أَخْطَأْنَا', 'source': 'البقرة: 286'},
-    {'dua': 'رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي', 'source': 'طه: 25-26'},
-    {'dua': 'رَبِّ لَا تَذَرْنِي فَرْدًا وَأَنتَ خَيْرُ الْوَارِثِينَ', 'source': 'الأنبياء: 89'},
-    {'dua': 'حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ', 'source': 'آل عمران: 173'},
-  ];
-
-  static Future<String> generateByMode(String mode, {String? mood}) async {
-    final random = DateTime.now().microsecond;
-    switch (mode) {
-      case MODE_SPIRITUAL:
-        return _spiritualThoughts[random % _spiritualThoughts.length];
-      case MODE_AYAH:
-        final ayah = _occasionAyahs[random % _occasionAyahs.length];
-        return '【${ayah['ayah']}】\n${ayah['surah']}\n\nمناسبة: ${ayah['occasion']}';
-      case MODE_DUA:
-        final dua = _authenticDuas[random % _authenticDuas.length];
-        return '🤲 ${dua['dua']}\n📖 ${dua['source']}';
-      default:
-        return _spiritualThoughts[random % _spiritualThoughts.length];
-    }
+  Future<void> initialize() async {
+    _prefs = await SharedPreferences.getInstance();
+    _apiKey = _prefs.getString('ai_api_key') ?? '';
+    _selectedModel = _prefs.getString('ai_model') ?? 'gemini-pro';
+    notifyListeners();
   }
 
-  /// توليد إلهام حسب حالة المستخدم (مطلوب من overlay_service)
-  static Future<String> generateInspiration({String? userMood, String? context}) async {
-    if (userMood != null && userMood.isNotEmpty) {
-      final mode = recommendMode(userMood);
-      return generateByMode(mode, mood: userMood);
-    }
-    return getDailyInspiration();
+  Future<void> setApiKey(String key) async {
+    _apiKey = key;
+    await _prefs.setString('ai_api_key', key);
+    notifyListeners();
   }
 
-  static Future<String> callOpenAIAPI({
-    required String prompt,
-    required String apiKey,
-    String mode = MODE_SPIRITUAL,
-  }) async {
+  String analyzeMood(String text) {
+    final t = text.toLowerCase();
+    if (t.contains('حزين') || t.contains('تعب') || t.contains('بكاء') || t.contains('خوف')) return 'حزين';
+    if (t.contains('فرح') || t.contains('سعيد') || t.contains('نجاح')) return 'فرح';
+    if (t.contains('غضب') || t.contains('ضيق') || t.contains('غاضب')) return 'غاضب';
+    if (t.contains('خائف') || t.contains('قلق') || t.contains('توتر')) return 'خائف';
+    if (t.contains('وحيد') || t.contains('وحدة')) return 'وحيد';
+    return 'عام';
+  }
+
+  Future<String> generateInspiration({String? userMood, String? context, bool forceApi = false}) async {
+    _isProcessing = true;
+    notifyListeners();
+
+    // Try Gemini API first if key is set
+    if (_apiKey.isNotEmpty && forceApi) {
+      try {
+        final prompt = 'أنت مساعد إلهام إسلامي. اكتب رسالة إلهام قصيرة بالعربية '
+            'مستوحاة من القرآن والسنة. حالة المستخدم: ${userMood ?? "عامة"}. السياق: ${context ?? "حياة يومية"}.';
+        final result = await _callGemini(prompt);
+        if (result.isNotEmpty) {
+          _lastResponse = result;
+          _isProcessing = false;
+          notifyListeners();
+          return result;
+        }
+      } catch (_) {}
+    }
+
+    // Local fallback — smart selection
+    await Future.delayed(const Duration(milliseconds: 400));
+    final random = Random();
+    final mood = (userMood ?? '').toLowerCase();
+    int index;
+    if (mood.contains('حزين') || mood.contains('تعب') || mood.contains('خائف')) {
+      index = [0, 2, 6][random.nextInt(3)]; // طمأنينة
+    } else if (mood.contains('فرح') || mood.contains('سعيد')) {
+      index = [3, 7, 9][random.nextInt(3)]; // شكر
+    } else if (mood.contains('غضب') || mood.contains('ضيق')) {
+      index = [4, 8][random.nextInt(2)]; // صبر
+    } else if (mood.contains('وحيد')) {
+      index = [5, 10, 11][random.nextInt(3)]; // أمل
+    } else {
+      index = random.nextInt(_inspirationDB.length);
+    }
+    final entry = _inspirationDB[index];
+    _lastResponse = '${entry['text']}\n\n— ${entry['source']}';
+    _isProcessing = false;
+    notifyListeners();
+    return _lastResponse;
+  }
+
+  Future<String> _callGemini(String prompt) async {
+    if (_apiKey.isEmpty) return '';
     try {
-      String systemPrompt;
-      switch (mode) {
-        case MODE_SPIRITUAL:
-          systemPrompt = 'أنت خادم روحاني إسلامي، تقدم خواطر روحانية قصيرة مؤثرة بالعربية';
-          break;
-        case MODE_AYAH:
-          systemPrompt = 'أنت مفسر قرآن، تقدم آيات مناسبة لحالة المستخدم مع تفسير مختصر';
-          break;
-        case MODE_DUA:
-          systemPrompt = 'أنت داعية إسلامي، تقدم أدعية مأثورة من القرآن والسنة مناسبة لحالة المستخدم';
-          break;
-        default:
-          systemPrompt = 'أنت مساعد روحي إسلامي';
+      final uri = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/${_selectedModel}:generateContent?key=$_apiKey');
+      final resp = await http.post(uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'contents': [{'parts': [{'text': prompt}]}], 'generationConfig': {'temperature': 0.7, 'maxOutputTokens': 200}}),
+      ).timeout(const Duration(seconds: 10));
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(resp.bodyBytes));
+        return data['candidates']?[0]?['content']?['parts']?[0]?['text'] as String? ?? '';
       }
-      final response = await http.post(
-        Uri.parse(_apiEndpoint),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $apiKey',
-        },
-        body: jsonEncode({
-          'model': _modelName,
-          'messages': [
-            {'role': 'system', 'content': systemPrompt},
-            {'role': 'user', 'content': prompt},
-          ],
-          'temperature': 0.8,
-          'max_tokens': 200,
-        }),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['choices'][0]['message']['content'] ?? 'تذكّر أن الله معك دائماً';
-      }
-      return 'عذراً، حدث خطأ في الاتصال';
-    } catch (e) {
-      return 'سبحان الله وبحمده، سبحان الله العظيم';
-    }
+    } catch (_) {}
+    return '';
   }
 
-  static Future<String> getDailyInspiration() async {
-    final random = DateTime.now().microsecond;
-    final all = [
-      ..._spiritualThoughts,
-      '﴿ إِنَّ مَعَ الْعُسْرِ يُسْرًا ﴾',
-      '﴿ وَمَن يَتَوَكَّلْ عَلَى اللَّهِ فَهُوَ حَسْبُهُ ﴾',
-      '﴿ أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ ﴾',
-      '﴿ رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً ﴾',
-      '﴿ إِنَّ اللَّهَ لَا يُضِيعُ أَجْرَ الْمُحْسِنِينَ ﴾',
-      '﴿ وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ ﴾',
-      '﴿ فَاذْكُرُونِي أَذْكُرْكُمْ ﴾',
-      '﴿ إِنَّ رَحْمَتَ اللَّهِ قَرِيبٌ مِّنَ الْمُحْسِنِينَ ﴾',
-    ];
-    return all[random % all.length];
+  Future<String> enhanceStory(String story) async {
+    if (_apiKey.isNotEmpty) {
+      try {
+        final result = await _callGemini('حسّن القصة التالية وأثرها:\n\n$story');
+        if (result.isNotEmpty) return result;
+      } catch (_) {}
+    }
+    return '$story\n\n🦂 — Mirror Scorpion AI';
   }
 
-  static String recommendMode(String text) {
-    final sad = ['حزين', 'تعب', 'خائف', 'قلق', 'ضيق', 'هم', 'غم'];
-    final happy = ['فرح', 'سعيد', 'نجاح', 'خير', 'حمد'];
-    for (final w in sad) {
-      if (text.contains(w)) return MODE_DUA;
+  Future<String> generateVideoScript(String title) async {
+    if (_apiKey.isNotEmpty) {
+      try {
+        final result = await _callGemini('اكتب سكريبت فيديو لقصة "$title" مقسم لمشاهد مع حوار');
+        if (result.isNotEmpty) return result;
+      } catch (_) {}
     }
-    for (final w in happy) {
-      if (text.contains(w)) return MODE_SPIRITUAL;
-    }
-    return MODE_AYAH;
+    return '🎬 سكريبت "$title":\nالمشهد الأول: مقدمة\nالمشهد الثاني: أحداث\nالمشهد الثالث: ذروة\nالمشهد الرابع: نهاية وعبرة';
   }
 }
