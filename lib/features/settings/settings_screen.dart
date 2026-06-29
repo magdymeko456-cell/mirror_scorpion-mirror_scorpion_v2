@@ -40,14 +40,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ===== الفقاعة العائمة =====
           _sectionHeader('💬 الفقاعة العائمة'),
           SwitchListTile(
             title: const Text('تفعيل الفقاعة العائمة'),
             subtitle: Text(bubble.isEnabled ? 'الفقاعة نشطة' : 'الفقاعة متوقفة'),
             value: bubble.isEnabled,
             onChanged: (v) => bubble.toggle(),
-            secondary: Icon(Icons.bubble_chart, color: bubble.isEnabled ? Colors.teal : Colors.grey),
+            secondary: Icon(Icons.bubble_chart,
+                color: bubble.isEnabled ? Colors.teal : Colors.grey),
           ),
           if (bubble.isEnabled) ...[
             ListTile(
@@ -75,36 +75,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
           const Divider(),
 
-          // ===== الصوت =====
-          _sectionHeader('🔊 الصوت والنطق'),
-          ListTile(
-            title: const Text('اختيار الصوت'),
-            subtitle: DropdownButton<String>(
-              value: tts.selectedVoice,
-              isExpanded: true,
-              items: tts.voices.map((voice) => DropdownMenuItem(
-                value: voice,
-                child: Text(voice),
-              )).toList(),
-              onChanged: (v) {
-                if (v != null) tts.setVoice(v);
-              },
+          _sectionHeader('🔊 الصوت'),
+          DropdownButtonFormField<String>(
+            value: tts.selectedVoice,
+            decoration: const InputDecoration(
+              labelText: 'الصوت',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.record_voice_over),
             ),
+            items: tts.voices.map((voice) => DropdownMenuItem<String>(
+              value: voice['id'],
+              child: Text('${voice['name']} - ${voice['desc']}'),
+            )).toList(),
+            onChanged: (v) {
+              if (v != null) tts.setVoice(v);
+            },
           ),
+          const SizedBox(height: 12),
           ListTile(
             title: const Text('سرعة النطق'),
             subtitle: Slider(
               value: tts.speed,
-              min: 0.3,
-              max: 1.5,
-              divisions: 12,
+              min: 0.2,
+              max: 1.0,
+              divisions: 16,
               label: '${tts.speed.toStringAsFixed(1)}x',
               onChanged: (v) => tts.setSpeed(v),
             ),
           ),
           const Divider(),
 
-          // ===== Pro / التنشيط =====
           _sectionHeader('⭐ النسخة المدفوعة (Pro)'),
           if (premium.isPremium) ...[
             Container(
@@ -121,7 +121,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Expanded(
                     child: Text(
                       '✅ Pro مفعل - جميع الميزات متاحة',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.brown),
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.brown),
                     ),
                   ),
                 ],
@@ -130,43 +133,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 8),
             ListTile(
               title: const Text('معرف الجهاز'),
-              subtitle: SelectableText(premium.deviceId, style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+              subtitle: SelectableText(premium.deviceId,
+                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
               trailing: IconButton(
                 icon: const Icon(Icons.copy),
                 onPressed: () {
-                  Clipboard.setData(ClipboardData(text: premium.getFormattedDeviceId()));
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم النسخ')));
+                  Clipboard.setData(
+                      ClipboardData(text: premium.getFormattedDeviceId()));
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(const SnackBar(content: Text('تم النسخ')));
                 },
               ),
             ),
             TextButton(
               onPressed: () => premium.deactivate(),
-              child: const Text('إلغاء التفعيل', style: TextStyle(color: Colors.red)),
+              child:
+                  const Text('إلغاء التفعيل', style: TextStyle(color: Colors.red)),
             ),
           ] else ...[
-            // زر التفعيل الذهبي
             Container(
               width: double.infinity,
               margin: const EdgeInsets.symmetric(vertical: 8),
               child: ElevatedButton.icon(
                 onPressed: () => _showActivationDialog(context, premium),
                 icon: const Icon(Icons.workspace_premium, color: Colors.white),
-                label: const Text('💎 تفعيل النسخة المدفوعة', style: TextStyle(fontSize: 18, color: Colors.white)),
+                label: const Text('💎 تفعيل النسخة المدفوعة',
+                    style: TextStyle(fontSize: 18, color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.amber.shade700,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   elevation: 4,
                 ),
               ),
             ),
-            // باقات الاشتراك
             Card(
               child: Column(
                 children: [
                   ListTile(
                     leading: const Icon(Icons.star, color: Colors.amber),
-                    title: const Text('📖 قصص كاملة - جميع القصص مع النص الكامل'),
+                    title: const Text(
+                        '📖 قصص كاملة - جميع القصص مع النص الكامل'),
                     subtitle: const Text('فتح جميع قصص الأنبياء والتفسير'),
                   ),
                   ListTile(
@@ -190,17 +198,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
           const Divider(),
 
-          // ===== تنزيل اللغات (Pro) =====
           if (premium.isPremium) ...[
             _sectionHeader('📥 تنزيل اللغات (دون إنترنت)'),
-            ...offline.availableLanguages.entries.map((entry) {
-              final code = entry.key;
-              final name = entry.value;
+            ...offline.availableLanguages.map((entry) {
+              final code = entry['code'] as String;
+              final name = entry['name'] as String;
               final isDownloaded = offline.isDownloaded(code);
               return ListTile(
-                leading: Icon(isDownloaded ? Icons.check_circle : Icons.download, color: isDownloaded ? Colors.green : Colors.grey),
+                leading: Icon(
+                    isDownloaded ? Icons.check_circle : Icons.download,
+                    color: isDownloaded ? Colors.green : Colors.grey),
                 title: Text(name),
-                subtitle: Text(isDownloaded ? 'محملة محلياً' : 'اضغط للتحميل'),
+                subtitle: Text(
+                    isDownloaded ? 'محملة محلياً' : 'اضغط للتحميل'),
                 trailing: isDownloaded
                     ? IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
@@ -215,27 +225,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Divider(),
           ],
 
-          // ===== معلومات الاتصال =====
           _sectionHeader('📞 التواصل'),
           ListTile(
             leading: const Icon(Icons.phone, color: Colors.teal),
             title: const Text('واتساب 1'),
-            subtitle: const SelectableText('+201234567890'),
+            subtitle: const SelectableText('01017341250'),
           ),
           ListTile(
             leading: const Icon(Icons.phone, color: Colors.teal),
             title: const Text('واتساب 2'),
-            subtitle: const SelectableText('+201234567891'),
+            subtitle: const SelectableText('01031680816'),
           ),
           ListTile(
             leading: const Icon(Icons.phone, color: Colors.teal),
             title: const Text('واتساب 3'),
-            subtitle: const SelectableText('+201234567892'),
+            subtitle: const SelectableText('01558203456'),
           ),
           ListTile(
             leading: const Icon(Icons.email, color: Colors.teal),
             title: const Text('البريد الإلكتروني'),
-            subtitle: const SelectableText('support@mirrorscorpion.com'),
+            subtitle: const SelectableText('dosoky.server@gmail.com'),
           ),
           const SizedBox(height: 32),
         ],
@@ -246,11 +255,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _sectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal)),
+      child: Text(title,
+          style: const TextStyle(
+              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal)),
     );
   }
 
-  void _showActivationDialog(BuildContext context, PremiumVerificationService premium) {
+  void _showActivationDialog(
+      BuildContext context, PremiumVerificationService premium) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -264,7 +276,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('أدخل رمز التفعيل (Patch) أو أرسل معرف الجهاز للدعم'),
+            const Text(
+                'أدخل رمز التفعيل (Patch) أو أرسل معرف الجهاز للدعم'),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
@@ -274,7 +287,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               child: SelectableText(
                 premium.deviceId,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                style:
+                    const TextStyle(fontFamily: 'monospace', fontSize: 12),
               ),
             ),
             const SizedBox(height: 12),
@@ -286,7 +300,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.paste),
                   onPressed: () async {
-                    final data = await Clipboard.getData(Clipboard.kTextPlain);
+                    final data =
+                        await Clipboard.getData(Clipboard.kTextPlain);
                     if (data?.text != null) {
                       _patchController.text = data!.text!;
                     }
@@ -298,26 +313,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء')),
           ElevatedButton.icon(
             onPressed: () {
               if (_patchController.text.isNotEmpty) {
-                final success = premium.verifyActivationPatch(_patchController.text.trim());
+                final success = premium
+                    .verifyActivationPatch(_patchController.text.trim());
                 if (success) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('✅ تم التفعيل بنجاح!'), backgroundColor: Colors.green),
+                    const SnackBar(
+                        content: Text('✅ تم التفعيل بنجاح!'),
+                        backgroundColor: Colors.green),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('❌ رمز التفعيل غير صحيح'), backgroundColor: Colors.red),
+                    const SnackBar(
+                        content: Text('❌ رمز التفعيل غير صحيح'),
+                        backgroundColor: Colors.red),
                   );
                 }
               }
             },
             icon: const Icon(Icons.check),
             label: const Text('تفعيل'),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.white),
           ),
         ],
       ),
