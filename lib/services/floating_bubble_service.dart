@@ -7,12 +7,12 @@ class FloatingBubbleService extends ChangeNotifier {
   bool _isEnabled = false;
   bool _isStarted = false;
   double _opacity = 0.85;
-  int _size = 60;
+  double _size = 55;
 
   bool get isEnabled => _isEnabled;
   bool get isStarted => _isStarted;
   double get opacity => _opacity;
-  int get size => _size;
+  double get size => _size;
 
   static const MethodChannel _channel = MethodChannel('mirror_scorpion/overlay');
 
@@ -21,7 +21,7 @@ class FloatingBubbleService extends ChangeNotifier {
     _isEnabled = _prefs?.getBool('floating_bubble_enabled') ?? false;
     _isStarted = _isEnabled;
     _opacity = _prefs?.getDouble('floating_bubble_opacity') ?? 0.85;
-    _size = _prefs?.getInt('floating_bubble_size') ?? 60;
+    _size = (_prefs?.getDouble('floating_bubble_size') ?? 55);
     notifyListeners();
   }
 
@@ -67,9 +67,9 @@ class FloatingBubbleService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setSize(int v) async {
-    _size = v.clamp(60, 200);
-    await _prefs?.setInt('floating_bubble_size', _size);
+  Future<void> setSize(double v) async {
+    _size = v.clamp(40, 100);
+    await _prefs?.setDouble('floating_bubble_size', _size);
     notifyListeners();
   }
 }

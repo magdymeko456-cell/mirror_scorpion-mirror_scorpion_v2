@@ -1,16 +1,90 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../services/premium_verification_service.dart';
+import '../../services/tts_service.dart';
 
 class StoriesScreen extends StatefulWidget {
   const StoriesScreen({super.key});
-
   @override
   State<StoriesScreen> createState() => _StoriesScreenState();
 }
 
 class _StoriesScreenState extends State<StoriesScreen> {
+  String _selectedCategory = 'الأنبياء';
+  final List<String> _categories = ['الأنبياء', 'النساء', 'الأقوام', 'الحيوان', 'الإنسان', 'أسباب النزول'];
+
+  // قصص الأنبياء الـ 25
+  final List<Map<String, String>> _prophetStories = const [
+    {'name': 'آدم عليه السلام', 'summary': 'أبو البشر، خلقه الله من طين، وأسجد له الملائكة، وعاش في الجنة ثم هبط إلى الأرض.', 'detail': 'خلق الله آدم بيده من طين، ونفخ فيه من روحه، وأمر الملائكة بالسجود له فسجدوا إلا إبليس أبى واستكبر. أسكنه الله الجنة مع زوجته حواء، وأباح لهما كل شيء إلا شجرة واحدة. فوسوس لهما الشيطان فأكلا منها، فأنزلهما الله إلى الأرض. تاب آدم فتاب الله عليه، وجعل ذريته خلفاء في الأرض.'},
+    {'name': 'نوح عليه السلام', 'summary': 'أول الرسل، دعا قومه 950 سنة، وأمره الله ببناء السفينة.', 'detail': 'بعثه الله إلى قومه يعبدون الأصنام. دعاهم 950 سنة فلم يؤمن إلا قليل. أمره الله ببناء السفينة، وكان يمر به قومه ويسخرون منه. جاء الطوفان فأهلك الله الكافرين، ونجى نوحاً والمؤمنين في السفينة.'},
+    {'name': 'إدريس عليه السلام', 'summary': 'نبي كريم، رفعه الله مكاناً علياً، أول من خط بالقلم.', 'detail': 'كان صديقاً نبياً، رفعه الله مكاناً علياً. كان أول من خط بالقلم وأول من خاط الثياب.'},
+    {'name': 'هود عليه السلام', 'summary': 'بعث إلى قوم عاد، الذين كانوا أصحاب قوة وجبارين.', 'detail': 'بعثه الله إلى قوم عاد الذين كانوا يسكنون الأحقاف. كانوا أقوياء طغوا في الأرض. دعاهم إلى عبادة الله وحده فكذبوه. أرسل الله عليهم ريحاً صرصراً دمرتهم جميعاً.'},
+    {'name': 'صالح عليه السلام', 'summary': 'بعث إلى قوم ثمود، وأتاهم بالناقة آية.', 'detail': 'بعثه الله إلى قوم ثمود الذين كانوا ينحتون الجبال بيوتاً. آتاهم الله الناقة آية، فعقروها. أخذتهم الصيحة فأصبحوا في دارهم جاثمين.'},
+    {'name': 'إبراهيم عليه السلام', 'summary': 'خليل الرحمن، أبو الأنبياء، بنى الكعبة.', 'detail': 'ولد في قوم يعبدون الأصنام. كسر أصنامهم فحاولوا حرقه فأنجاه الله. اتخذه الله خليلاً. بشرته الملائكة بإسحاق ويعقوب. بنى الكعبة مع ابنه إسماعيل. ضرب أروع الأمثلة في التسليم لله.'},
+    {'name': 'إسماعيل عليه السلام', 'summary': 'ابن إبراهيم، الذبيح، ساعد في بناء الكعبة.', 'detail': 'بشر الله إبراهيم به فبشر. أمر الله إبراهيم بذبحه فاستجابا، ففداه الله بذبح عظيم. ساعد أباه في بناء الكعبة.'},
+    {'name': 'إسحاق عليه السلام', 'summary': 'ابن إبراهيم من سارة، نبي كريم.', 'detail': 'بشرت به الملائكة إبراهيم وسارة. أنعم الله عليه بالنبوة وجعل في ذريته الأنبياء.'},
+    {'name': 'يعقوب عليه السلام', 'summary': 'ابن إسحاق، إسرائيل، أبو الأسباط.', 'detail': 'كان تقياً كريماً. ابتلي بفقد ابنه يوسف فصبر. اجتمع شمله بأولاده بمصر.'},
+    {'name': 'يوسف عليه السلام', 'summary': 'صديق، أحسن القصص، عزيز مصر.', 'detail': 'ابتدأ أمره برؤيا رآها. حسده إخوته فألقوه في الجب. بيع عبداً في مصر. دعي للفحشاء فاستعصم. سجن ثم أصبح عزيز مصر. عفا عن إخوته.'},
+    {'name': 'أيوب عليه السلام', 'summary': 'ضرب المثل في الصبر على البلاء.', 'detail': 'ابتلي في جسده وماله وولده. صبر واحتسب. نادى ربه فكشف ضره. آتاه الله أهله ومثلهم معهم.'},
+    {'name': 'شعيب عليه السلام', 'summary': 'بعث إلى أهل مدين، خطيب الأنبياء.', 'detail': 'بعثه الله إلى أهل مدين. كانوا ينقصون المكيال والميزان. دعاهم إلى التوحيد والعدل. كذبوه فأخذهم عذاب الظلة.'},
+    {'name': 'موسى عليه السلام', 'summary': 'كليم الله، أرسل بآيات عظيمة لفرعون.', 'detail': 'ولد في بيت فرعون. قتل قبطياً خطأ فهرب إلى مدين. ناداه الله في الوادي المقدس. أرسله إلى فرعون بآيات. أيده الله بمعجزات: العصا، اليد، الطوفان، الجراد. خرج ببني إسرائيل وشق الله لهم البحر.'},
+    {'name': 'هارون عليه السلام', 'summary': 'أخو موسى، وزيره ونبيه.', 'detail': 'جاء مع موسى إلى فرعون. خلفه في قومه حين ذهب للقاء ربه. واجه بني إسرائيل في قصة العجل.'},
+    {'name': 'داود عليه السلام', 'summary': 'خليفة الأرض، آتاه الله الزبور وسخر له الجبال.', 'detail': 'قتل جالوت. آتاه الله الملك والنبوة. أنزل عليه الزبور. سخر الله له الجبال والطير تسبح معه. ألان الله له الحديد.'},
+    {'name': 'سليمان عليه السلام', 'summary': 'ملك عظيم، سخر له الريح والجن.', 'detail': 'ورث داود وسأل الله ملكاً لا ينبغي لأحد من بعده. سخر له الريح والجن والإنس. كان يفقه منطق الطير والحيوان. قصته مع بلقيس ملكة سبأ.'},
+    {'name': 'الياس عليه السلام', 'summary': 'بعث إلى بني إسرائيل.', 'detail': 'دعا قومه لعبادة الله وترك عبادة بعل. كذبوه فأهلكهم الله.'},
+    {'name': 'اليسع عليه السلام', 'summary': 'تابع دعوة الياس.', 'detail': 'آمن بالياس واتبعه. أنعم الله عليه بالنبوة.'},
+    {'name': 'ذو الكفل عليه السلام', 'summary': 'نبي كريم من أنبياء بني إسرائيل.', 'detail': 'كان صابراً قاضياً عادلاً. ذكره الله في القرآن.'},
+    {'name': 'يونس عليه السلام', 'summary': 'صاحب الحوت، ذو النون.', 'detail': 'دعا قومه فكذبوه. تركهم مغاضباً. ركب السفينة فالتقمه الحوت. نادى في الظلمات: لا إله إلا أنت سبحانك إني كنت من الظالمين. استجاب الله له وأخرجه.'},
+    {'name': 'لوط عليه السلام', 'summary': 'بعث إلى قوم يأتون الفاحشة.', 'detail': 'دعا قومه لترك الفاحشة. كذبوه وأرادوا ضيوفه. أهلكهم الله بعذاب عظيم. نجى الله لوطاً وأهله.'},
+    {'name': 'زكريا عليه السلام', 'summary': 'نبي كريم، رزقه الله يحيى على الكبر.', 'detail': 'كان ولياً تقياً. دعا ربه أن يهب له ولداً. بشرته الملائكة بيحيى.'},
+    {'name': 'يحيى عليه السلام', 'summary': 'سيد الشباب، آتاه الله الحكم صبياً.', 'detail': 'ولد هبة من الله. آتاه الله الحكم والنبوة صبياً. قتله قومه ظلماً.'},
+    {'name': 'عيسى عليه السلام', 'summary': 'روح الله وكلمته، أوتي الإنجيل.', 'detail': 'خلقه الله من مريم بلا أب. أنزل عليه الإنجيل. أيده الله بمعجزات: يبرئ الأكمه والأبرص ويحيي الموتى بإذن الله. رفعه الله إليه. سيعود آخر الزمان.'},
+    {'name': 'محمد صلى الله عليه وسلم', 'summary': 'خاتم الأنبياء والمرسلين، أفضل الخلق.', 'detail': 'ولد في مكة. بعثه الله رحمة للعالمين. أنزل عليه القرآن. هاجر إلى المدينة. قاد المسلمين. غفر الله له ما تقدم من ذنبه. خير البشر وأكرمهم على الله.'},
+  ];
+
+  final Map<String, List<Map<String, String>>> _otherStories = {
+    'النساء': [
+      {'title': 'مريم بنت عمران', 'summary': 'أفضل نساء العالمين، أم عيسى عليه السلام.'},
+      {'title': 'آسية امرأة فرعون', 'summary': 'آمنت بموسى وطلبت بيتاً في الجنة.'},
+      {'title': 'خديجة بنت خويلد', 'summary': 'أم المؤمنين، أول من آمن بالنبي.'},
+      {'title': 'عائشة أم المؤمنين', 'summary': 'أحب النساء إلى النبي، العالمة الفقيهة.'},
+      {'title': 'هاجر أم إسماعيل', 'summary': 'جريت بين الصفا والمروة فصارت من مناسك الحج.'},
+    ],
+    'الأقوام': [
+      {'title': 'قوم عاد', 'summary': 'قوم هود، كانوا أقوياء فأهلكوا بالريح.'},
+      {'title': 'قوم ثمود', 'summary': 'قوم صالح، نحتوا الجبال فأهلكوا بالصيحة.'},
+      {'title': 'قوم فرعون', 'summary': 'أغرقهم الله في اليم.'},
+      {'title': 'قوم لوط', 'summary': 'قلبت عليهم ديارهم.'},
+      {'title': 'قوم شعيب', 'summary': 'أصحاب الأيكة، أخذهم عذاب الظلة.'},
+    ],
+    'الحيوان': [
+      {'title': 'ناقة صالح', 'summary': 'آية لقوم ثمود، شربت ماءهم يوماً.'},
+      {'title': 'حوت يونس', 'summary': 'التقم يونس ثم أخرجه بإذن الله.'},
+      {'title': 'بقرة بني إسرائيل', 'summary': 'قصة القتيل الذي أحياه الله بضرب بعضها.'},
+      {'title': 'طير إبراهيم', 'summary': 'أحياه الله ليُري إبراهيم كيف يحيي الموتى.'},
+      {'title': 'الفيل', 'summary': 'قصة أبرهة والفيل المذكورة في سورة الفيل.'},
+      {'title': 'الغراب', 'summary': 'علم قابيل كيف يواري سوأة أخيه.'},
+    ],
+    'الإنسان': [
+      {'title': 'قابيل وهابيل', 'summary': 'أول ابني آدم، أول قتل في الأرض.'},
+      {'title': 'قارون', 'summary': 'خسف الله به وبداره الأرض.'},
+      {'title': 'بلعام بن باعورا', 'summary': 'آتاه الله الآيات فانسلخ منها.'},
+      {'title': 'أصحاب الكهف', 'summary': 'فتية آمنوا بربهم وزادهم الله هدى.'},
+      {'title': 'لقمان الحكيم', 'summary': 'آتاه الله الحكمة ووعظ ابنه.'},
+    ],
+    'أسباب النزول': [
+      {'title': 'سورة الفاتحة', 'summary': 'نزلت بمكة، وهي أول سورة نزلت كاملة.'},
+      {'title': 'آية الكرسي (البقرة 255)', 'summary': 'نزلت وآية الكرسي أعظم آية في كتاب الله.'},
+      {'title': 'سورة الإخلاص', 'summary': 'نزلت حين قال المشركون: انسب لنا ربك.'},
+      {'title': 'سورة الكوثر', 'summary': 'نزلت في العاص بن وائل حين قال النبي أبتر.'},
+      {'title': 'سورة المسد', 'summary': 'نزلت في أبي لهب وامرأته.'},
+      {'title': 'الزلزلة', 'summary': 'نزلت تسلية للصحابة.'},
+      {'title': 'سورة الشرح', 'summary': 'نزلت تسلية للنبي صلى الله عليه وسلم.'},
+    ],
+  };
+
   @override
   Widget build(BuildContext context) {
     final premium = context.watch<PremiumVerificationService>();
@@ -18,264 +92,119 @@ class _StoriesScreenState extends State<StoriesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('📖 قصص إسلامية'),
+        title: const Text('📖 قصص وإلهام'),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
-        actions: [
-          if (!isPro)
-            TextButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/settings'),
-              icon: const Icon(Icons.workspace_premium, color: Colors.amber),
-              label: const Text('Pro', style: TextStyle(color: Colors.amber)),
-            ),
-        ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(12),
-        children: [
-          _sourceCard(
-            context,
-            title: '📚 تفسير الجلالين',
-            subtitle: 'تفسير القرآن الكريم للجلالين',
-            stories: [
-              IslamicStory(
-                title: 'سورة الفاتحة',
-                content: isPro
-                  ? 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ (1) الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ (2) الرَّحْمَٰنِ الرَّحِيمِ (3) مَالِكِ يَوْمِ الدِّينِ (4) إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ (5) اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ (6) صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ (7)\n\nالتفسير: قوله تعالى "رب العالمين" أي مالك جميع الخلق. "الرحمن الرحيم" أي ذو الرحمة العامة والخاصة. "مالك يوم الدين" أي يوم الجزاء.'
-                  : 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ... اضغط لعرض التفسير الكامل (يتطلب Pro)',
-                icon: Icons.auto_stories,
+      body: Column(children: [
+        // Categories
+        Container(
+          height: 56,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            children: _categories.map((cat) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: ChoiceChip(
+                label: Text(cat),
+                selected: _selectedCategory == cat,
+                selectedColor: Colors.teal,
+                labelStyle: TextStyle(color: _selectedCategory == cat ? Colors.white : Colors.teal),
+                onSelected: (_) => setState(() => _selectedCategory = cat),
               ),
-              IslamicStory(
-                title: 'سورة الإخلاص',
-                content: isPro
-                  ? 'قُلْ هُوَ اللَّهُ أَحَدٌ (1) اللَّهُ الصَّمَدُ (2) لَمْ يَلِدْ وَلَمْ يُولَدْ (3) وَلَمْ يَكُن لَّهُ كُفُواً أَحَدٌ (4)\n\nالتفسير: سورة الإخلاص تعدل ثلث القرآن. "أحد" أي واحد لا شريك له. "الصمد" أي السيد الذي يُصمد إليه في الحوائج.'
-                  : 'قُلْ هُوَ اللَّهُ أَحَدٌ... التفسير الكامل للمشتركين Pro',
-                icon: Icons.mosque,
-              ),
-            ],
+            )).toList(),
           ),
-          _sourceCard(
-            context,
-            title: '📖 تفسير ابن كثير',
-            subtitle: 'قصص الأنبياء - ابن كثير',
-            stories: [
-              IslamicStory(
-                title: 'قصة آدم عليه السلام',
-                content: isPro
-                  ? 'خلق الله آدم من طين من حمأ مسنون، ثم نفخ فيه من روحه، وأمر الملائكة بالسجود له فسجدوا إلا إبليس أبى واستكبر. وأسكن الله آدم الجنة مع زوجته حواء، ونهاهما عن شجرة معينة، فأكلا منها بعد وسوسة الشيطان، فأنزلهما الله إلى الأرض.'
-                  : 'خلق الله آدم من طين... القصة الكاملة في النسخة Pro',
-                icon: Icons.person,
-              ),
-              IslamicStory(
-                title: 'قصة نوح عليه السلام',
-                content: isPro
-                  ? 'أرسل الله نوحاً إلى قومه يدعوهم لعبادة الله وحده، فكذبوه واستكبروا. فدعا ربه: "إني مغلوب فانتصر". فأمره الله ببناء السفينة، وحمله الله ومن آمن معه وأهلك الكافرين بالطوفان.'
-                  : 'أرسل الله نوحاً إلى قومه... اضغط للمشاهدة الكاملة (Pro)',
-                icon: Icons.directions_boat,
-              ),
-              IslamicStory(
-                title: 'قصة إبراهيم عليه السلام',
-                content: isPro
-                  ? 'ولد إبراهيم في أرض بابل، ورأى قومه يعبدون الأصنام فحطمها، فألقوه في النار فكانت برداً وسلاماً. هاجر إلى الشام، وبنى الكعبة مع ابنه إسماعيل، وابتاه الله بذبح ابنه ففداه بذبح عظيم.'
-                  : 'ولد إبراهيم في أرض بابل... القصة كاملة في Pro',
-                icon: Icons.shield,
-              ),
-              IslamicStory(
-                title: 'قصة موسى عليه السلام',
-                content: isPro
-                  ? 'ولد موسى في وقت كان فرعون يذبح أبناء بني إسرائيل، فألقت أمه في اليم، والتقطه آل فرعون. كبر موسى وقتل رجلاً قبطياً فهرب إلى مدين. رجع ونبأه الله، وأرسله مع أخيه هارون إلى فرعون، فأيده الله بآيات عظيمة. أنقذ الله بني إسرائيل وأغرق فرعون وجنوده.'
-                  : 'ولد موسى في وقت كان فرعون يذبح أبناء بني إسرائيل... القصة الكاملة في Pro',
-                icon: Icons.auto_stories,
-              ),
-            ],
-          ),
-          _sourceCard(
-            context,
-            title: '📜 أسباب النزول',
-            subtitle: 'أسباب نزول الآيات القرآنية',
-            stories: [
-              IslamicStory(
-                title: 'سبب نزول سورة الفيل',
-                content: isPro
-                  ? 'نزلت في قصة أبرهة الحبشي الذي جاء بهدم الكعبة بجيش عظيم معه الفيلة. أرسل الله عليهم طيراً أبابيل ترميهم بحجارة من سجيل فجعلهم كعصف مأكول.'
-                  : 'نزلت في قصة أبرهة الحبشي... للاطلاع على القصة كاملة اشترك Pro',
-                icon: Icons.terrain,
-              ),
-              IslamicStory(
-                title: 'سبب نزول آية الكرسي',
-                content: isPro
-                  ? 'نزلت آية الكرسي (اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...) وهي أعظم آية في كتاب الله. قال صلى الله عليه وسلم: "من قرأها في ليلة لم يزل عليه من الله حافظ ولا يقربه شيطان حتى يصبح".'
-                  : 'نزلت آية الكرسي وهي أعظم آية... النص الكامل في Pro',
-                icon: Icons.star,
-              ),
-              IslamicStory(
-                title: 'سبب نزول سورة الكوثر',
-                content: isPro
-                  ? 'نزلت في العاص بن وائل الذي قال عن النبي صلى الله عليه وسلم "إنه أبتر" (لا عقب له). فأنزل الله: "إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ * فَصَلِّ لِرَبِّكَ وَانْحَرْ * إِنَّ شَانِئَكَ هُوَ الْأَبْتَرُ".'
-                  : 'نزلت في العاص بن وائل... القصة كاملة في النسخة المدفوعة',
-                icon: Icons.water,
-              ),
-            ],
-          ),
-          _sourceCard(
-            context,
-            title: '🕌 الأربعون النووية',
-            subtitle: '40 حديثاً نبوياً جمعها الإمام النووي',
-            stories: [
-              IslamicStory(
-                title: 'الحديث 1 - الأعمال بالنيات',
-                content: 'عن عمر بن الخطاب رضي الله عنه قال: سمعت رسول الله صلى الله عليه وسلم يقول: "إنما الأعمال بالنيات، وإنما لكل امرئ ما نوى..."',
-                icon: Icons.format_quote,
-              ),
-              IslamicStory(
-                title: 'الحديث 2 - الإسلام والإيمان',
-                content: 'عن عمر بن الخطاب قال: بينما نحن عند رسول الله صلى الله عليه وسلم إذ طلع علينا رجل شديد بياض الثياب... فقال: "الإسلام أن تشهد أن لا إله إلا الله وأن محمداً رسول الله..."',
-                icon: Icons.format_quote,
-              ),
-              IslamicStory(
-                title: 'الحديث 3 - أركان الإسلام',
-                content: 'عن عبد الله بن عمر رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم: "بني الإسلام على خمس: شهادة أن لا إله إلا الله وأن محمداً رسول الله، وإقام الصلاة، وإيتاء الزكاة، وحج البيت، وصوم رمضان."',
-                icon: Icons.format_quote,
-              ),
-            ],
-          ),
-          _sourceCard(
-            context,
-            title: '🌟 الحديث القدسي',
-            subtitle: 'أحاديث يرويها النبي عن ربه',
-            stories: [
-              IslamicStory(
-                title: 'الحديث القدسي - أنا عند ظن عبدي بي',
-                content: 'عن أبي هريرة رضي الله عنه أن النبي صلى الله عليه وسلم قال: يقول الله تعالى: "أنا عند ظن عبدي بي، وأنا معه إذا ذكرني..."',
-                icon: Icons.star_border,
-              ),
-              IslamicStory(
-                title: 'الحديث القدسي - يا عبادي إني حرمت الظلم',
-                content: 'عن أبي ذر رضي الله عنه عن النبي صلى الله عليه وسلم فيما روى عن الله تبارك وتعالى أنه قال: "يا عبادي إني حرمت الظلم على نفسي وجعلته بينكم محرماً فلا تظالموا..."',
-                icon: Icons.star_border,
-              ),
-            ],
-          ),
-          _sourceCard(
-            context,
-            title: '📜 صحيح الأحاديث',
-            subtitle: 'مجموعة من أحاديث صحيح البخاري ومسلم',
-            stories: [
-              IslamicStory(
-                title: 'حديث - من يرد الله به خيراً',
-                content: 'عن معاوية رضي الله عنه قال: قال رسول الله صلى الله عليه وسلم: "من يرد الله به خيراً يفقهه في الدين."',
-                icon: Icons.lightbulb,
-              ),
-              IslamicStory(
-                title: 'حديث - الدنيا سجن المؤمن',
-                content: 'عن أبي هريرة رضي الله عنه قال: قال رسول الله صلى الله عليه وسلم: "الدنيا سجن المؤمن وجنة الكافر."',
-                icon: Icons.lightbulb,
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+        Expanded(child: _selectedCategory == 'الأنبياء' ? _buildProphetList(isPro) : _buildOtherList(isPro)),
+      ]),
     );
   }
 
-  Widget _sourceCard(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required List<IslamicStory> stories,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ExpansionTile(
-        leading: const Icon(Icons.auto_stories, color: Colors.teal),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
-        children: stories.map((story) => ListTile(
-          leading: Icon(story.icon, color: Colors.amber.shade700, size: 28),
-          title: Text(story.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-          subtitle: Text(
-            story.content.length > 80 ? '${story.content.substring(0, 80)}...' : story.content,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+  Widget _buildProphetList(bool isPro) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(8),
+      itemCount: _prophetStories.length,
+      itemBuilder: (_, i) {
+        final story = _prophetStories[i];
+        return Card(margin: const EdgeInsets.symmetric(vertical: 4),
+          child: ListTile(
+            leading: CircleAvatar(backgroundColor: Colors.teal.shade100, child: Text('${i+1}', style: TextStyle(color: Colors.teal.shade700))),
+            title: Text(story['name']!, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(story['summary']!, maxLines: 2, overflow: TextOverflow.ellipsis),
+            trailing: const Icon(Icons.arrow_back_ios_new, size: 16),
+            onTap: () => _openStoryDetail(context, story['name']!, story['detail']!, isPro),
           ),
-          trailing: const Icon(Icons.arrow_back_ios_new, size: 16),
-          onTap: () => _openStory(context, story),
-        )).toList(),
-      ),
+        );
+      },
     );
   }
 
-  void _openStory(BuildContext context, IslamicStory story) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => _StoryDetailScreen(story: story),
-      ),
+  Widget _buildOtherList(bool isPro) {
+    final items = _otherStories[_selectedCategory] ?? [];
+    return ListView.builder(
+      padding: const EdgeInsets.all(8),
+      itemCount: items.length,
+      itemBuilder: (_, i) {
+        final item = items[i];
+        return Card(margin: const EdgeInsets.symmetric(vertical: 4),
+          child: ListTile(
+            leading: Icon(Icons.auto_stories, color: Colors.teal),
+            title: Text(item['title']!, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(item['summary']!, maxLines: 2, overflow: TextOverflow.ellipsis),
+            trailing: const Icon(Icons.arrow_back_ios_new, size: 16),
+            onTap: () => _openStoryDetail(context, item['title']!, item['summary']!, isPro),
+          ),
+        );
+      },
     );
   }
-}
 
-class IslamicStory {
-  final String title;
-  final String content;
-  final IconData icon;
-  const IslamicStory({
-    required this.title,
-    required this.content,
-    this.icon = Icons.auto_stories,
-  });
+  void _openStoryDetail(BuildContext context, String title, String content, bool isPro) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => _StoryDetailScreen(title: title, content: content, isPro: isPro)));
+  }
 }
 
 class _StoryDetailScreen extends StatelessWidget {
-  final IslamicStory story;
-  const _StoryDetailScreen({required this.story});
+  final String title;
+  final String content;
+  final bool isPro;
+
+  const _StoryDetailScreen({required this.title, required this.content, required this.isPro});
 
   @override
   Widget build(BuildContext context) {
+    final tts = context.watch<TTSService>();
     return Scaffold(
-      appBar: AppBar(
-        title: Text(story.title),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(story.icon, color: Colors.teal, size: 32),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    story.title,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.teal),
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 32),
-            SelectableText(
-              story.content,
-              style: const TextStyle(fontSize: 16, height: 1.8, fontFamily: 'Traditional Arabic'),
-              textDirection: TextDirection.rtl,
-            ),
-            const SizedBox(height: 24),
-            Center(
-              child: IconButton(
-                icon: const Icon(Icons.copy, color: Colors.teal),
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: story.content));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('تم نسخ المحتوى')),
-                  );
-                },
-                tooltip: 'نسخ المحتوى',
-              ),
+      appBar: AppBar(title: Text(title), backgroundColor: Colors.teal, foregroundColor: Colors.white),
+      body: SingleChildScrollView(padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.auto_stories, color: Colors.teal, size: 32),
+            const SizedBox(width: 12),
+            Expanded(child: Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.teal))),
+          ]),
+          const Divider(height: 32),
+          SelectableText(content, style: const TextStyle(fontSize: 16, height: 1.8), textDirection: TextDirection.rtl),
+          const SizedBox(height: 24),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            IconButton(icon: const Icon(Icons.volume_up, color: Colors.teal), onPressed: () => tts.speak(content)),
+            IconButton(icon: const Icon(Icons.copy, color: Colors.teal), onPressed: () {
+              Clipboard.setData(ClipboardData(text: '$title\n\n$content\n\n- Mirror Scorpion'));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم النسخ')));
+            }),
+          ]),
+          if (!isPro) ...[
+            const SizedBox(height: 16),
+            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.amber.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.amber)),
+              child: Row(children: [
+                const Icon(Icons.workspace_premium, color: Colors.amber),
+                const SizedBox(width: 8),
+                Expanded(child: Text('جميع القصص كاملة + تحويل إلى فيديو متاح في Pro', style: TextStyle(color: Colors.brown.shade700))),
+                TextButton(onPressed: () => Navigator.pushNamed(context, '/settings'), child: const Text('Pro', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold))),
+              ]),
             ),
           ],
-        ),
+        ]),
       ),
     );
   }
