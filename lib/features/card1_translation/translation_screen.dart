@@ -148,7 +148,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
   }
 
   void _share(String text) {
-    SharePlus.instance.share(ShareParams(text: text));
+    Share.share(text);
   }
 
   @override

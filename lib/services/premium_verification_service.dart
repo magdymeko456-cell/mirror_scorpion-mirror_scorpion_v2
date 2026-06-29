@@ -1,195 +1,133 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import 'dart:math';
-import 'dart:io';
 
-/// خدمة التحقق من النسخة البرو - مع تشفير متقدم وربط الجهاز
-/// المطور: Tamer Eldosoky
 class PremiumVerificationService extends ChangeNotifier {
-  static final PremiumVerificationService _instance =
-      PremiumVerificationService._internal();
-
-  factory PremiumVerificationService() => _instance;
-  PremiumVerificationService._internal();
-
   late SharedPreferences _prefs;
   bool _isPremium = false;
-  String? _licenseKey;
-  String? _deviceId;
-  String _expiryDate = '';
-  String _activationPeriod = '';
-
-  bool get isPremium => _isPremium;
-  String? get licenseKey => _licenseKey;
-  String get expiryDate => _expiryDate;
-  String get activationPeriod => _activationPeriod;
-  String get deviceId => _deviceId ?? '';
+  String _deviceId = '';
+  String _activationPatch = '';
 
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
-    _deviceId = await _getDeviceId();
     _isPremium = _prefs.getBool('is_premium') ?? false;
-    _licenseKey = _prefs.getString('premium_license_key');
-    _expiryDate = _prefs.getString('premium_expiry') ?? '';
-    _activationPeriod = _prefs.getString('premium_period') ?? '';
+    _deviceId = _prefs.getString('device_id') ?? _generateDeviceId();
+    _activationPatch = _prefs.getString('activation_patch') ?? '';
+    if (_deviceId.isNotEmpty) {
+      await _prefs.setString('device_id', _deviceId);
+    }
     notifyListeners();
   }
 
-  Future<String> _getDeviceId() async {
-    String? id = _prefs.getString('device_id_encrypted');
-    if (id == null) {
-      // توليد معرف جهاز واقعي
-      String rawId = _generateRealDeviceId();
-      id = _encryptAES(rawId);
-      await _prefs.setString('device_id_encrypted', id);
-    }
-    return id;
+  bool get isPremium => _isPremium;
+  String get deviceId => _deviceId;
+  String get activationPatch => _activationPatch;
+
+  String _generateDeviceId() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final hash = now ^ 0x5C4A3B2D; // XOR مع ثابت
+    return 'MS-${hash.toRadixString(16).toUpperCase()}-${DateTime.now().second}';
   }
 
-  String _generateRealDeviceId() {
-    // محاكاة معرف جهاز فريد
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final random = Random().nextInt(99999999);
-    return 'MIRROR-${timestamp}-$random';
+  /// تشفير device ID (للإرسال إلى الخادم)
+  String encryptDeviceId() {
+    // مفتاح تشفير بسيط (في الإنتاج يستخدم RSA)
+    const key = 'MS_DEVICE_KEY_2026_';
+    final bytes = utf8.encode('$_deviceId:$key');
+    return base64Encode(bytes);
   }
 
-  // تشفير AES مبسط
-  String _encryptAES(String input) {
-    final key = utf8.encode("MS_DEVICE_KEY_2026_$%#@!");
-    final bytes = utf8.encode(input);
-    final result = <int>[];
-    for (int i = 0; i < bytes.length; i++) {
-      result.add(bytes[i] ^ key[i % key.length]);
-    }
-    return base64Url.encode(result).replaceAll('=', '');
-  }
-
-  String _decryptAES(String input) {
+  /// التحقق من patch التفعيل
+  bool verifyActivationPatch(String patch) {
+    if (patch.isEmpty) return false;
     try {
-      // إعادة الـ padding
-      String padded = input;
-      switch (input.length % 4) {
-        case 2: padded += '=='; break;
-        case 3: padded += '='; break;
-      }
-      final key = utf8.encode("MS_DEVICE_KEY_2026_$%#@!");
-      final bytes = base64Url.decode(padded);
-      final result = <int>[];
-      for (int i = 0; i < bytes.length; i++) {
-        result.add(bytes[i] ^ key[i % key.length]);
-      }
-      return utf8.decode(result);
-    } catch (e) {
-      return '';
-    }
-  }
+      // فك التشفير
+      final decoded = utf8.decode(base64Decode(patch));
+      final parts = decoded.split(':');
+      if (parts.length < 2) return false;
 
-  /// دالة التفعيل الرئيسية - تربط الكود بالجهاز
-  Future<bool> activatePremium(String activationCode) async {
-    try {
-      final code = activationCode.trim();
-      if (code.isEmpty) return false;
+      final patchDeviceId = parts[0];
+      final timestamp = parts[1];
 
-      // فك تشفير كود التفعيل
-      final decoded = _decryptActivationCode(code);
-      if (decoded == null) return false;
+      // التحقق من device ID
+      if (patchDeviceId != _deviceId) return false;
 
-      // استخراج البيانات
-      final parts = decoded.split('|');
-      if (parts.length < 3) return false;
+      // التحقق من الصلاحية (30 يوم من timestamp)
+      final patchTime = int.tryParse(timestamp);
+      if (patchTime == null) return false;
 
-      final storedDeviceId = parts[0];
-      final periodMonths = int.tryParse(parts[1]) ?? 1;
-      final expiryTimestamp = int.tryParse(parts[2]) ?? 0;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final diff = now - patchTime;
+      const thirtyDays = 30 * 24 * 60 * 60 * 1000;
 
-      // التحقق من أن الكود مخصص لهذا الجهاز أو أنه كود عام
-      final isForThisDevice = storedDeviceId == _deviceId;
-      final isNotExpired = DateTime.now().millisecondsSinceEpoch < expiryTimestamp;
+      if (diff > thirtyDays) return false;
 
-      if (!isForThisDevice && storedDeviceId != 'GENERAL') {
-        debugPrint('❌ كود التفعيل غير مخصص لهذا الجهاز');
-        return false;
-      }
-
-      if (!isNotExpired) {
-        debugPrint('❌ كود التفعيل منتهي الصلاحية');
-        return false;
-      }
-
-      // تفعيل النسخة البرو
+      // حفظ patch
+      _activationPatch = patch;
+      _prefs.setString('activation_patch', patch);
       _isPremium = true;
-      _licenseKey = code;
-      _expiryDate = DateTime.fromMillisecondsSinceEpoch(expiryTimestamp).toIso8601String();
-      _activationPeriod = '$periodMonths شهر';
-
-      await _prefs.setBool('is_premium', true);
-      await _prefs.setString('premium_license_key', code);
-      await _prefs.setString('premium_expiry', _expiryDate);
-      await _prefs.setString('premium_period', _activationPeriod);
-
+      _prefs.setBool('is_premium', true);
       notifyListeners();
-      debugPrint('✅ تم تفعيل النسخة PRO بنجاح لمدة $_activationPeriod');
       return true;
     } catch (e) {
-      debugPrint('❌ خطأ في التفعيل: $e');
+      debugPrint('Patch verification error: $e');
       return false;
     }
   }
 
-  /// فك تشفير كود التفعيل
-  String? _decryptActivationCode(String code) {
-    try {
-      // إزالة البادئة
-      if (!code.startsWith('MS-PRO-')) return null;
-      final encoded = code.substring(7);
-
-      // فك الـ base64
-      String padded = encoded;
-      switch (encoded.length % 4) {
-        case 2: padded += '=='; break;
-        case 3: padded += '='; break;
-      }
-
-      final bytes = base64Url.decode(padded);
-      final xorKey = utf8.encode("MS_ACTIVATE_2026_SECURE");
-
-      // XOR decryption
-      final decrypted = <int>[];
-      for (int i = 0; i < bytes.length; i++) {
-        decrypted.add(bytes[i] ^ xorKey[i % xorKey.length]);
-      }
-
-      return utf8.decode(decrypted);
-    } catch (e) {
-      return null;
-    }
+  /// إنشاء patch جديد (للخادم فقط — للعرض)
+  String generatePatchForDevice(String deviceId) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final raw = '$deviceId:$now';
+    return base64Encode(utf8.encode(raw));
   }
 
-  /// توليد كود التفعيل (للاستخدام في تطبيق المطور)
-  static String generateActivationCode(String deviceId, {int durationMonths = 1}) {
-    final key = utf8.encode("MS_ACTIVATE_2026_SECURE");
-    final expiry = DateTime.now().add(Duration(days: 30 * durationMonths)).millisecondsSinceEpoch;
-    final data = '$deviceId|$durationMonths|$expiry';
-    final bytes = utf8.encode(data);
-
-    final encrypted = <int>[];
-    for (int i = 0; i < bytes.length; i++) {
-      encrypted.add(bytes[i] ^ key[i % key.length]);
-    }
-
-    return 'MS-PRO-${base64Url.encode(encrypted).replaceAll('=', '')}';
+  /// نسخ الـ ID للتسجيل
+  String getFormattedDeviceId() {
+    final encrypted = encryptDeviceId();
+    return '📱 Device ID: $_deviceId\n🔐 Encrypted: $encrypted';
   }
 
-  Future<void> revokePremium() async {
+  /// إلغاء التفعيل
+  Future<void> deactivate() async {
     _isPremium = false;
-    _licenseKey = null;
-    _expiryDate = '';
-    _activationPeriod = '';
+    _activationPatch = '';
     await _prefs.setBool('is_premium', false);
-    await _prefs.remove('premium_license_key');
-    await _prefs.remove('premium_expiry');
-    await _prefs.remove('premium_period');
+    await _prefs.setString('activation_patch', '');
     notifyListeners();
   }
+
+  /// التحقق من صلاحية التفعيل (يسمى يومياً)
+  Future<bool> validateSubscription() async {
+    if (!_isPremium) return false;
+    if (_activationPatch.isEmpty) return false;
+
+    try {
+      final decoded = utf8.decode(base64Decode(_activationPatch));
+      final parts = decoded.split(':');
+      if (parts.length < 2) return false;
+
+      final timestamp = parts[1];
+      final activationTime = int.tryParse(timestamp);
+      if (activationTime == null) return false;
+
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final diff = now - activationTime;
+      const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+      if (diff > thirtyDays) {
+        _isPremium = false;
+        await _prefs.setBool('is_premium', false);
+        notifyListeners();
+        return false;
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// رقم الإصدار للتحقق
+  String get version => '1.0.0';
 }
