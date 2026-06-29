@@ -9,7 +9,7 @@ class OfflineTranslationService extends ChangeNotifier {
   final Map<String, double> _downloadProgress = {};
   bool _isInitialized = false;
 
-  static const availableLanguages = [
+  static const List<Map<String, String>> _availableLanguages = [
     {'code': 'ar', 'name': 'العربية', 'size': '45 MB'},
     {'code': 'en', 'name': 'English', 'size': '38 MB'},
     {'code': 'fr', 'name': 'Français', 'size': '42 MB'},
@@ -22,6 +22,7 @@ class OfflineTranslationService extends ChangeNotifier {
     {'code': 'tr', 'name': 'Türkçe', 'size': '41 MB'},
     {'code': 'ur', 'name': 'اردو', 'size': '39 MB'},
     {'code': 'hi', 'name': 'हिन्दी', 'size': '43 MB'},
+    {'code': 'bn', 'name': 'বাংলা', 'size': '43 MB'},
     {'code': 'fa', 'name': 'فارسی', 'size': '38 MB'},
     {'code': 'it', 'name': 'Italiano', 'size': '39 MB'},
     {'code': 'pt', 'name': 'Português', 'size': '40 MB'},
@@ -36,6 +37,9 @@ class OfflineTranslationService extends ChangeNotifier {
     {'code': 'sw', 'name': 'Kiswahili', 'size': '31 MB'},
     {'code': 'ha', 'name': 'Hausa', 'size': '30 MB'},
   ];
+
+  // هذا هو getter الـ instance الذي يحتاجه settings_screen.dart
+  List<Map<String, String>> get availableLanguages => _availableLanguages;
 
   bool get isInitialized => _isInitialized;
   Map<String, bool> get downloadedLanguages => Map.unmodifiable(_downloadedLanguages);
