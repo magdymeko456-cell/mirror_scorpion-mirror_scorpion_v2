@@ -5,12 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 class FloatingBubbleService extends ChangeNotifier {
   SharedPreferences? _prefs;
   bool _isEnabled = false;
-  bool _isStarted = false;
   double _opacity = 0.85;
   double _size = 55;
 
   bool get isEnabled => _isEnabled;
-  bool get isStarted => _isStarted;
   double get opacity => _opacity;
   double get size => _size;
 
@@ -19,10 +17,9 @@ class FloatingBubbleService extends ChangeNotifier {
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
     _isEnabled = _prefs?.getBool('floating_bubble_enabled') ?? false;
-    _isStarted = _isEnabled;
     _opacity = _prefs?.getDouble('floating_bubble_opacity') ?? 0.85;
     _size = (_prefs?.getDouble('floating_bubble_size') ?? 55);
-    if (_isEnabled && _isStarted) {
+    if (_isEnabled) {
       try { await _channel.invokeMethod('createFloatingBubble'); } catch (_) {}
     }
     notifyListeners();
@@ -32,33 +29,29 @@ class FloatingBubbleService extends ChangeNotifier {
     if (_isEnabled) { stopBubble(); } else { startBubble(); }
   }
 
-  Future<bool> startBubble() async {
-    _isEnabled = true; _isStarted = true;
-    await _prefs?.setBool('floating_bubble_enabled', true);
+  void startBubble() {
+    _isEnabled = true;
+    _prefs?.setBool('floating_bubble_enabled', true);
     notifyListeners();
-    try {
-      final result = await _channel.invokeMethod<bool>('createFloatingBubble');
-      if (result == false) { await _channel.invokeMethod('requestOverlayPermission'); }
-      return true;
-    } catch (e) { debugPrint('Bubble error: $e'); return false; }
+    try { _channel.invokeMethod('createFloatingBubble'); } catch (e) { debugPrint('Bubble error: $e'); }
   }
 
-  Future<bool> stopBubble() async {
-    _isEnabled = false; _isStarted = false;
-    await _prefs?.setBool('floating_bubble_enabled', false);
+  void stopBubble() {
+    _isEnabled = false;
+    _prefs?.setBool('floating_bubble_enabled', false);
     notifyListeners();
-    try { await _channel.invokeMethod('destroyFloatingBubble'); return true; } catch (e) { return false; }
+    try { _channel.invokeMethod('destroyFloatingBubble'); } catch (e) { debugPrint('Bubble error: $e'); }
   }
 
-  Future<void> setOpacity(double v) async {
+  void setOpacity(double v) {
     _opacity = v.clamp(0.3, 1.0);
-    await _prefs?.setDouble('floating_bubble_opacity', _opacity);
+    _prefs?.setDouble('floating_bubble_opacity', _opacity);
     notifyListeners();
   }
 
-  Future<void> setSize(double v) async {
+  void setSize(double v) {
     _size = v.clamp(40, 100);
-    await _prefs?.setDouble('floating_bubble_size', _size);
+    _prefs?.setDouble('floating_bubble_size', _size);
     notifyListeners();
   }
 }
