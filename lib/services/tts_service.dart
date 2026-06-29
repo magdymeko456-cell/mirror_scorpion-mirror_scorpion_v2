@@ -112,3 +112,9 @@ class TTSService extends ChangeNotifier {
     super.dispose();
   }
 }
+
+  Future<void> resume() async {
+    // Not supported in this flutter_tts version
+    _isPaused = false;
+    notifyListeners();
+  }

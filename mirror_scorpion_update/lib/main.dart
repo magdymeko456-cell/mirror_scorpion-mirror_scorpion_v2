@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-
+import 'core/utils/r_bridge.dart';
 import 'core/theme/theme_provider.dart';
 import 'services/database_service.dart';
 import 'services/floating_bubble_service.dart';
@@ -10,7 +10,7 @@ import 'services/premium_verification_service.dart';
 import 'services/language_service.dart';
 import 'services/background_service.dart';
 import 'services/language_download_service.dart';
-
+import 'services/ai_enhanced_service.dart';
 import 'features/home_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/about/about_app_screen.dart';
@@ -25,6 +25,12 @@ import 'features/games/rubik_cube/rubik_cube_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  try {
+    initializeRVariables();
+  } catch (e) {
+    debugPrint('⚠ Bridge initialization warning: $e');
+  }
+
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -38,6 +44,7 @@ void main() async {
   final languageService = LanguageService();
   final backgroundService = BackgroundService();
   final languageDownloadService = LanguageDownloadService();
+  final aiEnhancedService = AIEnhancedService();
 
   try {
     debugPrint('🚀 Initializing core services...');
@@ -47,9 +54,17 @@ void main() async {
     await languageService.initialize();
     await backgroundService.initialize();
     await languageDownloadService.initialize();
+    await aiEnhancedService.initialize();
     debugPrint('✅ All services initialized successfully');
   } catch (e) {
     debugPrint('⚠ Service initialization warning: $e');
+  }
+
+  // اكتشاف لغة الجهاز وضبطها كافتراضي
+  final deviceLang = languageService.getDeviceLanguage();
+  final supportedCodes = languageService.getLanguageCodes();
+  if (supportedCodes.contains(deviceLang)) {
+    await languageService.setCurrentLanguage(deviceLang);
   }
 
   runApp(
@@ -63,6 +78,7 @@ void main() async {
         ChangeNotifierProvider.value(value: languageService),
         ChangeNotifierProvider.value(value: backgroundService),
         ChangeNotifierProvider.value(value: languageDownloadService),
+        ChangeNotifierProvider.value(value: aiEnhancedService),
       ],
       child: const MirrorScorpionApp(),
     ),
@@ -74,12 +90,28 @@ class MirrorScorpionApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final langService = Provider.of<LanguageService>(context);
+    final deviceLang = langService.getDeviceLanguage();
+    final locale = Locale(deviceLang);
+
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
           title: 'Mirror Scorpion',
           debugShowCheckedModeBanner: false,
           theme: themeProvider.themeData,
+          locale: locale,
+          supportedLocales: const [
+            Locale('ar'),
+            Locale('en'),
+            Locale('fr'),
+            Locale('de'),
+            Locale('es'),
+          ],
+          localizationsDelegates: const [
+            DefaultMaterialLocalizations.delegate,
+            DefaultWidgetsLocalizations.delegate,
+          ],
           initialRoute: '/',
           routes: {
             '/': (context) => const HomeScreen(),
