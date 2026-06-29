@@ -53,7 +53,7 @@ class PremiumVerificationService extends ChangeNotifier {
       DateTime now;
       final networkTime = await _fetchNetworkTime();
       if (networkTime != null) { now = networkTime; }
-      else { now = DateTime.now(); debugPrint('⚠️ استخدام الوقت المحلي'); }
+      else { now = DateTime.now(); }
       final expiry = DateTime(now.year, now.month + months, now.day);
       _isPremium = true; _expiryDate = expiry;
       await _prefs.setBool('is_pro_version', true);
