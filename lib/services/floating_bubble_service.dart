@@ -33,14 +33,14 @@ class FloatingBubbleService extends ChangeNotifier {
     _isEnabled = true;
     _prefs?.setBool('floating_bubble_enabled', true);
     notifyListeners();
-    try { _channel.invokeMethod('createFloatingBubble'); } catch (e) { debugPrint('Bubble error: $e'); }
+    try { _channel.invokeMethod('createFloatingBubble'); } catch (e) { debugPrint('Bubble: $e'); }
   }
 
   void stopBubble() {
     _isEnabled = false;
     _prefs?.setBool('floating_bubble_enabled', false);
     notifyListeners();
-    try { _channel.invokeMethod('destroyFloatingBubble'); } catch (e) { debugPrint('Bubble error: $e'); }
+    try { _channel.invokeMethod('destroyFloatingBubble'); } catch (e) { debugPrint('Bubble: $e'); }
   }
 
   void setOpacity(double v) {
