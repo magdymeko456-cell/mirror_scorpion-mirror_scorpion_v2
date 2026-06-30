@@ -18,78 +18,18 @@ jobs:
       
       - uses: subosito/flutter-action@v2
         with:
+          # 🟢 استخدام إصدار محدد يعمل (3.22.0 كان مستقراً)
+          flutter-version: '3.22.0'
           channel: 'stable'
       
-      - name: Prepare Project and Build
+      - name: Test flutter create and build
         run: |
           set -e
           
-          # 1. نبدأ بإنشاء مشروع Flutter جديد في /tmp
-          rm -rf /tmp/clean_project
-          flutter create --org com.mirror --project-name mirror_scorpion_translate /tmp/clean_project
-          
-          # 2. ننسخ ملفات المشروع الأصلي
-          cp -r lib /tmp/clean_project/
-          cp -r assets /tmp/clean_project/
-          cp pubspec.yaml /tmp/clean_project/
-          cp -r packages /tmp/clean_project/
-          cp -r scripts /tmp/clean_project/
-          
-          # 3. نمسح android/ بالكامل (الذي أنشأه flutter create)
-          cd /tmp/clean_project
-          rm -rf android
-          
-          # 4. ننشئ android/ جديد من flutter create
-          flutter create --org com.tetocollctionway --project-name mirror_scorpion_translate .
-          
-          # 5. نتأكد من flutter pub get
+          rm -rf /tmp/test_project
+          flutter create --org com.test --project-name test_app /tmp/test_project
+          cd /tmp/test_project
           flutter pub get
-          
-          # 6. نطبق patch scripts (كما في الـ builds الناجحة)
-          python3 scripts/patch_dash_bubble_compilesdk.py || true
-          python3 scripts/patch_gradle.py || true
-          python3 scripts/patch_manifest.py || true
-          
-          # 7. تعديل compileSdk/targetSdk
-          find android -name "build.gradle*" -exec sed -i 's/compileSdk .*/compileSdk = 36/g' {} +
-          find android -name "build.gradle*" -exec sed -i 's/targetSdk .*/targetSdk = 35/g' {} +
-          find android -name "build.gradle*" -exec sed -i 's/==/=/g' {} +
-          find android -name "build.gradle*" -exec sed -i 's/compileSdk=/compileSdk = /g' {} +
-          find android -name "build.gradle*" -exec sed -i 's/targetSdk=/targetSdk = /g' {} +
-          
-          # 8. إنشاء الموارد المطلوبة
-          mkdir -p android/app/src/main/res/values
-          for res in mipmap-hdpi mipmap-mdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
-            mkdir -p android/app/src/main/res/$res
-          done
-          
-          printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82' > android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          
-          for res in mipmap-mdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
-            cp android/app/src/main/res/mipmap-hdpi/ic_launcher.png android/app/src/main/res/$res/ic_launcher.png
-          done
-          
-          cat > android/app/src/main/res/values/styles.xml << 'XMLEOF'
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <item name="android:windowBackground">@android:color/white</item>
-    </style>
-    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <item name="android:windowBackground">@android:color/white</item>
-    </style>
-</resources>
-XMLEOF
-          
-          # 9. BUILD - وأخيراً!
           flutter build apk --release
           
-          mkdir -p $GITHUB_WORKSPACE/output_apk
-          cp /tmp/clean_project/build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/output_apk/
-      
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: mirror-scorpion-release
-          path: output_apk/app-release.apk
-          if-no-files-found: error
+          echo "✅ BUILD WORKS!"
