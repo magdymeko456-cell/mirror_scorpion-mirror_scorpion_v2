@@ -1,82 +1,94 @@
 import 'dart:math';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
+/// خدمة الذكاء الاصطناعي - إلهام، تحليل نصوص، توليد قصص
 class AIService {
-  static final List<String> _inspirations = [
-    'لا تحزن، إن الله معنا.',
-    'وما تدري نفس ماذا تكسب غداً.',
-    'فإن مع العسر يسراً.',
-    'إن الله لا يغير ما بقوم حتى يغيروا ما بأنفسهم.',
-    'رب اشرح لي صدري ويسر لي أمري.',
-    'أحسن الظن بالله.',
-    'اليوم أنت أقوى مما كنت أمس.',
-    'البدايات الصغيرة تصنع نهايات عظيمة.',
-    'لا تنتظر الظروف المثالية، اصنعها.',
-    'قيمتك لا تقاس بما تملك، بل بما تعطي.',
-    'الفشل ليس النهاية، بل درس جديد.',
-    'عقلك أقوى أداة لديك — دربه على النجاح.',
-    'كل لحظة هي فرصة لبداية جديدة.',
-    'أنت لست وحدك، هناك من يؤمن بك.',
-    'الوقت هو أثمن ما تملك — استثمره بحكمة.',
-  ];
+  static final Random _random = Random();
 
-  /// إنشاء رسالة تحفيزية حقيقية عبر API
+  // قواعد بيانات الرسائل الملهمة حسب الحالة
+  static const Map<String, List<String>> _inspirationByMood = {
+    'حزين': [
+      "أعلم أن الأوقات صعبة، ولكن تذكر أن الله لا يكلف نفساً إلا وسعها. أنت قادر على تخطي هذه المحنة.",
+      "قال تعالى: {إِنَّ مَعَ الْعُسْرِ يُسْرًا}. بعد كل ضيق يأتي الفرج، ثق بالله.",
+      "الدموع ليست ضعفاً، هي تطهير للروح. كل دمعة تسقط تحمل معها بعض الألم. غداً سيكون أجمل.",
+      "لا تحزن، إن الله معنا. القمر لا يختفي، بل يختفي خلف السحاب مؤقتاً. ستعود الأيام المشرقة.",
+    ],
+    'فرحان': [
+      "الحمد لله على نعمة الفرح. تذكر أن تبقى متواضعاً، وأن تشكر الله على ما أعطاك. الفرح الحقيقي في المشاركة.",
+      "النجاح ليس نهاية الطريق، بل هو محطة. استمتع بلحظتك ولكن استعد للمرحلة القادمة بتواضع.",
+      "الفرح الذي تشعر به الآن هو ثمرة صبرك. لا تدع الغرور يسرق جمال هذه اللحظة.",
+    ],
+    'متعب': [
+      "خذ قسطاً من الراحة، جسدك وروحك يحتاجان للاسترخاء. لا بأس أن تتوقف قليلاً لتستعيد طاقتك.",
+      "التعب ليس فشلاً، بل دليل على أنك تبذل جهداً. أنت في الطريق الصحيح، استمر ولكن بتمهل.",
+      "كل مجهود تبذله اليوم هو استثمار في مستقبلك. أنت تبني شيئاً عظيماً، لا تستسلم.",
+    ],
+    'محتاج تشجيع': [
+      "أنت أقوى مما تتصور، وأعظم مما تتخيل. لا تسمح للشك أن يسرق أحلامك.",
+      "لا تقارن نفسك بالآخرين، فلك طريقك الخاص الذي يميزك. رحلتك فريدة وأنت بطلها.",
+      "الثقة بالنفس هي أول خطوة نحو النجاح. أنت تملك كل ما تحتاجه لتحقيق أهدافك.",
+    ],
+  };
+
+  /// توليد رسالة ملهمة بناءً على حالة المستخدم
   static Future<String> generateInspiration({
-    String? userMood,
-    String? context,
+    required String userMood,
+    required String context,
   }) async {
-    try {
-      final uri = Uri.parse('https://api.quotable.io/random');
-      final response = await http.get(uri).timeout(const Duration(seconds: 5));
+    await Future.delayed(Duration(milliseconds: 200 + _random.nextInt(500)));
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final content = data['content'] as String? ?? '';
-        final author = data['author'] as String? ?? '';
-        if (content.isNotEmpty) {
-          return '$content\n— $author';
-        }
+    // البحث عن رسائل تناسب الحالة
+    for (final entry in _inspirationByMood.entries) {
+      if (userMood.contains(entry.key)) {
+        final messages = entry.value;
+        return messages[_random.nextInt(messages.length)];
       }
-    } catch (e) {
-      debugPrint('AI API error, falling back: $e');
     }
 
-    // Fallback محلي
+    // رسائل عشوائية عامة
+    const generalMessages = [
+      "الوقت هو العملة الأغلى، استثمر كل ثانية في بناء نفسك.",
+      "الماضي ليس للمحو بل للتعلم، والمستقبل هو ما يستحق انتباهك الآن.",
+      "قوتك الحقيقية تكمن في قدرتك على النهوض بعد كل سقوط.",
+      "اليوم هو فرصة جديدة لبداية جديدة.",
+      "لا تؤجل حلمك إلى الغد، فاليوم هو أفضل وقت للبدء.",
+      "تذكر دائماً.. قصتك لا تزال تُكتب، والنهاية لم يحن وقتها بعد.",
+    ];
+    return generalMessages[_random.nextInt(generalMessages.length)];
+  }
+
+  /// توليد رسالة مخصصة كل 3 ساعات
+  static Future<String> generatePersonalizedMessage(String userId) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    final random = Random();
-    int index = random.nextInt(_inspirations.length);
-    if (userMood != null && userMood.contains('حزين')) index = 0;
-    else if (userMood != null && userMood.contains('فرح')) index = 3;
-    else if (userMood != null && userMood.contains('خائف')) index = 4;
-    return _inspirations[index];
+    final messages = _inspirationByMood.values.expand((x) => x).toList();
+    final msg = messages[_random.nextInt(messages.length)];
+    return "🌟 $msg\n- ميرور سكربيون AI";
   }
 
-  /// وضع التشخيص — يعطي رسالة حسب السياق
-  static String recommendMode(String text) {
-    if (text.contains('سلام') || text.contains('hello')) {
-      return 'السلام عليكم — أنا هنا لمساعدتك في الترجمة';
-    } else if (text.contains('?')) {
-      return 'هل لديك سؤال؟ دعني أساعدك';
-    } else if (text.length > 50) {
-      return 'نص طويل! يمكنني ترجمته لك';
+  /// توليد مقدمة قصة
+  static Future<String> generateStoryIntro(String storyTitle) async {
+    final intros = [
+      "قصة $storyTitle: رحلة مليئة بالعبر والدروس المستفادة من أحداث عظيمة.",
+      "في قديم الزمان، كان هناك $storyTitle... قصة تحمل في طياتها الحكمة.",
+      "تعالوا نستمع إلى قصة $storyTitle المستوحاة من أحداث حقيقية.",
+    ];
+    return intros[_random.nextInt(intros.length)];
+  }
+
+  /// تحليل النص لتحديد الحالة النفسية
+  static String analyzeMood(String text) {
+    final lower = text.toLowerCase();
+    if (lower.contains('حزين') || lower.contains('تعب') || lower.contains('ضيق') || lower.contains('بكاء')) {
+      return 'حزين';
     }
-    return 'مرحباً بك في ميرور سكربيون 🦂';
-  }
-
-  static Future<String> enhanceStory(String story) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return '$story\n\n🦂 — تمت الكتابة والتنسيق بواسطة Mirror Scorpion AI';
-  }
-
-  static Future<String> generateVideoScript(String storyTitle) async {
-    await Future.delayed(const Duration(seconds: 2));
-    return 'سكريبت فيديو لقصة "$storyTitle"\n'
-        'المدة المقترحة: 10-15 دقيقة\n\n'
-        'المشهد الأول: مقدمة درامية\n'
-        'المشهد الثاني: الأحداث الرئيسية\n'
-        'المشهد الثالث: الذروة\n'
-        'المشهد الرابع: النهاية والعبرة';
+    if (lower.contains('فرح') || lower.contains('سعيد') || lower.contains('نجاح') || lower.contains('الحمد')) {
+      return 'فرحان';
+    }
+    if (lower.contains('تعب') || lower.contains('مرهق') || lower.contains('نوم')) {
+      return 'متعب';
+    }
+    return 'محتاج تشجيع';
   }
 }
