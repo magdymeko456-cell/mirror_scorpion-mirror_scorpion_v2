@@ -5,16 +5,18 @@ plugins {
 }
 android {
     namespace "com.mirror.scorpion.v2"
-    compileSdk 36
+    compileSdk 34
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
-    kotlinOptions { jvmTarget = "11" }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
     defaultConfig {
         applicationId "com.mirror.scorpion.v2"
         minSdk 24
-        targetSdk 36
+        targetSdk 34
         versionCode 1
         versionName "1.2.0"
         multiDexEnabled true
@@ -23,9 +25,13 @@ android {
         release {
             signingConfig signingConfigs.debug
             minifyEnabled false
-            shrinkResources false
         }
     }
-    lint { abortOnError false; checkReleaseBuilds false }
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
 }
-flutter { source "../.." }
+flutter {
+    source "../.."
+}
