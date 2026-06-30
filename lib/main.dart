@@ -12,14 +12,11 @@ import 'services/floating_bubble_service.dart';
 import 'services/tts_service.dart';
 import 'services/ai_service.dart';
 import 'services/database_service.dart';
+import 'services/background_service.dart';
 import 'core/theme/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await LanguageService().initialize();
-  await DatabaseService().initialize();
-  await FloatingBubbleService().initialize();
-
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => LanguageService()),
@@ -28,6 +25,7 @@ void main() async {
       ChangeNotifierProvider(create: (_) => DatabaseService()),
       ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ChangeNotifierProvider(create: (_) => AIService()),
+      ChangeNotifierProvider(create: (_) => BackgroundService()),
     ],
     child: const MirrorScorpionApp(),
   ));
