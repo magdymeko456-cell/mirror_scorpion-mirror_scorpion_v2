@@ -177,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               (value) async {  
                 setState(() => _bubbleEnabled = value);  
                 _saveSetting('bubble_enabled', value);  
-                await Provider.of<FloatingBubbleService>(context, listen: false).toggle();  
+                Provider.of<FloatingBubbleService>(context, listen: false).toggle();  
               },  
             ),  
             if (_bubbleEnabled) ...[  
@@ -334,7 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               IconButton(  
                 icon: const Icon(Icons.restore, color: Colors.redAccent),  
                 onPressed: () async {
-                  await Provider.of<BackgroundService>(context, listen: false).removeBackground();
+                  Provider.of<BackgroundService>(context, listen: false).removeBackground();
                 },  
               ),  
             ],  
