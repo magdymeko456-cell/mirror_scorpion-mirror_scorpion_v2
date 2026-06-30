@@ -1,43 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// الشاشات الرئيسية
+// استيراد الشاشات الحقيقية بناءً على هيكل المجلدات المتاحة
 import 'features/home_screen.dart';
 import 'features/card1_translation/translation_screen.dart';
 import 'features/card2_dialogue/dialogue_screen.dart';
 import 'features/card3_document/document_screen.dart';
 import 'features/card4_stories/stories_screen.dart';
-import 'features/games/games_menu_screen.dart';
+import 'features/games/chess/chess_game.dart';
+import 'features/games/rubik_cube/rubik_cube_screen_enhanced.dart';
 import 'features/settings/settings_screen.dart';
 
-// الخدمات
 import 'services/language_service.dart';
 import 'services/floating_bubble_service.dart';
 import 'services/tts_service.dart';
-import 'services/database_service.dart';
-import 'services/premium_verification_service.dart';
-import 'core/theme/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final languageService = LanguageService();
   await languageService.initialize();
-  final databaseService = DatabaseService();
-  final premiumService = PremiumVerificationService();
-  await premiumService.initialize();
-  final bubbleService = FloatingBubbleService();
-  await bubbleService.initialize();
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(value: languageService),
-        ChangeNotifierProvider.value(value: bubbleService),
+        ChangeNotifierProvider<LanguageService>.value(value: languageService),
+        ChangeNotifierProvider(create: (_) => FloatingBubbleService()),
         ChangeNotifierProvider(create: (_) => TTSService()),
-        ChangeNotifierProvider.value(value: databaseService),
-        ChangeNotifierProvider.value(value: premiumService),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: const MirrorScorpionApp(),
     ),
@@ -49,23 +38,22 @@ class MirrorScorpionApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return MaterialApp(
-          title: 'Mirror Scorpion',
-          debugShowCheckedModeBanner: false,
-          theme: themeProvider.themeData,
-          initialRoute: '/',
-          routes: {
-            '/': (context) => const HomeScreen(),
-            '/translate': (context) => const TextTranslationScreen(),
-            '/dialogue': (context) => const DialogueTranslationScreen(),
-            '/document': (context) => const DocumentTranslationScreen(),
-            '/stories': (context) => const StoriesScreen(),
-            '/games': (context) => const GamesMenuScreen(),
-            '/settings': (context) => const SettingsScreen(),
-          },
-        );
+    return MaterialApp(
+      title: 'Mirror Scorpion',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+      ),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomeScreen(),
+        '/translate': (context) => const TranslationScreen(), // ربط الشاشة الحقيقية
+        '/dialogue': (context) => const DialogueScreen(),     // ربط الشاشة الحقيقية
+        '/document': (context) => const DocumentScreen(),     // ربط الشاشة الحقيقية
+        '/stories': (context) => const StoriesScreen(),       // ربط الشاشة الحقيقية
+        '/chess': (context) => const ChessGame(),             // ربط الشاشة الحقيقية
+        '/rubik': (context) => const RubikCubeScreenEnhanced(), // ربط الشاشة الحقيقية
+        '/settings': (context) => const SettingsScreen(),     // ربط الشاشة الحقيقية
       },
     );
   }
