@@ -27,9 +27,54 @@ jobs:
           flutter create --org com.mirror.scorpion --project-name mirror_scorpion_v2 /tmp/clean_p
           rm -rf android
           cp -r /tmp/clean_p/android .
+
+      - name: Copy custom Android config from repo root
+        run: |
+          set -e
+          # نسخ app_build.gradle
           if [ -f app_build.gradle ]; then
-            cp app_build.gradle android/app/build.gradle
+            cp -f app_build.gradle android/app/build.gradle
           fi
+          # إنشاء مجلدات resources
+          mkdir -p android/app/src/main/res/mipmap-hdpi
+          mkdir -p android/app/src/main/res/mipmap-mdpi
+          mkdir -p android/app/src/main/res/mipmap-xhdpi
+          mkdir -p android/app/src/main/res/mipmap-xxhdpi
+          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+          mkdir -p android/app/src/main/res/values
+          # إنشاء ملفات XML للأيقونات والثيمات
+          cat > android/app/src/main/res/mipmap-hdpi/ic_launcher.xml << 'XEOF'
+        <?xml version="1.0" encoding="utf-8"?>
+        <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+            <background android:drawable="@color/ic_launcher_background"/>
+            <foreground android:drawable="@color/ic_launcher_foreground"/>
+        </adaptive-icon>
+        XEOF
+          cp android/app/src/main/res/mipmap-hdpi/ic_launcher.xml android/app/src/main/res/mipmap-mdpi/ic_launcher.xml
+          cp android/app/src/main/res/mipmap-hdpi/ic_launcher.xml android/app/src/main/res/mipmap-xhdpi/ic_launcher.xml
+          cp android/app/src/main/res/mipmap-hdpi/ic_launcher.xml android/app/src/main/res/mipmap-xxhdpi/ic_launcher.xml
+          cp android/app/src/main/res/mipmap-hdpi/ic_launcher.xml android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.xml
+          # colors.xml
+          cat > android/app/src/main/res/values/colors.xml << 'YEOF'
+        <?xml version="1.0" encoding="utf-8"?>
+        <resources>
+            <color name="ic_launcher_background">#1a1a2e</color>
+            <color name="ic_launcher_foreground">#e94560</color>
+        </resources>
+        YEOF
+          # styles.xml
+          cat > android/app/src/main/res/values/styles.xml << 'ZEOF'
+        <?xml version="1.0" encoding="utf-8"?>
+        <resources>
+            <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+                <item name="android:windowBackground">@color/ic_launcher_background</item>
+            </style>
+            <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+                <item name="android:windowBackground">?android:colorBackground</item>
+            </style>
+        </resources>
+        ZEOF
+          echo "✅ Resources and icon files created"
 
       - name: Write gradle.properties
         run: |
@@ -37,36 +82,48 @@ jobs:
           echo "android.useAndroidX=true" >> android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
 
-      - name: Patch Android
+      - name: Patch Android Manifest
         run: |
           set -e
-          # ضمان Android v2 embedding
           sed -i 's|io.flutter.app.FlutterApplication|${applicationName}|g' android/app/src/main/AndroidManifest.xml
           if ! grep -q "flutterEmbedding" android/app/src/main/AndroidManifest.xml; then
             sed -i 's|<application|<application\n <meta-data android:name="flutterEmbedding" android:value="2" />|' android/app/src/main/AndroidManifest.xml
           fi
           find android -name "MainActivity.*" -exec sed -i 's|io.flutter.app.FlutterActivity|io.flutter.embedding.android.FlutterActivity|g' {} +
-          echo "✅ Android patched"
+          echo "✅ Android manifest patched"
 
-      - name: Restore Gradle files from repo
+      - name: Force Kotlin 1.9.23
         run: |
-          cp android/build.gradle /tmp/clean_p/android/build.gradle
-          cp android/app/build.gradle /tmp/clean_p/android/app/build.gradle
-
-      - name: Force Kotlin 1.9.23 in settings.gradle
-        run: |
-          # الـ flutter create من 3.24.3 يجيب Kotlin 2.x فنرجعها لـ 1.9.23
           sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*" apply false/id "org.jetbrains.kotlin.android" version "1.9.23" apply false/' android/settings.gradle
           echo "✅ Kotlin forced to 1.9.23"
 
+      - name: Override build.gradle (root)
+        run: |
+          cat > android/build.gradle << 'BEOF'
+        buildscript {
+            ext.kotlin_version = '1.9.23'
+            repositories {
+                google()
+                mavenCentral()
+            }
+            dependencies {
+                classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+            }
+        }
+        allprojects {
+            repositories { google(); mavenCentral() }
+        }
+        rootProject.buildDir = "../build"
+        subprojects {
+            project.buildDir = "\${rootProject.buildDir}/\${project.name}"
+            project.evaluationDependsOn(":app")
+        }
+        tasks.register("clean", Delete) { delete rootProject.buildDir }
+        BEOF
+          echo "✅ Root build.gradle overridden"
+
       - name: Get Dependencies
         run: flutter pub get
-
-      - name: Clean build cache
-        run: |
-          rm -rf ~/.gradle/caches/8.9/transforms/892b7e2adc96df17f4f973a156ea045b/ 2>/dev/null || true
-          rm -rf build/ android/.gradle/ 2>/dev/null || true
-          echo "✅ Cache cleaned"
 
       - name: Build APK
         run: |

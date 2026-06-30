@@ -5,55 +5,38 @@ plugins {
 }
 
 android {
-    namespace = "com.tetocollctionway.mirror"
+    namespace = "com.mirror.scorpion.v2"
     compileSdk = 36
-    ndkVersion = "27.0.12077973"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
 
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "11"
     }
 
     defaultConfig {
-        applicationId = "com.tetocollctionway.mirror"
-        minSdk = 21
-        targetSdk = 35
+        applicationId = "com.mirror.scorpion.v2"
+        minSdk = 24
+        targetSdk = 36
         versionCode = 1
-        versionName = "1.0.0"
+        versionName = "1.2.0"
         multiDexEnabled true
     }
 
     buildTypes {
         release {
             signingConfig = signingConfigs.debug
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            minifyEnabled false
+            shrinkResources false
         }
     }
 
     lint {
         abortOnError = false
         checkReleaseBuilds = false
-    }
-
-    packaging {
-        resources {
-            excludes += [
-                'META-INF/DEPENDENCIES',
-                'META-INF/LICENSE',
-                'META-INF/LICENSE.txt',
-                'META-INF/NOTICE',
-                'META-INF/NOTICE.txt'
-            ]
-        }
     }
 }
 
