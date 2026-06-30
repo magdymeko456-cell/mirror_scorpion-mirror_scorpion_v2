@@ -40,6 +40,7 @@ jobs:
       - name: Patch Android
         run: |
           set -e
+          # ضمان Android v2 embedding
           sed -i 's|io.flutter.app.FlutterApplication|${applicationName}|g' android/app/src/main/AndroidManifest.xml
           if ! grep -q "flutterEmbedding" android/app/src/main/AndroidManifest.xml; then
             sed -i 's|<application|<application\n <meta-data android:name="flutterEmbedding" android:value="2" />|' android/app/src/main/AndroidManifest.xml
@@ -52,8 +53,20 @@ jobs:
           cp android/build.gradle /tmp/clean_p/android/build.gradle
           cp android/app/build.gradle /tmp/clean_p/android/app/build.gradle
 
+      - name: Force Kotlin 1.9.23 in settings.gradle
+        run: |
+          # الـ flutter create من 3.24.3 يجيب Kotlin 2.x فنرجعها لـ 1.9.23
+          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*" apply false/id "org.jetbrains.kotlin.android" version "1.9.23" apply false/' android/settings.gradle
+          echo "✅ Kotlin forced to 1.9.23"
+
       - name: Get Dependencies
         run: flutter pub get
+
+      - name: Clean build cache
+        run: |
+          rm -rf ~/.gradle/caches/8.9/transforms/892b7e2adc96df17f4f973a156ea045b/ 2>/dev/null || true
+          rm -rf build/ android/.gradle/ 2>/dev/null || true
+          echo "✅ Cache cleaned"
 
       - name: Build APK
         run: |
