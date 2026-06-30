@@ -37,30 +37,25 @@ jobs:
           cd /tmp/clean_project
           flutter pub get
           
-          # ❌ لا نستخدم patch_gradle.py أو patch_manifest.py - يسببان مشاكل
-          # ✅ فقط patch_dash_bubble_compilesdk.py آمن
-          python3 scripts/patch_dash_bubble_compilesdk.py || true
+          # ✅ الحل السحري: إعادة توليد ملفات Gradle (يحل مشكلة unsupported Gradle)
+          flutter create .
           
-          # ✅ تعديل compileSdk/targetSdk فقط
+          # ✅ تعديلات بسيطة على compileSdk/targetSdk
           find android -name "build.gradle*" -exec sed -i 's/compileSdk .*/compileSdk = 36/g' {} +
           find android -name "build.gradle*" -exec sed -i 's/targetSdk .*/targetSdk = 35/g' {} +
           
-          # ✅ إنشاء الموارد المطلوبة
+          # ✅ إنشاء الموارد (ic_launcher + styles.xml)
           mkdir -p android/app/src/main/res/values
-          mkdir -p android/app/src/main/res/mipmap-hdpi
-          mkdir -p android/app/src/main/res/mipmap-mdpi
-          mkdir -p android/app/src/main/res/mipmap-xhdpi
-          mkdir -p android/app/src/main/res/mipmap-xxhdpi
-          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+          for res in mipmap-hdpi mipmap-mdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
+            mkdir -p android/app/src/main/res/$res
+          done
           
-          # إنشاء ic_launcher (1x1 بكسل شفاف)
           printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82' > android/app/src/main/res/mipmap-hdpi/ic_launcher.png
           
           for res in mipmap-mdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
             cp android/app/src/main/res/mipmap-hdpi/ic_launcher.png android/app/src/main/res/$res/ic_launcher.png
           done
           
-          # إنشاء styles.xml
           cat > android/app/src/main/res/values/styles.xml << 'XMLEOF'
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
