@@ -2,11 +2,8 @@ name: Mirror Scorpion Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -17,107 +14,24 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '11'
 
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.24.3'
           channel: 'stable'
 
-      - name: Reconstruct Android from scratch
-        run: |
-          set -ex
-          rm -rf android
-          flutter create --org com.mirror --project-name mirror_scorpion_v2 /tmp/clean_p
-          cp -r /tmp/clean_p/android .
-          rm -rf /tmp/clean_p
-
-      - name: Apply Gradle patches
-        run: |
-          set -ex
-          cat > android/app/build.gradle << 'EOF'
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-          android {
-              namespace "com.mirror.scorpion.v2"
-              compileSdk 35
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
-              kotlinOptions {
-                  jvmTarget = "17"
-              }
-              defaultConfig {
-                  applicationId "com.mirror.scorpion.v2"
-                  minSdk 24
-                  targetSdk 35
-                  versionCode 1
-                  versionName "1.2.0"
-                  multiDexEnabled true
-              }
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.debug
-                      minifyEnabled false
-                      shrinkResources false
-                  }
-              }
-              lint {
-                  abortOnError false
-                  checkReleaseBuilds false
-              }
-          }
-          flutter {
-              source "../.."
-          }
-          EOF
-
-          cat > android/settings.gradle << 'EOF'
-          pluginManagement {
-              def flutterSdkPath = {
-                  def properties = new Properties()
-                  file("local.properties").withInputStream { properties.load(it) }
-                  def flutterSdkPath = properties.getProperty("flutter.sdk")
-                  assert flutterSdkPath != null
-                  return flutterSdkPath
-              }()
-              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          plugins {
-              id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-              id "com.android.application" version "8.7.3" apply false
-              id "org.jetbrains.kotlin.android" version "2.0.21" apply false
-          }
-          include ":app"
-          EOF
-
-          cat > android/gradle.properties << 'EOF'
-          org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=512m
-          org.gradle.parallel=true
-          android.useAndroidX=true
-          android.enableJetifier=true
-          EOF
-
-      - name: Patch JCenter in cache
-        run: |
-          find /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} + 2>/dev/null || true
-
-      - name: Install dependencies
+      - name: Get Dependencies
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: |
+          flutter build apk --release --no-tree-shake-icons
+          mkdir -p output_apk
+          cp build/app/outputs/flutter-apk/app-release.apk output_apk/
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: mirror-scorpion-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: output_apk/app-release.apk
