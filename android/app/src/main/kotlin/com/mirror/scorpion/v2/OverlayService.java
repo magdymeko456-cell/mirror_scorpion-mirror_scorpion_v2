@@ -10,50 +10,75 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.ImageView;
 
 public class OverlayService extends Service {
-    private WindowManager windowManager;
-    private View overlayView;
+    private WindowManager wm;
+    private View bubble;
+    private WindowManager.LayoutParams params;
+    private boolean isExpanded = false;
 
-    @Override
-    public IBinder onBind(Intent intent) { return null; }
+    @Override public IBinder onBind(Intent i) { return null; }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        overlayView = LayoutInflater.from(this).inflate(
-            getResources().getIdentifier("overlay_layout", "layout", getPackageName()),
-            null
-        );
-        int layoutFlag;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
-        } else {
-            layoutFlag = WindowManager.LayoutParams.TYPE_PHONE;
-        }
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-            150, 150,
-            layoutFlag,
+        wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        bubble = LayoutInflater.from(this).inflate(
+            getResources().getIdentifier("overlay_layout", "layout", getPackageName()), null);
+
+        int LAYOUT_FLAG = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+            ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            : WindowManager.LayoutParams.TYPE_PHONE;
+
+        params = new WindowManager.LayoutParams(
+            180, 180, LAYOUT_FLAG,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        );
+            PixelFormat.TRANSLUCENT);
         params.gravity = Gravity.TOP | Gravity.START;
-        params.x = 50;
-        params.y = 200;
-        try {
-            windowManager.addView(overlayView, params);
-        } catch (Exception e) {
-            stopSelf();
-        }
+        params.x = 50; params.y = 200;
+
+        // سحب الفقاعة
+        bubble.setOnTouchListener(new View.OnTouchListener() {
+            int initialX, initialY;
+            float initialTouchX, initialTouchY;
+            long touchStartTime;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent e) {
+                switch (e.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        initialX = params.x;
+                        initialY = params.y;
+                        initialTouchX = e.getRawX();
+                        initialTouchY = e.getRawY();
+                        touchStartTime = System.currentTimeMillis();
+                        return true;
+                    case MotionEvent.ACTION_MOVE:
+                        params.x = initialX + (int)(e.getRawX() - initialTouchX);
+                        params.y = initialY + (int)(e.getRawY() - initialTouchY);
+                        wm.updateViewLayout(bubble, params);
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                        long dt = System.currentTimeMillis() - touchStartTime;
+                        if (dt < 300) {
+                            // نقرة بسيطة - إرسال intent لـ Flutter
+                            Intent intent = new Intent("com.mirror.scorpion.TOGGLE_BUBBLE");
+                            sendBroadcast(intent);
+                        }
+                        return true;
+                }
+                return false;
+            }
+        });
+
+        try { wm.addView(bubble, params); } catch (Exception e) { stopSelf(); }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (overlayView != null && windowManager != null) {
-            try { windowManager.removeView(overlayView); } catch (Exception ignored) {}
+        if (bubble != null && wm != null) {
+            try { wm.removeView(bubble); } catch (Exception ignored) {}
         }
     }
 }

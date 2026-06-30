@@ -8,12 +8,14 @@ class TTSService extends ChangeNotifier {
   double _rate = 0.5;
   double _pitch = 1.0;
   String _voice = 'ar-xa';
+  String _selectedVoiceName = 'سارة';
 
   bool get isSpeaking => _isSpeaking;
   double get volume => _volume;
   double get rate => _rate;
   double get pitch => _pitch;
   String get voice => _voice;
+  String get selectedVoiceName => _selectedVoiceName;
 
   TTSService() {
     _tts.setCompletionHandler(() { _isSpeaking = false; notifyListeners(); });
@@ -37,35 +39,34 @@ class TTSService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setVolume(double v) async {
-    _volume = v;
-    await _tts.setVolume(v);
-    notifyListeners();
-  }
+  Future<void> setVolume(double v) async { _volume = v; await _tts.setVolume(v); notifyListeners(); }
+  Future<void> setRate(double r) async { _rate = r; await _tts.setSpeechRate(r); notifyListeners(); }
+  Future<void> setPitch(double p) async { _pitch = p; await _tts.setPitch(p); notifyListeners(); }
 
-  Future<void> setRate(double r) async {
-    _rate = r;
-    await _tts.setSpeechRate(r);
-    notifyListeners();
-  }
+  /// الأصوات الخمسة: سيف, سلمى, سما, سارة, صوت المستخدم
+  static const Map<String, String> voices = {
+    'سارة': 'ar-xa',
+    'سيف': 'ar-xa',
+    'سلمى': 'ar-xa',
+    'سما': 'ar-xa',
+    'صوت المستخدم': 'ar-xa',
+  };
 
-  Future<void> setPitch(double p) async {
-    _pitch = p;
-    await _tts.setPitch(p);
-    notifyListeners();
-  }
+  static const Map<String, String> voiceLanguages = {
+    'ar-xa': 'ar',
+    'en-US': 'en',
+    'fr-FR': 'fr',
+    'de-DE': 'de',
+    'es-ES': 'es',
+  };
 
-  /// هذه الدالة مطلوبة من settings_screen.dart
-  Future<void> setVoice(String voice) async {
-    _voice = voice;
-    final map = {
-      'ar-xa': 'ar',
-      'en-US': 'en',
-      'fr-FR': 'fr',
-      'de-DE': 'de',
-      'es-ES': 'es',
-    };
-    final lang = map[voice] ?? 'ar';
+  Future<void> setVoice(String voiceCode) async {
+    _voice = voiceCode;
+    _selectedVoiceName = voices.entries
+        .firstWhere((e) => e.value == voiceCode,
+            orElse: () => MapEntry('سارة', 'ar-xa'))
+        .key;
+    final lang = voiceLanguages[voiceCode] ?? 'ar';
     await _tts.setLanguage(lang);
     notifyListeners();
   }
