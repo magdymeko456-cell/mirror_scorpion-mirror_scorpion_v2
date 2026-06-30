@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import "dart:convert";
-import "package:http/http.dart" as http;
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:speech_to_text/speech_to_text.dart as stt;
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import '../../services/tts_service.dart';
 import '../../services/language_service.dart';
+import '../../services/floating_bubble_service.dart';
 
 class TextTranslationScreen extends StatefulWidget {
   const TextTranslationScreen({super.key});
@@ -25,9 +26,10 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
   String _selectedLanguage = 'en';
   bool _isListening = false;
   bool _isTranslating = false;
+
   final Map<String, String> _hundredLanguages = {
-    'ar': 'العربية', 'en': 'English', 'fr': 'Français', 'de': 'Deutsch',
-    'es': 'Español', 'it': 'Italiano', 'pt': 'Português', 'ru': 'Русский',
+    'ar': 'العربية', 'en': 'English', 'fr': 'Fran\u00e7ais', 'de': 'Deutsch',
+    'es': 'Espa\u00f1ol', 'it': 'Italiano', 'pt': 'Portugu\u00eas', 'ru': 'Русский',
     'zh': '中文', 'ja': '日本語', 'ko': '한국어', 'hi': 'हिन्दी',
     'tr': 'Türkçe', 'ur': 'اردو', 'fa': 'فارسی', 'nl': 'Nederlands',
     'pl': 'Polski', 'sv': 'Svenska', 'da': 'Dansk', 'fi': 'Suomi',
@@ -35,28 +37,6 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
     'ms': 'Bahasa Melayu', 'id': 'Bahasa Indonesia', 'tl': 'Filipino',
     'cs': 'Čeština', 'hu': 'Magyar', 'ro': 'Română', 'sk': 'Slovenčina',
     'hr': 'Hrvatski', 'sr': 'Српски', 'bg': 'Български', 'uk': 'Українська',
-    'sq': 'Shqip', 'hy': 'Հայերեն', 'ka': 'ქართული', 'kk': 'Қазақ',
-    'uz': 'Oʻzbek', 'az': 'Azərbaycan', 'mn': 'Монгол', 'ne': 'नेपाली',
-    'si': 'සිංහල', 'am': 'አማርኛ', 'sw': 'Kiswahili', 'ha': 'Hausa',
-    'yo': 'Yorùbá', 'ig': 'Igbo', 'zu': 'isiZulu', 'xh': 'isiXhosa',
-    'af': 'Afrikaans', 'mt': 'Malti', 'cy': 'Cymraeg', 'ga': 'Gaeilge',
-    'gd': 'Gàidhlig', 'lb': 'Lëtzebuergesch', 'is': 'Íslenska', 'no': 'Norsk',
-    'et': 'Eesti', 'lv': 'Latviešu', 'lt': 'Lietuvių', 'be': 'Беларуская',
-    'mk': 'Македонски', 'bs': 'Bosanski', 'sl': 'Slovenščina', 'ca': 'Català',
-    'gl': 'Galego', 'eu': 'Euskara', 'fy': 'Frysk', 'eo': 'Esperanto',
-    'la': 'Latina', 'ku': 'Kurdî', 'ps': 'پښتو', 'sd': 'سنڌي',
-    'ckb': 'کوردی', 'dv': 'ދިވެހި', 'dz': 'རྫོང་ཁ', 'my': 'မြန်မာ',
-    'km': 'ភាសាខ្មែរ', 'lo': 'ລາວ', 'bo': 'བོད་སྐད', 'ug': 'ئۇيغۇرچە',
-    'tt': 'Татар', 'ba': 'Башҡорт', 'cv': 'Чӑваш', 'ce': 'Нохчийн',
-    'os': 'Ирон', 'ab': 'Аԥсшәа', 'kv': 'Коми', 'udm': 'Удмурт',
-    'mhr': 'Марий', 'mrj': 'Кырык мары', 'koi': 'Перем коми',
-    'sjd': 'Са̄мь', 'sma': 'Åarjelsaemien', 'smj': 'Julevsámegiella',
-    'se': 'Davvisámegiella', 'sms': 'Nuorttâlääʹmmiõll',
-    'syr': 'ܣܘܪܝܝܐ', 'arc': 'ܐܪܡܝܐ', 'cop': 'ϯⲙⲉⲧⲣⲉⲙⲛ̀ⲭⲏⲙⲓ',
-    'tig': 'ትግረ', 'tir': 'ትግርኛ', 'aar': 'Qafar', 'som': 'Soomaali',
-    'orm': 'Oromoo', 'ber': 'ⵜⴰⵎⴰⵣⵉⵖⵜ', 'ary': 'الدارجة',
-    'apc': 'شامي', 'acm': 'عراقي', 'ars': 'نجدي', 'acq': 'خليجي',
-    'ayl': 'ليبي', 'aec': 'مصري',
   };
 
   @override
@@ -67,8 +47,8 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
   }
 
   void _loadSavedLanguage() {
-    final langService = Provider.of<LanguageService>(context, listen: false);
-    final saved = langService.getLanguageForScreen('translation');
+    final ls = Provider.of<LanguageService>(context, listen: false);
+    final saved = ls.getLanguageForScreen('translation');
     if (saved.isNotEmpty && _hundredLanguages.containsKey(saved)) {
       _selectedLanguage = saved;
     }
@@ -81,21 +61,21 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
 
   void _handleMic() async {
     if (_isListening) {
-      _speakToText.stop();
+      _speechToText.stop();
       setState(() => _isListening = false);
       return;
     }
-
-    bool available = await _speakToText.initialize();
+    bool available = await _speechToText.initialize();
     if (!available) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('⚠️ التعرف على الصوت غير متاح')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('⚠️ التعرف على الصوت غير متاح')),
+        );
+      }
       return;
     }
-
     setState(() => _isListening = true);
-    _speakToText.listen(
+    _speechToText.listen(
       onResult: (result) {
         if (result.finalResult) {
           setState(() {
@@ -109,10 +89,6 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
       },
       localeId: 'ar_SA',
     );
-  }
-
-  void _handleInputClearCheck() {
-    // لا نحتاج لمسح يدوي، المستخدم يتحكم
   }
 
   Future<void> _translate() async {
@@ -131,12 +107,10 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final translatedText = data[0][0][0];
-        setState(() => _translatedController.text = translatedText);
+        _translatedController.text = data[0][0][0];
       }
-    } catch (e) {
-      // Fallback محلي
-      setState(() => _translatedController.text = _sourceController.text);
+    } catch (_) {
+      _translatedController.text = _sourceController.text;
     }
     setState(() => _isTranslating = false);
   }
@@ -149,22 +123,14 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
     );
   }
 
-  String _getSignature() {
-    return 'ترجم هذا المستند بواسطه ميرور اسكربيون';
-  }
-
   Future<void> _shareAudio() async {
     if (_translatedController.text.isEmpty) return;
-    try {
-      final tts = Provider.of<TTSService>(context, listen: false);
-      await tts.speak(_translatedController.text, language: _selectedLanguage);
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/mirror_scorpion_translation.wav');
-      await file.writeAsString(_translatedController.text);
-      await Share.shareXFiles([XFile(file.path)], text: _getSignature());
-    } catch (e) {
-      Share.share('${_getSignature()}\n\n${_translatedController.text}');
-    }
+    final tts = Provider.of<TTSService>(context, listen: false);
+    await tts.speak(_translatedController.text, language: _selectedLanguage);
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/mirror_scorpion_translation.txt');
+    await file.writeAsString('ترجم هذا النص بواسطه ميرور اسكربيون\n\n$_translatedController');
+    await Share.shareXFiles([XFile(file.path)], text: 'ترجم هذا النص بواسطه ميرور اسكربيون');
   }
 
   Future<void> _pickAudioFile() async {
@@ -174,11 +140,11 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
         allowedExtensions: ['mp3', 'wav', 'm4a', 'ogg', 'aac'],
       );
       if (result != null && result.files.single.path != null) {
-        setState(() => _sourceController.text = '📂 تم اختيار ملف: ${result.files.single.name}\n(ترجمة الملفات الصوتية قادمة في التحديث القادم)');
+        setState(() {
+          _sourceController.text = '📂 تم اختيار ملف: ${result.files.single.name}';
+        });
       }
-    } catch (e) {
-      // Silent fail
-    }
+    } catch (_) {}
   }
 
   @override
@@ -204,7 +170,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             children: [
-              // شعار العقرب
+              // شعار
               Container(
                 width: 80, height: 80,
                 decoration: BoxDecoration(
@@ -218,7 +184,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
               ),
               const SizedBox(height: 8),
 
-              // شريط تحديد اللغة - 100 لغة
+              // اختيار اللغة - 100 لغة
               Center(
                 child: Container(
                   width: 280,
@@ -253,7 +219,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
               ),
               const SizedBox(height: 16),
 
-              // المحرر العلوي - النص المصدر
+              // المحرر العلوي - مصدر
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -272,18 +238,11 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                         hintStyle: TextStyle(color: Colors.white30, fontSize: 15),
                         border: InputBorder.none,
                       ),
-                      onChanged: (val) {
-                        if (_isListening) return;
-                        setState(() {});
-                        if (val.isNotEmpty && _translatedController.text.isNotEmpty) {
-                          _translate();
-                        }
-                      },
+                      onChanged: (_) => setState(() {}),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        // مايك لالتقاط الكلام
                         GestureDetector(
                           onTap: _handleMic,
                           child: CircleAvatar(
@@ -308,7 +267,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
               ),
               const SizedBox(height: 12),
 
-              // المحرر السفلي - الترجمة
+              // المحرر السفلي - ترجمة
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -333,7 +292,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        // دبوس رفع ملفات صوتية
+                        // دبوس
                         GestureDetector(
                           onTap: _pickAudioFile,
                           child: const CircleAvatar(
@@ -353,7 +312,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        // مشاركة (ملف صوت فقط + توقيع)
+                        // مشاركة
                         GestureDetector(
                           onTap: _shareAudio,
                           child: const CircleAvatar(
@@ -363,7 +322,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        // سبيكر لنطق الترجمة
+                        // سبيكر
                         GestureDetector(
                           onTap: () {
                             if (_translatedController.text.isNotEmpty) {
@@ -384,7 +343,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
               ),
               const SizedBox(height: 20),
 
-              // توقيع التطبيق
+              // توقيع
               Opacity(
                 opacity: 0.15,
                 child: Transform.rotate(
@@ -397,52 +356,47 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
               ),
               const SizedBox(height: 10),
 
-              // مفتاح فتح/غلق الفقاعة
-              Center(
-                child: Consumer<FloatingBubbleService>(
-                  builder: (context, bubble, child) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: bubble.isStarted ? Colors.blueAccent : Colors.white12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.bubble_chart, color: bubble.isStarted ? Colors.blueAccent : Colors.grey, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            bubble.isStarted ? '🔓 الفقاعة مفتوحة' : '🔒 الفقاعة مغلقة',
-                            style: TextStyle(color: bubble.isStarted ? Colors.blueAccent : Colors.white38, fontSize: 12),
-                          ),
-                          const SizedBox(width: 8),
-                          Switch(
-                            value: bubble.isStarted,
-                            onChanged: (_) {
-                              if (bubble.isStarted) {
-                                bubble.stopBubble();
-                              } else {
-                                bubble.startBubble(context);
-                              }
-                            },
-                            activeColor: Colors.blueAccent,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+              // الفقاعة العائمة
+              Consumer<FloatingBubbleService>(
+                builder: (context, bubble, child) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: bubble.isStarted ? Colors.blueAccent : Colors.white12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.bubble_chart, color: bubble.isStarted ? Colors.blueAccent : Colors.grey, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          bubble.isStarted ? '🔓 الفقاعة مفتوحة' : '🔒 الفقاعة مغلقة',
+                          style: TextStyle(color: bubble.isStarted ? Colors.blueAccent : Colors.white38, fontSize: 12),
+                        ),
+                        const SizedBox(width: 8),
+                        Switch(
+                          value: bubble.isStarted,
+                          onChanged: (_) {
+                            if (bubble.isStarted) {
+                              bubble.stopBubble();
+                            } else {
+                              bubble.startBubble(context);
+                            }
+                          },
+                          activeColor: Colors.blueAccent,
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 20),
               const Opacity(
                 opacity: 0.2,
-                child: Text(
-                  "Mirror Scorpion • v2",
-                  style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 1),
-                ),
+                child: Text("Mirror Scorpion \u2022 v2", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 1)),
               ),
             ],
           ),

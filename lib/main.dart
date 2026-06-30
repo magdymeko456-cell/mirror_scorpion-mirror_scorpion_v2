@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'features/home_screen.dart';
 import 'features/card1_translation/translation_screen.dart';
 import 'features/card2_dialogue/dialogue_screen.dart';
@@ -20,8 +21,7 @@ void main() async {
   final languageService = LanguageService();
   await languageService.initialize();
   final databaseService = DatabaseService();
-  final premiumService = PremiumVerificationService();
-  await premiumService.initialize();
+  await databaseService.initialize();
   final bubbleService = FloatingBubbleService();
   await bubbleService.initialize();
 
@@ -32,7 +32,6 @@ void main() async {
         ChangeNotifierProvider.value(value: bubbleService),
         ChangeNotifierProvider(create: (_) => TTSService()),
         ChangeNotifierProvider.value(value: databaseService),
-        ChangeNotifierProvider.value(value: premiumService),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AIService()),
       ],

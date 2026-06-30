@@ -205,7 +205,8 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: _pickDocument,
-                      icon: const Icon(Icons
+                      icon: const Icon(Icons.folder_open, color: Colors.tealAccent),
+                      label: const Text('📂 فتح من المستعرض'),
 SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(

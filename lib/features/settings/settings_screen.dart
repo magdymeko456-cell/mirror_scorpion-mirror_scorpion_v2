@@ -96,7 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'استخدم الوضع المظلم لحماية العينين',  
               Provider.of<ThemeProvider>(context).isDarkMode,  
               (value) {  
-                Provider.of<ThemeProvider>(context, listen: false).toggleTheme(value);  
+                Provider.of<ThemeProvider>(context, listen: false).toggleTheme();  
               },  
             ),  
             const SizedBox(height: 20),  
@@ -177,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               (value) async {  
                 setState(() => _bubbleEnabled = value);  
                 _saveSetting('bubble_enabled', value);  
-                await Provider.of<FloatingBubbleService>(context, listen: false).toggleBubble(context, value);  
+                await Provider.of<FloatingBubbleService>(context, listen: false).toggle();  
               },  
             ),  
             if (_bubbleEnabled) ...[  
@@ -185,7 +185,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSliderTile('الشفافية', _bubbleOpacity, 0.3, 1.0, (value) {  
                 setState(() => _bubbleOpacity = value);  
                 _saveSetting('bubble_opacity', value);  
-                Provider.of<FloatingBubbleService>(context, listen: false).setOpacity(value);  
               }),  
             ],  
             const SizedBox(height: 20),  
@@ -329,7 +328,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               IconButton(  
                 icon: const Icon(Icons.image, color: Colors.blueAccent),  
                 onPressed: () async {
-                  await Provider.of<BackgroundService>(context, listen: false).pickBackground();
+                  await Provider.of<BackgroundService>(context, listen: false).pickDocument();
                 },  
               ),  
               IconButton(  
@@ -448,11 +447,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)),  
             child: Row(  
               children: [  
-                Expanded(child: Text(premiumService.encryptedDeviceId, style: const TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'monospace'))),  
+                Expanded(child: Text(premiumService.deviceId, style: const TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'monospace'))),  
                 IconButton(  
                   icon: const Icon(Icons.copy, color: Colors.amber, size: 20),  
                   onPressed: () {  
-                    Clipboard.setData(ClipboardData(text: premiumService.encryptedDeviceId));  
+                    Clipboard.setData(ClipboardData(text: premiumService.deviceId));  
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ معرف الجهاز')));  
                   },  
                 ),  
