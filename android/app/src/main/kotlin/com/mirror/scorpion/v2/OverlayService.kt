@@ -25,15 +25,11 @@ class OverlayService : Service() {
     private var initialTouchX = 0f
     private var initialTouchY = 0f
 
-    // كل الألوان محوّلة إلى Int مباشرة — no Hex literals
     private val COLOR_DARK = Color.rgb(13, 27, 42)
     private val COLOR_DARK2 = Color.rgb(27, 40, 56)
     private val COLOR_CYAN = Color.rgb(0, 188, 212)
-    private val COLOR_CYAN_LIGHT = Color.argb(51, 0, 188, 212)  // 33% opacity
-    private val COLOR_CYAN_SOLID = Color.argb(255, 0, 188, 212)
 
     override fun onBind(intent: Intent?): IBinder? = null
-
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
@@ -42,31 +38,22 @@ class OverlayService : Service() {
 
     private fun createBubble() {
         val bubbleSize = 140
-
         val params = WindowManager.LayoutParams(
             bubbleSize, bubbleSize,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else
-                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+            else WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.TOP or Gravity.START
-        params.x = 0
-        params.y = 300
+        params.x = 0; params.y = 300
 
         val bubble = ImageView(this)
-
-        // دائرة متدرجة
-        val bgShape = GradientDrawable(
-            GradientDrawable.Orientation.TL_BR,
-            intArrayOf(COLOR_DARK, COLOR_DARK2)
-        )
+        val bgShape = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(COLOR_DARK, COLOR_DARK2))
         bgShape.shape = GradientDrawable.OVAL
         bgShape.setSize(bubbleSize, bubbleSize)
         bgShape.setStroke(3, COLOR_CYAN)
-
         bubble.background = bgShape
         bubble.setImageResource(android.R.drawable.ic_menu_rotate)
         bubble.scaleType = ImageView.ScaleType.CENTER
@@ -76,13 +63,8 @@ class OverlayService : Service() {
         bubble.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    initialX = params.x
-                    initialY = params.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
-                    bubble.alpha = 1.0f
-                    bubble.scaleX = 1.15f
-                    bubble.scaleY = 1.15f
+                    initialX = params.x; initialY = params.y
+                    initialTouchX = event.rawX; initialTouchY = event.rawY
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
@@ -92,26 +74,18 @@ class OverlayService : Service() {
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    val dx = event.rawX - initialTouchX
-                    val dy = event.rawY - initialTouchY
-                    val distance = sqrt(dx.pow(2) + dy.pow(2))
-                    if (distance < 30f) {
-                        toggleBubble()
-                    }
+                    val distance = sqrt((event.rawX - initialTouchX).pow(2) + (event.rawY - initialTouchY).pow(2))
+                    if (distance < 30f) toggleBubble()
                     val display = windowManager.defaultDisplay
                     val size = android.graphics.Point()
                     display.getSize(size)
                     params.x = if (params.x < size.x / 2) 0 else size.x - bubbleSize
                     windowManager.updateViewLayout(bubble, params)
-                    bubble.alpha = 0.92f
-                    bubble.scaleX = 1.0f
-                    bubble.scaleY = 1.0f
                     true
                 }
                 else -> false
             }
         }
-
         bubbleView = bubble
         windowManager.addView(bubble, params)
     }
@@ -119,41 +93,21 @@ class OverlayService : Service() {
     private fun toggleBubble() {
         bubbleExpanded = !bubbleExpanded
         val bubble = bubbleView ?: return
-
         if (bubbleExpanded) {
-            bubble.scaleX = 1.4f
-            bubble.scaleY = 1.4f
-            bubble.alpha = 1.0f
+            bubble.scaleX = 1.4f; bubble.scaleY = 1.4f; bubble.alpha = 1.0f
             bubble.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
-            bubble.setBackgroundColor(COLOR_CYAN_SOLID)
         } else {
-            bubble.scaleX = 1.0f
-            bubble.scaleY = 1.0f
-            bubble.alpha = 0.92f
+            bubble.scaleX = 1.0f; bubble.scaleY = 1.0f; bubble.alpha = 0.92f
             bubble.setColorFilter(COLOR_CYAN, PorterDuff.Mode.SRC_IN)
-            val bgShape = GradientDrawable(
-                GradientDrawable.Orientation.TL_BR,
-                intArrayOf(COLOR_DARK, COLOR_DARK2)
-            )
-            bgShape.shape = GradientDrawable.OVAL
-            bgShape.setSize(140, 140)
-            bgShape.setStroke(3, COLOR_CYAN)
-            bubble.background = bgShape
         }
     }
 
     override fun onDestroy() {
-        bubbleView?.let {
-            if (it.isAttachedToWindow) {
-                try { windowManager.removeView(it) } catch (_: Exception) {}
-            }
-        }
+        bubbleView?.let { if (it.isAttachedToWindow) try { windowManager.removeView(it) } catch (_: Exception) {} }
         super.onDestroy()
     }
 
     companion object {
-        fun stop(context: android.content.Context) {
-            context.stopService(Intent(context, OverlayService::class.java))
-        }
+        fun stop(context: android.content.Context) { context.stopService(Intent(context, OverlayService::class.java)) }
     }
 }
