@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/widgets/floating_bubble_overlay.dart';
-import 'features/splash_screen.dart';
 import 'features/home_screen.dart';
 import 'features/card1_translation/translation_screen.dart';
 import 'features/card1_translation/dialogue_screen.dart';
@@ -41,7 +40,6 @@ class MirrorScorpionApp extends StatelessWidget {
         title: 'Mirror Scorpion',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          primarySwatch: Colors.blue,
           useMaterial3: true,
           scaffoldBackgroundColor: const Color(0xFF0D1B2A),
         ),

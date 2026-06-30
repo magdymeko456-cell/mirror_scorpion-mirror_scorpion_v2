@@ -25,14 +25,12 @@ class OverlayService : Service() {
     private var initialTouchX = 0f
     private var initialTouchY = 0f
 
-    companion object {
-        // استخدام Color.parseColor بدلاً من hex literal لتجنب مشكلة Long vs Int
-        private val COLOR_DARK = Color.parseColor("#0D1B2A")
-        private val COLOR_DARK2 = Color.parseColor("#1B2838")
-        private val COLOR_CYAN = Color.parseColor("#00BCD4")
-        private val COLOR_CYAN_LIGHT = Color.parseColor("#3300BCD4")
-        private val COLOR_CYAN_SOLID = Color.parseColor("#FF00BCD4")
-    }
+    // كل الألوان محوّلة إلى Int مباشرة — no Hex literals
+    private val COLOR_DARK = Color.rgb(13, 27, 42)
+    private val COLOR_DARK2 = Color.rgb(27, 40, 56)
+    private val COLOR_CYAN = Color.rgb(0, 188, 212)
+    private val COLOR_CYAN_LIGHT = Color.argb(51, 0, 188, 212)  // 33% opacity
+    private val COLOR_CYAN_SOLID = Color.argb(255, 0, 188, 212)
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -60,7 +58,7 @@ class OverlayService : Service() {
 
         val bubble = ImageView(this)
 
-        // دائرة متدرجة أنيقة — استخدام Color.parseColor بدلاً من hex literal
+        // دائرة متدرجة
         val bgShape = GradientDrawable(
             GradientDrawable.Orientation.TL_BR,
             intArrayOf(COLOR_DARK, COLOR_DARK2)
@@ -69,16 +67,7 @@ class OverlayService : Service() {
         bgShape.setSize(bubbleSize, bubbleSize)
         bgShape.setStroke(3, COLOR_CYAN)
 
-        // طبقة خارجية متوهجة
-        val outerGlow = GradientDrawable()
-        outerGlow.shape = GradientDrawable.OVAL
-        outerGlow.setSize(bubbleSize + 8, bubbleSize + 8)
-        outerGlow.setColor(Color.TRANSPARENT)
-        outerGlow.setStroke(2, COLOR_CYAN_LIGHT)
-
         bubble.background = bgShape
-
-        // أيقونة ترجمة آمنة
         bubble.setImageResource(android.R.drawable.ic_menu_rotate)
         bubble.scaleType = ImageView.ScaleType.CENTER
         bubble.setColorFilter(COLOR_CYAN, PorterDuff.Mode.SRC_IN)
@@ -109,7 +98,6 @@ class OverlayService : Service() {
                     if (distance < 30f) {
                         toggleBubble()
                     }
-                    // Snap to edge
                     val display = windowManager.defaultDisplay
                     val size = android.graphics.Point()
                     display.getSize(size)
@@ -143,7 +131,6 @@ class OverlayService : Service() {
             bubble.scaleY = 1.0f
             bubble.alpha = 0.92f
             bubble.setColorFilter(COLOR_CYAN, PorterDuff.Mode.SRC_IN)
-            // إعادة الخلفية المتدرجة
             val bgShape = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
                 intArrayOf(COLOR_DARK, COLOR_DARK2)
