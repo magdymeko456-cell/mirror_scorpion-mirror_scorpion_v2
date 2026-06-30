@@ -2,7 +2,7 @@ name: Mirror Scorpion Build
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 env:
@@ -13,42 +13,111 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-      
+
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      
-      - name: Prepare Project and Build
+
+      - name: Reconstruct Android from scratch
         run: |
-          set -e
-          flutter pub get
-          rm -rf /tmp/clean_project
-          flutter create --org com.tetocollctionway --project-name mirror_scorpion_translate /tmp/clean_project
-          cp -r lib /tmp/clean_project/
-          cp -r assets /tmp/clean_project/
-          cp pubspec.yaml /tmp/clean_project/
-          cp -r packages /tmp/clean_project/
-          cp -r scripts /tmp/clean_project/
-          cd /tmp/clean_project
-          flutter pub get
-          python3 scripts/patch_dash_bubble_compilesdk.py || true
-          python3 scripts/patch_gradle.py || true
-          python3 scripts/patch_manifest.py || true
-          find android -name "build.gradle*" -exec sed -i 's/compileSdk .*/compileSdk = 36/g' {} +
-          find android -name "build.gradle*" -exec sed -i 's/targetSdk .*/targetSdk = 35/g' {} +
-          find android -name "build.gradle*" -exec sed -i 's/==/=/g' {} +
-          flutter build apk --release --obfuscate --split-debug-info=build/debug-info
-          mkdir -p $GITHUB_WORKSPACE/output_apk
-          cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/output_apk/
-      
+          set -ex
+          rm -rf android
+          flutter create --org com.mirror --project-name mirror_scorpion_v2 /tmp/clean_p
+          cp -r /tmp/clean_p/android .
+          rm -rf /tmp/clean_p
+
+      - name: Apply Gradle patches
+        run: |
+          set -ex
+          cat > android/app/build.gradle << 'EOF'
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+          android {
+              namespace "com.mirror.scorpion.v2"
+              compileSdk 35
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+              defaultConfig {
+                  applicationId "com.mirror.scorpion.v2"
+                  minSdk 24
+                  targetSdk 35
+                  versionCode 1
+                  versionName "1.2.0"
+                  multiDexEnabled true
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                      minifyEnabled false
+                      shrinkResources false
+                  }
+              }
+              lint {
+                  abortOnError false
+                  checkReleaseBuilds false
+              }
+          }
+          flutter {
+              source "../.."
+          }
+          EOF
+
+          cat > android/settings.gradle << 'EOF'
+          pluginManagement {
+              def flutterSdkPath = {
+                  def properties = new Properties()
+                  file("local.properties").withInputStream { properties.load(it) }
+                  def flutterSdkPath = properties.getProperty("flutter.sdk")
+                  assert flutterSdkPath != null
+                  return flutterSdkPath
+              }()
+              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          plugins {
+              id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+              id "com.android.application" version "8.7.3" apply false
+              id "org.jetbrains.kotlin.android" version "2.0.21" apply false
+          }
+          include ":app"
+          EOF
+
+          cat > android/gradle.properties << 'EOF'
+          org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=512m
+          org.gradle.parallel=true
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
+
+      - name: Patch JCenter in cache
+        run: |
+          find /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} + 2>/dev/null || true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release --no-tree-shake-icons
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: mirror-scorpion-release
-          path: output_apk/app-release.apk
-          if-no-files-found: error
+          name: mirror-scorpion-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

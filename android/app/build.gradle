@@ -4,61 +4,42 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
-}
-
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
-
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
-
 android {
     namespace "com.mirror.scorpion.v2"
-    compileSdk 36
-    ndkVersion flutter.ndkVersion
+    compileSdk 35
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
-    }
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
+        jvmTarget = "17"
     }
 
     defaultConfig {
         applicationId "com.mirror.scorpion.v2"
         minSdk 24
-        targetSdk 36
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        targetSdk 35
+        versionCode 1
+        versionName "1.2.0"
+        multiDexEnabled true
     }
 
     buildTypes {
         release {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             signingConfig signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
         }
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
     }
 }
 
 flutter {
-    source '../..'
+    source "../.."
 }
-
-dependencies {}

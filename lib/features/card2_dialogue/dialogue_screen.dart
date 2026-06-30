@@ -6,27 +6,34 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:file_picker/file_picker.dart';
 import '../../services/language_service.dart';
 import '../../services/tts_service.dart';
+import 'dart:math';
 
 class DialogueTranslationScreen extends StatefulWidget {
   const DialogueTranslationScreen({super.key});
+
   @override
   State<DialogueTranslationScreen> createState() => _DialogueTranslationScreenState();
 }
 
-class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
+class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
+    with TickerProviderStateMixin {
   final TextEditingController _sourceController = TextEditingController();
   final TextEditingController _translatedController = TextEditingController();
-  
   stt.SpeechToText? _speech;
   bool _isListening = false;
   String _langFrom = 'ar';
   String _langTo = 'en';
   bool _isTranslating = false;
   bool _isProcessingAudio = false;
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
     _initSpeech();
     _loadSavedLanguages();
   }
@@ -47,8 +54,8 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
     setState(() {
       _langFrom = langService.getLanguageForScreen('dialogue_from');
       _langTo = langService.getLanguageForScreen('dialogue_to');
-      if (_langFrom == 'auto') _langFrom = 'ar';
-      if (_langTo == 'auto') _langTo = 'en';
+      if (_langFrom == 'auto' || _langFrom.isEmpty) _langFrom = 'ar';
+      if (_langTo == 'auto' || _langTo.isEmpty) _langTo = 'en';
     });
   }
 
@@ -71,87 +78,94 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
   }
 
   void _startListening() async {
-    if (_speech == null || !_speech!.isAvailable) return;
+    if (_speech == null || !(await _speech!.initialize())) {
+      return;
+    }
+
     if (_isListening) {
       _speech!.stop();
       setState(() => _isListening = false);
       return;
     }
-    setState(() {
-      _isListening = true;
-      _sourceController.clear();
-      _translatedController.clear();
-    });
-    await _speech!.listen(
+
+    // امسح المحررين عند بدء استماع جديد
+    _sourceController.clear();
+    _translatedController.clear();
+    setState(() => _isListening = true);
+
+    // المحرر العلوي يفهم اللغة الموجودة في الزر الذي بجانبه (جهة اليمين)
+    _speech!.listen(
       onResult: (result) {
-        setState(() => _sourceController.text = result.recognizedWords);
+        setState(() {
+          _sourceController.text = result.recognizedWords;
+        });
       },
       localeId: '${_langFrom}_${_langFrom.toUpperCase()}',
-      listenFor: const Duration(seconds: 60),
-      pauseFor: const Duration(seconds: 3),
-      partialResults: true,
-      cancelOnError: true,
+      listenMode: stt.ListenMode.dictation,
     );
-    if (mounted) {
-      setState(() => _isListening = false);
-      if (_sourceController.text.isNotEmpty) _performTranslation();
+
+    // محاكاة ترجمة تلقائية أثناء الاستماع
+    while (_isListening) {
+      await Future.delayed(const Duration(milliseconds: 1500));
+      if (_sourceController.text.isNotEmpty && mounted) {
+        _performTranslation();
+      }
     }
   }
 
-  /// 🎯 AUDIO UPLOAD PIN - رفع ملف صوتي من الجهاز
   Future<void> _pickAudioFile() async {
-    setState(() => _isProcessingAudio = true);
     try {
+      setState(() => _isProcessingAudio = true);
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['mp3', 'wav', 'm4a', 'ogg', 'aac', 'amr', '3gp', 'webm'],
-        allowMultiple: false,
+        allowedExtensions: ['mp3', 'wav', 'm4a', 'ogg'],
       );
       if (result != null && result.files.single.path != null) {
-        String filePath = result.files.single.path!;
-        String fileName = result.files.single.name;
+        await Future.delayed(const Duration(seconds: 1));
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('✅ تم استيراد: $fileName - جارٍ معالجة الصوت للحوار...')),
-          );
-          _sourceController.text = '[ملف صوتي: $fileName]\n⏳ انتظر التعرف على الكلام...';
-          await Future.delayed(const Duration(seconds: 2));
-          _sourceController.text = '[نص الحوار المستخرج من الملف الصوتي: $fileName]';
-          if (mounted) _performTranslation();
+          _sourceController.text = 'ملف صوتي: ${result.files.single.name}';
         }
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ خطأ: $e')),
-        );
-      }
+    } finally {
+      if (mounted) setState(() => _isProcessingAudio = false);
     }
-    if (mounted) setState(() => _isProcessingAudio = false);
   }
 
-  Future<void> _performTranslation() async {
-    if (_sourceController.text.trim().isEmpty) return;
-    setState(() => _isTranslating = true);
-    _saveLanguages();
+  void _performTranslation() async {
+    if (_sourceController.text.isEmpty) return;
+
     try {
-      await Future.delayed(const Duration(milliseconds: 600));
-      String result = '[$_langFrom → $_langTo]\n${_sourceController.text} (مترجم للحوار)';
-      setState(() => _translatedController.text = result);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ خطأ: $e')),
-        );
+      await Future.delayed(const Duration(milliseconds: 500));
+      final text = _sourceController.text;
+      String translated;
+
+      // محاكاة الترجمة
+      if (_langTo == 'ar') {
+        if (text.contains('Hello')) translated = 'مرحباً';
+        else if (text.contains('How are')) translated = 'كيف حالك؟';
+        else if (text.contains('Thank')) translated = 'شكراً';
+        else if (text.contains('Good')) translated = 'جيد';
+        else if (text.contains('Peace')) translated = 'سلام';
+        else if (text.contains('مرحباً')) translated = 'Hello';
+        else if (text.contains('كيف حالك')) translated = 'How are you?';
+        else if (text.contains('شكراً')) translated = 'Thank you';
+        else if (text.contains('الحمد')) translated = 'Praise be to Allah';
+        else if (text.contains('بسم')) translated = 'In the name of Allah';
+        else translated = '[$_langTo] $text';
+      } else {
+        translated = '[$_langTo] $text';
       }
-    }
-    if (mounted) setState(() => _isTranslating = false);
+
+      setState(() {
+        _translatedController.text = translated;
+      });
+    } catch (_) {}
   }
 
   void _speakTranslation() {
     final tts = Provider.of<TTSService>(context, listen: false);
     if (_translatedController.text.isNotEmpty) {
-      tts.speak(_translatedController.text, language: _langTo);
+      tts.speak(_translatedController.text);
     }
   }
 
@@ -160,6 +174,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
     _sourceController.dispose();
     _translatedController.dispose();
     _speech?.stop();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -180,7 +195,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // --- شريط اللغات + تبديل ---
+            // --- صف اللغات: اليمين (من) | تبديل | اليسار (إلى) ---
             Row(
               children: [
                 // اللغة المصدر (يمين)
@@ -192,18 +207,24 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: Colors.green.withOpacity(0.4)),
                     ),
-                    child: DropdownButton<String>(
-                      value: langCodes.contains(_langFrom) ? _langFrom : 'ar',
-                      dropdownColor: const Color(0xFF0D1B2A),
-                      style: const TextStyle(color: Colors.greenAccent, fontSize: 13),
-                      underline: const SizedBox(),
-                      isExpanded: true,
-                      items: langCodes.map((code) => DropdownMenuItem(
-                        value: code,
-                        child: Text(langService.getLanguageName(code),
-                          style: const TextStyle(color: Colors.white, fontSize: 12)),
-                      )).toList(),
-                      onChanged: (v) { if (v != null) setState(() => _langFrom = v); },
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: langCodes.contains(_langFrom) ? _langFrom : 'ar',
+                        dropdownColor: const Color(0xFF0D1B2A),
+                        style: const TextStyle(color: Colors.greenAccent, fontSize: 12),
+                        isExpanded: true,
+                        items: langCodes.map((code) => DropdownMenuItem(
+                          value: code,
+                          child: Text(langService.getLanguageName(code),
+                            style: const TextStyle(color: Colors.white, fontSize: 12)),
+                        )).toList(),
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() => _langFrom = v);
+                            _saveLanguages();
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -222,18 +243,24 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: Colors.amber.withOpacity(0.4)),
                     ),
-                    child: DropdownButton<String>(
-                      value: langCodes.contains(_langTo) ? _langTo : 'en',
-                      dropdownColor: const Color(0xFF0D1B2A),
-                      style: const TextStyle(color: Colors.amberAccent, fontSize: 13),
-                      underline: const SizedBox(),
-                      isExpanded: true,
-                      items: langCodes.map((code) => DropdownMenuItem(
-                        value: code,
-                        child: Text(langService.getLanguageName(code),
-                          style: const TextStyle(color: Colors.white, fontSize: 12)),
-                      )).toList(),
-                      onChanged: (v) { if (v != null) setState(() => _langTo = v); },
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: langCodes.contains(_langTo) ? _langTo : 'en',
+                        dropdownColor: const Color(0xFF0D1B2A),
+                        style: const TextStyle(color: Colors.amberAccent, fontSize: 12),
+                        isExpanded: true,
+                        items: langCodes.map((code) => DropdownMenuItem(
+                          value: code,
+                          child: Text(langService.getLanguageName(code),
+                            style: const TextStyle(color: Colors.white, fontSize: 12)),
+                        )).toList(),
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() => _langTo = v);
+                            _saveLanguages();
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -241,38 +268,49 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
             ),
             const SizedBox(height: 16),
 
-            // --- المايك الكبير ---
+            // --- المايك الكبير في المنتصف ---
             GestureDetector(
               onTap: _startListening,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: _isListening
-                        ? [Colors.redAccent, Colors.red.shade900]
-                        : [Colors.greenAccent, Colors.green.shade900],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (_isListening ? Colors.redAccent : Colors.greenAccent).withOpacity(0.4),
-                      blurRadius: 20,
-                      spreadRadius: 5,
+              child: AnimatedBuilder(
+                animation: _pulseController,
+                builder: (context, child) {
+                  return Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: _isListening
+                          ? [Colors.redAccent, Colors.red.shade900]
+                          : [Colors.greenAccent, Colors.green.shade900],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (_isListening ? Colors.redAccent : Colors.greenAccent)
+                              .withOpacity(0.3 + _pulseController.value * 0.3),
+                          blurRadius: 20 + _pulseController.value * 15,
+                          spreadRadius: 3 + _pulseController.value * 5,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Icon(
-                  _isListening ? Icons.mic : Icons.mic_none,
-                  color: Colors.white,
-                  size: 36,
-                ),
+                    child: Icon(
+                      _isListening ? Icons.mic : Icons.mic_none,
+                      color: Colors.white,
+                      size: 40,
+                    ),
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 8),
-            Text(_isListening ? '🟢 جارٍ الاستماع...' : 'اضغط للبدء',
-              style: TextStyle(color: _isListening ? Colors.greenAccent : Colors.white38, fontSize: 12)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
+            Text(
+              _isListening ? '🟢 جارٍ الاستماع (اضغط للإيقاف)' : '🎤 اضغط للبدء',
+              style: TextStyle(
+                color: _isListening ? Colors.greenAccent : Colors.white38,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 14),
 
             // --- المحرر العلوي (النص المصدر) ---
             Container(
@@ -283,19 +321,21 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
               ),
               child: Column(
                 children: [
-                  TextField(
-                    controller: _sourceController,
-                    maxLines: 4,
-                    style: const TextStyle(color: Colors.white, fontSize: 15),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.all(16),
-                      hintText: 'النص الأصلي يظهر هنا...',
-                      hintStyle: TextStyle(color: Colors.white24),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 150),
+                    child: TextField(
+                      controller: _sourceController,
+                      maxLines: null,
+                      style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.5),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.all(16),
+                        hintText: 'النص الأصلي يظهر هنا...',
+                        hintStyle: TextStyle(color: Colors.white24),
+                      ),
+                      onChanged: (_) => setState(() {}),
                     ),
-                    onChanged: (_) => setState(() {}),
                   ),
-                  // شريط الأدوات - مايك + Audio Pin
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
@@ -305,29 +345,40 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                     child: Row(
                       children: [
                         IconButton(
-                          icon: Icon(_isListening ? Icons.mic : Icons.mic_none,
-                            color: _isListening ? Colors.redAccent : Colors.greenAccent, size: 22),
+                          icon: Icon(
+                            _isListening ? Icons.mic : Icons.mic_none,
+                            color: _isListening ? Colors.redAccent : Colors.greenAccent,
+                            size: 22),
                           onPressed: _startListening,
-                          tooltip: 'التقاط الصوت',
                         ),
-                        // 📌 AUDIO UPLOAD PIN
-                        IconButton(
+                        PopupMenuButton<String>(
                           icon: _isProcessingAudio
-                              ? const SizedBox(width: 18, height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.cyanAccent))
-                              : const Icon(Icons.push_pin, color: Colors.orangeAccent, size: 22),
-                          onPressed: _isProcessingAudio ? null : _pickAudioFile,
-                          tooltip: 'رفع ملف صوتي',
+                            ? const SizedBox(width: 18, height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.cyanAccent))
+                            : const Icon(Icons.push_pin, color: Colors.orangeAccent, size: 22),
+                          color: const Color(0xFF1B2838),
+                          onSelected: (v) {
+                            if (v == 'file') _pickAudioFile();
+                          },
+                          itemBuilder: (_) => [
+                            const PopupMenuItem(
+                              value: 'file',
+                              child: ListTile(
+                                leading: Icon(Icons.audio_file, color: Colors.cyanAccent),
+                                title: Text('📂 ملف صوتي', style: TextStyle(color: Colors.white, fontSize: 13)),
+                              ),
+                            ),
+                          ],
                         ),
                         const Spacer(),
                         if (_sourceController.text.isNotEmpty)
                           TextButton.icon(
                             onPressed: _isTranslating ? null : _performTranslation,
                             icon: _isTranslating
-                                ? const SizedBox(width: 14, height: 14,
-                                    child: CircularProgressIndicator(strokeWidth: 2))
-                                : const Icon(Icons.translate, size: 16),
-                            label: Text(_isTranslating ? '...' : 'ترجمة'),
+                              ? const SizedBox(width: 14, height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.translate, size: 16),
+                            label: const Text('ترجمة'),
                             style: TextButton.styleFrom(foregroundColor: Colors.greenAccent),
                           ),
                       ],
@@ -347,17 +398,20 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
               ),
               child: Column(
                 children: [
-                  TextField(
-                    controller: _translatedController,
-                    maxLines: 4,
-                    style: const TextStyle(color: Colors.amberAccent, fontSize: 15),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.all(16),
-                      hintText: 'الترجمة ستظهر هنا...',
-                      hintStyle: TextStyle(color: Colors.white24),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 150),
+                    child: TextField(
+                      controller: _translatedController,
+                      maxLines: null,
+                      style: const TextStyle(color: Colors.amberAccent, fontSize: 15, height: 1.5),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.all(16),
+                        hintText: 'الترجمة ستظهر هنا...',
+                        hintStyle: TextStyle(color: Colors.white24),
+                      ),
+                      readOnly: true,
                     ),
-                    readOnly: true,
                   ),
                   if (_translatedController.text.isNotEmpty)
                     Container(
@@ -369,12 +423,14 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          // 🔊 سبيكر
                           IconButton(
                             icon: Icon(Icons.volume_up,
-                              color: tts.isSpeaking ? Colors.cyanAccent : Colors.greenAccent, size: 22),
+                              color: tts.isSpeaking ? Colors.cyanAccent : Colors.greenAccent,
+                              size: 22),
                             onPressed: _speakTranslation,
-                            tooltip: 'نطق الترجمة',
                           ),
+                          // 📋 نسخ
                           IconButton(
                             icon: const Icon(Icons.copy, color: Colors.white70, size: 20),
                             onPressed: () {
@@ -383,7 +439,6 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                                 const SnackBar(content: Text('✅ تم النسخ')),
                               );
                             },
-                            tooltip: 'نسخ',
                           ),
                         ],
                       ),
