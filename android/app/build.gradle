@@ -3,16 +3,20 @@ plugins {
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
+
 android {
     namespace "com.mirror.scorpion.v2"
     compileSdk 34
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
+
     defaultConfig {
         applicationId "com.mirror.scorpion.v2"
         minSdk 24
@@ -21,17 +25,20 @@ android {
         versionName "1.2.0"
         multiDexEnabled true
     }
+
     buildTypes {
         release {
             signingConfig signingConfigs.debug
             minifyEnabled false
         }
     }
+
     lint {
         abortOnError false
         checkReleaseBuilds false
     }
 }
+
 flutter {
     source "../.."
 }
