@@ -2,8 +2,11 @@ name: Mirror Scorpion Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -14,125 +17,40 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '17'
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.3'
           channel: 'stable'
 
-      - name: Reconstruct Android
+      - name: Prepare Project and Build
         run: |
           set -e
-          flutter create --org com.mirror.scorpion --project-name mirror_scorpion_v2 /tmp/clean_p
-          rm -rf android
-          cp -r /tmp/clean_p/android .
-
-      - name: Copy custom Android config from repo root
-        run: |
-          set -e
-          # نسخ app_build.gradle
-          if [ -f app_build.gradle ]; then
-            cp -f app_build.gradle android/app/build.gradle
-          fi
-          # إنشاء مجلدات resources
-          mkdir -p android/app/src/main/res/mipmap-hdpi
-          mkdir -p android/app/src/main/res/mipmap-mdpi
-          mkdir -p android/app/src/main/res/mipmap-xhdpi
-          mkdir -p android/app/src/main/res/mipmap-xxhdpi
-          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-          mkdir -p android/app/src/main/res/values
-          # إنشاء ملفات XML للأيقونات والثيمات
-          cat > android/app/src/main/res/mipmap-hdpi/ic_launcher.xml << 'XEOF'
-        <?xml version="1.0" encoding="utf-8"?>
-        <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-            <background android:drawable="@color/ic_launcher_background"/>
-            <foreground android:drawable="@color/ic_launcher_foreground"/>
-        </adaptive-icon>
-        XEOF
-          cp android/app/src/main/res/mipmap-hdpi/ic_launcher.xml android/app/src/main/res/mipmap-mdpi/ic_launcher.xml
-          cp android/app/src/main/res/mipmap-hdpi/ic_launcher.xml android/app/src/main/res/mipmap-xhdpi/ic_launcher.xml
-          cp android/app/src/main/res/mipmap-hdpi/ic_launcher.xml android/app/src/main/res/mipmap-xxhdpi/ic_launcher.xml
-          cp android/app/src/main/res/mipmap-hdpi/ic_launcher.xml android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.xml
-          # colors.xml
-          cat > android/app/src/main/res/values/colors.xml << 'YEOF'
-        <?xml version="1.0" encoding="utf-8"?>
-        <resources>
-            <color name="ic_launcher_background">#1a1a2e</color>
-            <color name="ic_launcher_foreground">#e94560</color>
-        </resources>
-        YEOF
-          # styles.xml
-          cat > android/app/src/main/res/values/styles.xml << 'ZEOF'
-        <?xml version="1.0" encoding="utf-8"?>
-        <resources>
-            <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
-                <item name="android:windowBackground">@color/ic_launcher_background</item>
-            </style>
-            <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
-                <item name="android:windowBackground">?android:colorBackground</item>
-            </style>
-        </resources>
-        ZEOF
-          echo "✅ Resources and icon files created"
-
-      - name: Write gradle.properties
-        run: |
-          echo "org.gradle.jvmargs=-Xmx4G" > android/gradle.properties
-          echo "android.useAndroidX=true" >> android/gradle.properties
-          echo "android.enableJetifier=true" >> android/gradle.properties
-
-      - name: Patch Android Manifest
-        run: |
-          set -e
-          sed -i 's|io.flutter.app.FlutterApplication|${applicationName}|g' android/app/src/main/AndroidManifest.xml
-          if ! grep -q "flutterEmbedding" android/app/src/main/AndroidManifest.xml; then
-            sed -i 's|<application|<application\n <meta-data android:name="flutterEmbedding" android:value="2" />|' android/app/src/main/AndroidManifest.xml
-          fi
-          find android -name "MainActivity.*" -exec sed -i 's|io.flutter.app.FlutterActivity|io.flutter.embedding.android.FlutterActivity|g' {} +
-          echo "✅ Android manifest patched"
-
-      - name: Force Kotlin 1.9.23
-        run: |
-          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*" apply false/id "org.jetbrains.kotlin.android" version "1.9.23" apply false/' android/settings.gradle
-          echo "✅ Kotlin forced to 1.9.23"
-
-      - name: Override build.gradle (root)
-        run: |
-          cat > android/build.gradle << 'BEOF'
-        buildscript {
-            ext.kotlin_version = '1.9.23'
-            repositories {
-                google()
-                mavenCentral()
-            }
-            dependencies {
-                classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-            }
-        }
-        allprojects {
-            repositories { google(); mavenCentral() }
-        }
-        rootProject.buildDir = "../build"
-        subprojects {
-            project.buildDir = "\${rootProject.buildDir}/\${project.name}"
-            project.evaluationDependsOn(":app")
-        }
-        tasks.register("clean", Delete) { delete rootProject.buildDir }
-        BEOF
-          echo "✅ Root build.gradle overridden"
-
-      - name: Get Dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: |
-          flutter build apk --release --no-tree-shake-icons
-          mkdir -p output_apk
-          cp build/app/outputs/flutter-apk/app-release.apk output_apk/
+          flutter pub get
+          rm -rf /tmp/clean_project
+          flutter create --org com.tetocollctionway --project-name mirror_scorpion_translate /tmp/clean_project
+          cp -r lib /tmp/clean_project/
+          cp -r assets /tmp/clean_project/
+          cp pubspec.yaml /tmp/clean_project/
+          cp -r packages /tmp/clean_project/
+          cp -r scripts /tmp/clean_project/
+          cd /tmp/clean_project
+          flutter pub get
+          python3 scripts/patch_dash_bubble_compilesdk.py || true
+          python3 scripts/patch_gradle.py || true
+          python3 scripts/patch_manifest.py || true
+          find android -name "build.gradle*" -exec sed -i 's/compileSdk .*/compileSdk = 36/g' {} +
+          find android -name "build.gradle*" -exec sed -i 's/targetSdk .*/targetSdk = 35/g' {} +
+          find android -name "build.gradle*" -exec sed -i 's/==/=/g' {} +
+          # إضافة minSdk = 26 لمنع مشكلة adaptive-icon (أو بديلاً عنها نستبدل ملفات XML)
+          find android -name "build.gradle*" -exec sed -i 's/minSdk .*/minSdk = 26/g' {} +
+          flutter build apk --release --obfuscate --split-debug-info=build/debug-info
+          mkdir -p $GITHUB_WORKSPACE/output_apk
+          cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/output_apk/
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: mirror-scorpion-apk
+          name: mirror-scorpion-release
           path: output_apk/app-release.apk
+          if-no-files-found: error
