@@ -25,6 +25,15 @@ class OverlayService : Service() {
     private var initialTouchX = 0f
     private var initialTouchY = 0f
 
+    companion object {
+        // استخدام Color.parseColor بدلاً من hex literal لتجنب مشكلة Long vs Int
+        private val COLOR_DARK = Color.parseColor("#0D1B2A")
+        private val COLOR_DARK2 = Color.parseColor("#1B2838")
+        private val COLOR_CYAN = Color.parseColor("#00BCD4")
+        private val COLOR_CYAN_LIGHT = Color.parseColor("#3300BCD4")
+        private val COLOR_CYAN_SOLID = Color.parseColor("#FF00BCD4")
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -51,28 +60,28 @@ class OverlayService : Service() {
 
         val bubble = ImageView(this)
 
-        // دائرة متدرجة أنيقة
+        // دائرة متدرجة أنيقة — استخدام Color.parseColor بدلاً من hex literal
         val bgShape = GradientDrawable(
             GradientDrawable.Orientation.TL_BR,
-            intArrayOf(0xFF0D1B2A, 0xFF1B2838)
+            intArrayOf(COLOR_DARK, COLOR_DARK2)
         )
         bgShape.shape = GradientDrawable.OVAL
         bgShape.setSize(bubbleSize, bubbleSize)
-        bgShape.setStroke(3, 0xFF00BCD4.toInt())
+        bgShape.setStroke(3, COLOR_CYAN)
 
         // طبقة خارجية متوهجة
         val outerGlow = GradientDrawable()
         outerGlow.shape = GradientDrawable.OVAL
         outerGlow.setSize(bubbleSize + 8, bubbleSize + 8)
         outerGlow.setColor(Color.TRANSPARENT)
-        outerGlow.setStroke(2, 0x3300BCD4.toInt())
+        outerGlow.setStroke(2, COLOR_CYAN_LIGHT)
 
         bubble.background = bgShape
 
-        // أيقونة ترجمة آمنة (موجودة في كل API levels)
+        // أيقونة ترجمة آمنة
         bubble.setImageResource(android.R.drawable.ic_menu_rotate)
         bubble.scaleType = ImageView.ScaleType.CENTER
-        bubble.setColorFilter(0xFF00BCD4.toInt(), PorterDuff.Mode.SRC_IN)
+        bubble.setColorFilter(COLOR_CYAN, PorterDuff.Mode.SRC_IN)
         bubble.alpha = 0.92f
 
         bubble.setOnTouchListener { _, event ->
@@ -100,7 +109,7 @@ class OverlayService : Service() {
                     if (distance < 30f) {
                         toggleBubble()
                     }
-                    // Snap to edge مع أنيميشن
+                    // Snap to edge
                     val display = windowManager.defaultDisplay
                     val size = android.graphics.Point()
                     display.getSize(size)
@@ -124,26 +133,24 @@ class OverlayService : Service() {
         val bubble = bubbleView ?: return
 
         if (bubbleExpanded) {
-            // حالة التوسع — فتح القائمة
             bubble.scaleX = 1.4f
             bubble.scaleY = 1.4f
             bubble.alpha = 1.0f
             bubble.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
-            bubble.setBackgroundColor(0xFF00BCD4.toInt())
+            bubble.setBackgroundColor(COLOR_CYAN_SOLID)
         } else {
-            // حالة التصغير
             bubble.scaleX = 1.0f
             bubble.scaleY = 1.0f
             bubble.alpha = 0.92f
-            bubble.setColorFilter(0xFF00BCD4.toInt(), PorterDuff.Mode.SRC_IN)
+            bubble.setColorFilter(COLOR_CYAN, PorterDuff.Mode.SRC_IN)
             // إعادة الخلفية المتدرجة
             val bgShape = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                intArrayOf(0xFF0D1B2A, 0xFF1B2838)
+                intArrayOf(COLOR_DARK, COLOR_DARK2)
             )
             bgShape.shape = GradientDrawable.OVAL
             bgShape.setSize(140, 140)
-            bgShape.setStroke(3, 0xFF00BCD4.toInt())
+            bgShape.setStroke(3, COLOR_CYAN)
             bubble.background = bgShape
         }
     }
