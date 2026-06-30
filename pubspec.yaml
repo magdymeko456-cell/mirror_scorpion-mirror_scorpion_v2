@@ -1,36 +1,47 @@
 name: mirror_scorpion_v2
-description: Mirror Scorpion - حيث تُصنع البدايات
+description: "Mirror Scorpion - حيث تُصنع البدايات"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.2.0+1
 
 environment:
-  sdk: '^3.5.0'
+  sdk: '>=3.4.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  flutter_tts: ^4.2.5
-  speech_to_text: ^7.3.0
-  http: ^1.3.0
-  provider: ^6.1.4
-  shared_preferences: ^2.3.5
-  sqflite: ^2.3.0
-  path_provider: ^2.1.5
-  intl: ^0.20.2
+  flutter_localizations:
+    sdk: flutter
+  provider: ^6.1.2
+  http: ^1.2.1
+  shared_preferences: ^2.3.3
+  path_provider: ^2.1.4
+  flutter_tts: ^4.1.0
+  sqflite: ^2.3.3+1
+  intl: ^0.19.0
   permission_handler: ^11.3.1
-  file_picker: ^8.3.7
+  speech_to_text: ^6.6.2
+  file_picker: ^8.1.7
   image_picker: ^1.1.2
   clipboard: ^0.1.3
   share_plus: ^10.1.4
   url_launcher: ^6.3.1
-  vibration: ^3.1.3
   sensors_plus: ^6.1.1
   vector_math: ^2.1.4
+  vibration: ^3.1.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^4.0.0
 
 flutter:
-  uses-material-design: true  # v2
+  uses-material-design: true
+  assets:
+    - assets/data/hadiths.json
+    - assets/data/hadith_qudsi.json
+    - assets/data/quran_stories.json
+    - assets/data/stories.json
+    - assets/data/asbab_nuzul.json
+    - assets/data/arbaeen_nawawi.json
+    - assets/data/prophet_stories_ibn_kathir.json
+    - assets/images/
