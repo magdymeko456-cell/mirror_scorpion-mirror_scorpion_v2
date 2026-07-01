@@ -39,7 +39,30 @@ jobs:
 
       - name: إصلاح إعدادات Android
         run: |
-          cat > android/gradle.properties << 'EOF'
-org.gradle.jvmargs=-Xmx4G
-android.useAndroidX=true
-android.enableJetifier=true
+          echo 'org.gradle.jvmargs=-Xmx4G' > android/gradle.properties
+          echo 'android.useAndroidX=true' >> android/gradle.properties
+          echo 'android.enableJetifier=true' >> android/gradle.properties
+          cd android/app
+          sed -i 's/android {/android {\n    namespace = "com.tetocollctionway.mirror_scorpion_v2"/' build.gradle
+          sed -i 's/compileSdk .*/compileSdk 35/' build.gradle
+          sed -i 's/targetSdk .*/targetSdk 35/' build.gradle
+          sed -i 's/minSdk .*/minSdk 21/' build.gradle
+          echo "✅ Android config patched"
+
+      - name: تثبيت الاعتماديات
+        run: |
+          cd $GITHUB_WORKSPACE
+          flutter pub get
+
+      - name: بناء APK
+        run: |
+          cd $GITHUB_WORKSPACE
+          flutter build apk --release --no-tree-shake-icons --ignore-deprecation
+          mkdir -p output_apk
+          cp build/app/outputs/flutter-apk/app-release.apk output_apk/mirror-scorpion.apk
+
+      - name: رفع APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirror-scorpion-release
+          path: output_apk/mirror-scorpion.apk
