@@ -1,10 +1,8 @@
 name: Mirror Scorpion Build
-
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,54 +11,44 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Git Safe Directory
         run: git config --global --add safe.directory /github/workspace
-
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.3'
           channel: 'stable'
           cache: true
-
       - name: إنشاء مجلد android نظيف
         run: |
           cd /tmp
           flutter create --org com.tetocollctionway --project-name mirror_scorpion_v2 --platforms android .
           cp -r android $GITHUB_WORKSPACE/
-          echo "✅ Fresh android folder created"
-
       - name: إصلاح إعدادات Android
         run: |
-          echo 'org.gradle.jvmargs=-Xmx4G' > android/gradle.properties
-          echo 'android.useAndroidX=true' >> android/gradle.properties
-          echo 'android.enableJetifier=true' >> android/gradle.properties
+          echo "org.gradle.jvmargs=-Xmx4G" > android/gradle.properties
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
           cd android/app
-          sed -i 's/android {/android {\n    namespace = "com.tetocollctionway.mirror_scorpion_v2"/' build.gradle
+          sed -i 's/android {/android { namespace = "com.tetocollctionway.mirror_scorpion_v2"/' build.gradle
           sed -i 's/compileSdk .*/compileSdk 35/' build.gradle
           sed -i 's/targetSdk .*/targetSdk 35/' build.gradle
           sed -i 's/minSdk .*/minSdk 21/' build.gradle
-          echo "✅ Android config patched"
-
       - name: تثبيت الاعتماديات
         run: |
           cd $GITHUB_WORKSPACE
           flutter pub get
-
       - name: بناء APK
         run: |
           cd $GITHUB_WORKSPACE
           flutter build apk --release --no-tree-shake-icons --ignore-deprecation
           mkdir -p output_apk
           cp build/app/outputs/flutter-apk/app-release.apk output_apk/mirror-scorpion.apk
-
       - name: رفع APK
         uses: actions/upload-artifact@v4
         with:
