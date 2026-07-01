@@ -1,14 +1,16 @@
-import 'package:flutter/material.dart'; // تم التعديل هنا لضمان معرفة BuildContext
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FloatingBubbleService extends ChangeNotifier {
   late SharedPreferences _prefs;
   bool _isEnabled = false;
+  bool _isVisible = false;
   double _opacity = 0.85;
   int _size = 60;
 
   bool get isEnabled => _isEnabled;
+  bool get isVisible => _isVisible;
   double get opacity => _opacity;
   int get size => _size;
 
@@ -20,7 +22,23 @@ class FloatingBubbleService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> startBubble(BuildContext context) async {
+  void toggle() {
+    _isEnabled = !_isEnabled;
+    _prefs.setBool('floating_bubble_enabled', _isEnabled);
+    if (_isEnabled) {
+      startBubble();
+    } else {
+      stopBubble();
+    }
+    notifyListeners();
+  }
+
+  void toggleVisibility() {
+    _isVisible = !_isVisible;
+    notifyListeners();
+  }
+
+  Future<bool> startBubble() async {
     _isEnabled = true;
     await _prefs.setBool('floating_bubble_enabled', true);
     notifyListeners();
