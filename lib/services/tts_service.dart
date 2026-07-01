@@ -1,55 +1,98 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 class TTSService extends ChangeNotifier {
-  final FlutterTts _tts = FlutterTts();
+  final FlutterTts _flutterTts = FlutterTts();
   bool _isSpeaking = false;
-  double _volume = 1.0, _rate = 0.5, _pitch = 1.0;
-  String _voice = 'ar-xa';
-  String _selectedVoiceName = 'سارة';
+  bool _isPaused = false;
+  String _selectedVoice = 'voice_salma';
+
+  static const List<Map<String, String>> availableVoices = [
+    {'id': 'voice_seif', 'name': 'سيف', 'desc': 'خشن/عميق'},
+    {'id': 'voice_salma', 'name': 'سلمى', 'desc': 'متزن'},
+    {'id': 'voice_sama', 'name': 'سما', 'desc': 'دافئ/ناعم'},
+    {'id': 'voice_sara', 'name': 'سارة', 'desc': 'رقيق'},
+    {'id': 'voice_user', 'name': 'صوت المستخدم', 'desc': 'مميز (Pro)'},
+  ];
 
   bool get isSpeaking => _isSpeaking;
-  double get volume => _volume;
-  double get rate => _rate;
-  double get pitch => _pitch;
-  String get voice => _voice;
-  String get selectedVoiceName => _selectedVoiceName;
+  bool get isPaused => _isPaused;
+  String get selectedVoice => _selectedVoice;
 
-  static const Map<String, String> voices = {
-    'سارة': 'ar-xa', 'سيف': 'ar-xa', 'سلمى': 'ar-xa',
-    'سما': 'ar-xa', 'صوت المستخدم': 'ar-xa',
-  };
+  TTSService() { _initTts(); }
 
-  static const Map<String, String> voiceLanguages = {
-    'ar-xa': 'ar', 'en-US': 'en', 'fr-FR': 'fr',
-    'de-DE': 'de', 'es-ES': 'es',
-  };
-
-  TTSService() {
-    _tts.setCompletionHandler(() { _isSpeaking = false; notifyListeners(); });
-    _tts.setErrorHandler((_) { _isSpeaking = false; notifyListeners(); });
+  Future<void> _initTts() async {
+    await _flutterTts.setLanguage('ar');
+    await _flutterTts.setSpeechRate(0.5);
+    await _flutterTts.setPitch(1.0);
+    _flutterTts.setCompletionHandler(() { _isSpeaking = false; notifyListeners(); });
+    _flutterTts.setErrorHandler((msg) { _isSpeaking = false; debugPrint('TTS Error: $msg'); notifyListeners(); });
   }
 
-  Future<void> speak(String text, {String language = 'ar'}) async {
-    if (text.isEmpty) return;
-    _isSpeaking = true; notifyListeners();
-    await _tts.setLanguage(language);
-    await _tts.setSpeechRate(_rate);
-    await _tts.setVolume(_volume);
-    await _tts.setPitch(_pitch);
-    await _tts.speak(text);
-  }
-
-  Future<void> stop() async { await _tts.stop(); _isSpeaking = false; notifyListeners(); }
-  Future<void> setVolume(double v) async { _volume = v; await _tts.setVolume(v); notifyListeners(); }
-  Future<void> setRate(double r) async { _rate = r; await _tts.setSpeechRate(r); notifyListeners(); }
-  Future<void> setPitch(double p) async { _pitch = p; await _tts.setPitch(p); notifyListeners(); }
-
-  Future<void> setVoice(String voiceCode) async {
-    _voice = voiceCode;
-    _selectedVoiceName = voices.entries
-        .firstWhere((e) => e.value == voiceCode, orElse: () => MapEntry('سارة', 'ar-xa')).key;
-    await _tts.setLanguage(voiceLanguages[voiceCode] ?? 'ar');
+  Future<void> setVoice(String voiceId) async {
+    _selectedVoice = voiceId;
+    switch (voiceId) {
+      case 'voice_seif': // سيف - خشن/عميق
+        await _flutterTts.setPitch(0.7);
+        await _flutterTts.setSpeechRate(0.4);
+        break;
+      case 'voice_salma': // سلمى - متزن
+        await _flutterTts.setPitch(1.0);
+        await _flutterTts.setSpeechRate(0.5);
+        break;
+      case 'voice_sama': // سما - دافئ/ناعم
+        await _flutterTts.setPitch(1.2);
+        await _flutterTts.setSpeechRate(0.42);
+        break;
+      case 'voice_sara': // سارة - رقيق
+        await _flutterTts.setPitch(1.5);
+        await _flutterTts.setSpeechRate(0.48);
+        break;
+      case 'voice_user': // صوت المستخدم - Pro
+        await _flutterTts.setPitch(1.0);
+        await _flutterTts.setSpeechRate(0.5);
+        break;
+    }
     notifyListeners();
+  }
+
+  Future<void> speak(String text, {String? language}) async {
+    if (_isSpeaking) await stop();
+    _isSpeaking = true;
+    notifyListeners();
+    await _flutterTts.setLanguage(language ?? 'ar');
+    await _flutterTts.speak(text);
+  }
+
+  Future<void> speakQuran(String ayah, {String? language}) async {
+    await speak(ayah, language: language ?? 'ar');
+  }
+
+  Future<void> stop() async {
+    await _flutterTts.stop();
+    _isSpeaking = false;
+    _isPaused = false;
+    notifyListeners();
+  }
+
+  Future<void> pause() async {
+    await _flutterTts.pause();
+    _isPaused = true;
+    notifyListeners();
+  }
+
+  Future<void> resume() async {
+    _isPaused = false;
+    notifyListeners();
+  }
+
+  Future<List<String>> getAvailableLanguages() async {
+    return await _flutterTts.getLanguages;
+  }
+
+  @override
+  void dispose() {
+    _flutterTts.stop();
+    super.dispose();
   }
 }

@@ -1,420 +1,415 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
+import 'document_lens.dart';
+import '../../services/ai_service.dart';
 import '../../services/language_service.dart';
-import '../../services/tts_service.dart';
+import '../../services/premium_verification_service.dart';
+import 'package:provider/provider.dart';
 
 class DocumentTranslationScreen extends StatefulWidget {
   const DocumentTranslationScreen({super.key});
+
   @override
   State<DocumentTranslationScreen> createState() => _DocumentTranslationScreenState();
 }
 
-class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
+class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> with SingleTickerProviderStateMixin {
   final TextEditingController _urlController = TextEditingController();
-  String _selectedFilePath = '';
-  String _selectedFileName = '';
+  final ImagePicker _imagePicker = ImagePicker();
+  
+  File? _selectedImage;
+  String _extractedText = '';
   String _translatedText = '';
+  String _selectedLanguage = 'ar';
   bool _isProcessing = false;
   bool _showOriginal = false;
-  bool _isLensMode = false;
+  late AnimationController _slideController;
+  late Animation<Offset> _slideAnimation;
+
+  final Map<String, String> _languages = {
+    'ar': 'العربية', 'en': 'English', 'fr': 'Français', 'es': 'Español',
+    'de': 'Deutsch', 'it': 'Italiano', 'pt': 'Português', 'ru': 'Русский',
+    'ja': 'Japanese', 'zh': '中文', 'ko': '한국어', 'tr': 'Türkçe',
+  };
 
   @override
-  Widget build(BuildContext context) {
-    final langService = Provider.of<LanguageService>(context);
-    final List<String> langCodes = langService.getLanguageCodes();
-
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A),
-      appBar: AppBar(
-        title: Text(_isLensMode ? 'العدسة' : 'مستندات وعدسة',
-          style: const TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF1B2838),
-        iconTheme: const IconThemeData(color: Colors.orangeAccent),
-        actions: [
-          IconButton(
-            icon: Icon(_isLensMode ? Icons.description : Icons.camera_alt,
-              color: Colors.orangeAccent),
-            onPressed: () => setState(() => _isLensMode = !_isLensMode),
-            tooltip: _isLensMode ? 'وضع المستندات' : 'وضع العدسة',
-          ),
-        ],
-      ),
-      body: _isLensMode ? _buildLensView() : _buildDocumentView(langCodes),
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
     );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(1.0, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
+    _loadLastLanguage();
   }
 
-  Widget _buildLensView() {
-    return Column(
-      children: [
-        Expanded(
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.orange.withOpacity(0.3)),
-              image: const DecorationImage(
-                image: NetworkImage('https://via.placeholder.com/400x600/0D1B2A/FFFFFF?text=📷+Camera+Preview'),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                // زر اللغة
-                Positioned(
-                  left: 16,
-                  bottom: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black87,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: DropdownButton<String>(
-                      value: 'ar',
-                      dropdownColor: Colors.black87,
-                      style: const TextStyle(color: Colors.orangeAccent, fontSize: 13),
-                      underline: const SizedBox(),
-                      items: const [
-                        DropdownMenuItem(value: 'ar', child: Text('العربية', style: TextStyle(color: Colors.white))),
-                        DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(color: Colors.white))),
-                        DropdownMenuItem(value: 'fr', child: Text('Français', style: TextStyle(color: Colors.white))),
-                      ],
-                      onChanged: (_) {},
-                    ),
-                  ),
-                ),
-                // زر التقاط
-                Positioned(
-                  bottom: 16,
-                  child: Container(
-                    width: 60, height: 60,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.orangeAccent, width: 3),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.camera_alt, color: Colors.orangeAccent, size: 28),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('📷 تم التقاط الصورة - جارٍ التعرف على النص...')),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        // نتيجة OCR
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1B2838),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              const Text('النص المستخرج:', style: TextStyle(color: Colors.white70, fontSize: 12)),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'اضغط على زر الكاميرا للبدء\nسيتم التعرف على النص تلقائياً',
-                  style: TextStyle(color: Colors.white54, fontSize: 13),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDocumentView(List<String> langCodes) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // مربع إدخال الرابط
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1B2838),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                  ),
-                  child: TextField(
-                    controller: _urlController,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      hintText: 'رابط المستند أو المسار...',
-                      hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
-                      prefixIcon: Icon(Icons.link, color: Colors.orangeAccent, size: 20),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // زر البحث
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.orangeAccent.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.search, color: Colors.orangeAccent),
-                  onPressed: () {
-                    if (_urlController.text.isNotEmpty) {
-                      setState(() => _isProcessing = true);
-                      Future.delayed(const Duration(seconds: 2), () {
-                        if (mounted) {
-                          setState(() {
-                            _isProcessing = false;
-                            _translatedText = 'مستند تم تحميله من: ${_urlController.text}\n(محاكاة - النسخة الكاملة تتطلب API)';
-                          });
-                        }
-                      });
-                    }
-                  },
-                  tooltip: 'بحث',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // زر فتح من المستعرض
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                try {
-                  FilePickerResult? result = await FilePicker.platform.pickFiles(
-                    type: FileType.any,
-                    allowMultiple: false,
-                  );
-                  if (result != null && result.files.single.path != null) {
-                    setState(() {
-                      _selectedFilePath = result.files.single.path!;
-                      _selectedFileName = result.files.single.name;
-                      _urlController.text = _selectedFileName;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('✅ تم اختيار: $_selectedFileName')),
-                    );
-                  }
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('❌ $e')),
-                  );
-                }
-              },
-              icon: const Icon(Icons.folder_open),
-              label: const Text('فتح من المستعرض'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orangeAccent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
-
-          if (_selectedFilePath.isNotEmpty || _translatedText.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            // زر الترجمة الكبير
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isProcessing ? null : () {
-                  setState(() => _isProcessing = true);
-                  Future.delayed(const Duration(seconds: 3), () {
-                    if (mounted) {
-                      setState(() {
-                        _isProcessing = false;
-                        _translatedText = '📄 النسخة المترجمة من المستند\n\n'
-                            'النص الأصلي: $_selectedFileName\n'
-                            'تمت الترجمة بنجاح ✓\n\n'
-                            '(النسخة الكاملة تتطلب تفعيل API الترجمة)';
-                      });
-                      _showDocumentFullScreen();
-                    }
-                  });
-                },
-                icon: _isProcessing
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.translate, size: 28),
-                label: Text(_isProcessing ? 'جارٍ الترجمة...' : '🌐 ترجمة'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void _showDocumentFullScreen() {
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => Scaffold(
-        backgroundColor: const Color(0xFF0D1B2A),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF1B2838),
-          iconTheme: const IconThemeData(color: Colors.orangeAccent),
-          title: const Text('المستند', style: TextStyle(color: Colors.white)),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.share, color: Colors.orangeAccent),
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: 
-                  '$_translatedText\n\n— — — — — — — — — —\n🌐 تُرجم بواسطة ميرور سكربيون 🦂'));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('✅ تم النسخ مع التوقيع للمشاركة')),
-                );
-              },
-              tooltip: 'مشاركة',
-            ),
-          ],
-        ),
-        body: GestureDetector(
-          onLongPressStart: (_) => setState(() => _showOriginal = true),
-          onLongPressEnd: (_) => setState(() => _showOriginal = false),
-          child: Stack(
-            children: [
-              // المستند الأصلي (نص عربي وهمي)
-              Positioned.fill(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      'المستند الأصلي:\n\n'
-                      'هذا هو النص الأصلي للمستند قبل الترجمة.\n'
-                      'يظهر عند الضغط المطول على الشاشة.\n\n'
-                      '﷽\n'
-                      'بسم الله الرحمن الرحيم\n\n'
-                      'الحمد لله رب العالمين، والصلاة والسلام على أشرف المرسلين.\n'
-                      'أما بعد: فهذا مستند تجريبي للترجمة.',
-                      style: TextStyle(
-                        color: _showOriginal ? Colors.white : Colors.transparent,
-                        fontSize: 16,
-                        height: 1.8,
-                      ),
-                      textDirection: TextDirection.rtl,
-                    ),
-                  ),
-                ),
-              ),
-              // المستند المترجم (يغطي الأصلي من اليمين)
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeOutCubic,
-                left: _showOriginal ? MediaQuery.of(context).size.width : 0,
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1B2838),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 20,
-                        offset: const Offset(-5, 0),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Stack(
-                      children: [
-                        // النص المترجم
-                        SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('📄 المستند المترجم',
-                                style: TextStyle(color: Colors.amberAccent, fontSize: 14, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 8),
-                              Text(
-                                _translatedText,
-                                style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.8),
-                              ),
-                              const SizedBox(height: 16),
-                              // التوقيع الشفاف
-                              Transform.rotate(
-                                angle: 130 * 3.14159 / 180,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.cyanAccent.withOpacity(0.2)),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    'تُرجم بواسطة ميرور سكربيون',
-                                    style: TextStyle(
-                                      color: Colors.cyanAccent.withOpacity(0.15),
-                                      fontSize: 11,
-                                      letterSpacing: 2,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // إشعار الضغط المطول
-                        Positioned(
-                          bottom: 16,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Text('👆 اضغط مطولاً لرؤية النص الأصلي',
-                                style: TextStyle(color: Colors.white38, fontSize: 11)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ));
+  Future<void> _loadLastLanguage() async {
+    final langService = Provider.of<LanguageService>(context, listen: false);
+    final lastLang = await langService.getLanguageForScreen('document');
+    if (lastLang != null && _languages.containsKey(lastLang)) {
+      setState(() => _selectedLanguage = lastLang);
+    }
   }
 
   @override
   void dispose() {
     _urlController.dispose();
+    _slideController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+        _urlController.text = pickedFile.path;
+        _extractedText = '';
+        _translatedText = '';
+        _slideController.reset();
+      });
+      await _extractTextFromImage();
+    }
+  }
+
+  Future<void> _extractTextFromImage() async {
+    if (_selectedImage == null) return;
+    setState(() => _isProcessing = true);
+    try {
+      final inputImage = InputImage.fromFile(_selectedImage!);
+      // Use both Latin and Arabic support if possible
+      final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+      
+      String text = '';
+      for (TextBlock block in recognizedText.blocks) {
+        text += '${block.text}\n';
+      }
+      
+      setState(() {
+        _extractedText = text.trim();
+        _isProcessing = false;
+      });
+      await textRecognizer.close();
+      
+      if (_extractedText.isEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('لم يتم العثور على نص في الصورة'))
+        );
+      }
+    } catch (e) {
+      debugPrint('OCR error: $e');
+    }
+    setState(() => _isProcessing = false);
+  }
+
+  Future<void> _translateDocument() async {
+    if (_extractedText.isEmpty) return;
+    
+    // Check for free limit: 5 pages (mocked by character length for this demo)
+    final isPremium = Provider.of<PremiumVerificationService>(context, listen: false).isPremium;
+    if (!isPremium && _extractedText.length > 5000) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('النسخة العادية تترجم حتى 5 صفحات فقط. يرجى الترقية للبرو.'))
+      );
+      return;
+    }
+
+    setState(() => _isProcessing = true);
+    try {
+      // 3 seconds delay as requested
+      await Future.delayed(const Duration(seconds: 3));
+      final url = Uri.parse('https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=$_selectedLanguage&dt=t&q=${Uri.encodeComponent(_extractedText)}');
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final translated = (data[0] as List).map((e) => e[0] as String).join();
+        setState(() => _translatedText = translated);
+        _slideController.forward();
+      }
+    } catch (e) {
+      debugPrint('Translation error: $e');
+    }
+    setState(() => _isProcessing = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('مستندات وعدسة', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF0D1B2A),
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF0D1B2A), Color(0xFF1B2838)]
+              )
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  // Lens Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const DocumentLensScreen())),
+                      icon: const Icon(Icons.camera_alt, color: Colors.white),
+                      label: const Text('الدخول إلى العدسة (Google Lens)', style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Document Section
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _urlController,
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: 'رابط الملف أو مساره...',
+                            hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.05),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        decoration: BoxDecoration(color: Colors.blueAccent, borderRadius: BorderRadius.circular(12)),
+                        child: IconButton(
+                          icon: const Icon(Icons.search, color: Colors.white),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('جاري جلب الملف من الرابط...'))
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  
+                  SizedBox(
+                    width: 200,
+                    child: ElevatedButton.icon(
+                      onPressed: _pickImage,
+                      icon: const Icon(Icons.folder_open),
+                      label: const Text('فتح من المستعرض'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white10, 
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ),
+                  
+                  const Spacer(),
+                  
+                  Align(
+                    alignment: Alignment.bottomRight,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedLanguage,
+                          dropdownColor: const Color(0xFF1B2838),
+                          icon: const Icon(Icons.language, color: Colors.amber),
+                          items: _languages.entries.map((e) => DropdownMenuItem(
+                            value: e.key, 
+                            child: Text(e.value, style: const TextStyle(color: Colors.white, fontSize: 12))
+                          )).toList(),
+                          onChanged: (v) {
+                            setState(() => _selectedLanguage = v!);
+                            Provider.of<LanguageService>(context, listen: false)
+                                .saveLanguageForScreen('document', v!);
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  SizedBox(
+                      width: double.infinity,
+                      height: 60,
+                      child: ElevatedButton(
+                        onPressed: (_isProcessing || (_extractedText.isEmpty && _urlController.text.isEmpty)) ? null : _translateDocument,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        ),
+                        child: const Text('ترجمة', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                      ),
+                    ),
+                  
+                  const SizedBox(height: 10),
+                  if (_extractedText.isNotEmpty && _translatedText.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'تم استخراج النص. اضغط ترجمة للمتابعة',
+                        style: TextStyle(color: Colors.greenAccent.withOpacity(0.7), fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          
+          if (_translatedText.isNotEmpty)
+            Positioned.fill(
+              child: GestureDetector(
+                onLongPressStart: (_) => setState(() => _showOriginal = true),
+                onLongPressEnd: (_) => setState(() => _showOriginal = false),
+                child: Container(
+                  color: const Color(0xFF0D1B2A),
+                  padding: const EdgeInsets.all(10),
+                  child: Stack(
+                    children: [
+                      _buildDocumentPaper(_extractedText, Colors.white.withOpacity(0.1), Colors.white70),
+                      if (!_showOriginal)
+                        SlideTransition(
+                          position: _slideAnimation,
+                          child: _buildDocumentPaper(_translatedText, Colors.white, Colors.black87, hasWatermark: true),
+                        ),
+                      Positioned(
+                        top: 40,
+                        right: 16,
+                        child: IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                          onPressed: () {
+                            setState(() {
+                              _translatedText = '';
+                              _extractedText = '';
+                              _slideController.reset();
+                            });
+                          },
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 20,
+                        left: 20,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FloatingActionButton(
+                              heroTag: 'share_doc_btn',
+                              backgroundColor: Colors.blueAccent,
+                              child: const Icon(Icons.share, color: Colors.white),
+                              onPressed: () {
+                                final isPremium = Provider.of<PremiumVerificationService>(context, listen: false).isPremium;
+                                if (!isPremium) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('المستند المترجم لا يحفظ إلا في النسخة المدفوعة. تم التوقيع بواسطة ميرور سكربيون.'),
+                                      backgroundColor: Colors.blue,
+                                    )
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('جاري حفظ ومشاركة المستند (نسخة برو)...'))
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+          if (_isProcessing)
+            Container(
+              color: Colors.black87,
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Colors.blueAccent),
+                    SizedBox(height: 20),
+                    Text('جاري المعالجة والترجمة...', style: TextStyle(color: Colors.white, fontSize: 18)),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocumentPaper(String text, Color bgColor, Color textColor, {bool hasWatermark = false}) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      padding: const EdgeInsets.all(30),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(4),
+        boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 15)],
+      ),
+      child: Stack(
+        children: [
+          if (hasWatermark)
+            Center(
+              child: Opacity(
+                opacity: 0.15,
+                child: Transform.rotate(
+                  angle: -130 * 3.14 / 180,
+                  child: const Text(
+                    'ترجم هذا المستند بواسطة ميرور سكربيون',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          SingleChildScrollView(
+            child: Text(
+              text,
+              style: TextStyle(color: textColor, fontSize: 16, height: 1.5),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/widgets/shared_widgets.dart';
 import '../services/floating_bubble_service.dart';
-import '../services/ai_service.dart';
-import '../services/tts_service.dart';
+import '../services/ai_enhanced_service.dart';
 import '../services/language_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -15,10 +15,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
-  late AnimationController _glowController;
-  late Animation<double> _glowAnimation;
-  String _deviceLanguage = 'ar';
-  bool _isBubbleActive = false;
+  late AnimationController _reflectionController;
+  late Animation<double> _reflectionAnimation;
+  bool _bubbleActive = false;
 
   @override
   void initState() {
@@ -27,28 +26,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat(reverse: true);
-    _pulseAnimation = Tween(begin: 0.95, end: 1.05).animate(
+    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-    _glowController = AnimationController(
+    _reflectionController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 4),
     )..repeat(reverse: true);
-    _glowAnimation = Tween(begin: 0.3, end: 0.7).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    _reflectionAnimation = Tween<double>(begin: 0.3, end: 0.6).animate(
+      CurvedAnimation(parent: _reflectionController, curve: Curves.easeInOut),
     );
-    _loadLanguage();
-  }
-
-  void _loadLanguage() {
-    final langService = Provider.of<LanguageService>(context, listen: false);
-    _deviceLanguage = langService.getDeviceLanguage();
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
-    _glowController.dispose();
+    _reflectionController.dispose();
     super.dispose();
   }
 
@@ -56,141 +49,195 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final service = Provider.of<FloatingBubbleService>(context, listen: false);
     if (service.isStarted) {
       await service.stopBubble();
-      setState(() => _isBubbleActive = false);
+      setState(() => _bubbleActive = false);
     } else {
       await service.startBubble(context);
-      setState(() => _isBubbleActive = true);
+      setState(() => _bubbleActive = service.isStarted);
     }
   }
 
-  void _showGamesSelection(BuildContext ctx) {
-    showModalBottomSheet(
-      context: ctx,
-      backgroundColor: const Color(0xFF1B2838),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+  void _showAIInspiration() async {
+    final aiService = Provider.of<AIEnhancedService>(context, listen: false);
+    final inspiration = await aiService.generateInspiration(
+      userMood: '',
+      context: 'Home Screen',
+    );
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
           children: [
             Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(2),
+              width: 30, height: 30,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                image: DecorationImage(
+                  image: AssetImage('assets/images/scorpion_icon.jpeg'),
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-            const SizedBox(height: 20),
-            const Text('🎮 اختر لعبتك', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _gameButton(ctx, '♟ شطرنج', Colors.purpleAccent, '/chess'),
-                _gameButton(ctx, '🧊 روبيك', Colors.cyanAccent, '/rubik'),
-              ],
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(width: 10),
+            const Text('مانوس إنتليجنس ✨', style: TextStyle(color: Colors.amber, fontSize: 16)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _gameButton(BuildContext ctx, String title, Color color, String route) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(ctx);
-        Navigator.pushNamed(ctx, route);
-      },
-      child: Container(
-        width: 130, height: 130,
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.4), width: 1.5),
-        ),
-        child: Center(
-          child: Text(title, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
-        ),
+        backgroundColor: const Color(0xFF1B2838),
+        content: Text(inspiration, style: const TextStyle(color: Colors.white)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('شكراً', style: TextStyle(color: Colors.blue)),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isBubbleActive = Provider.of<FloatingBubbleService>(context).isStarted;
+    final bubbleService = Provider.of<FloatingBubbleService>(context);
+    final aiService = Provider.of<AIEnhancedService>(context);
+    final langService = Provider.of<LanguageService>(context);
+    
+    bool isBubbleActive = bubbleService.isStarted;
+    String deviceLang = langService.getDeviceLanguage();
+    String langName = deviceLang == 'ar' ? 'العربية' : 
+                       deviceLang == 'en' ? 'English' : deviceLang;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D1B2A),
       body: CustomScrollView(
         slivers: [
-          // شعار التطبيق - العقرب مع الانعكاس
+          // Floating Bubble Toggle + AI Button
           SliverToBoxAdapter(
-            child: AnimatedBuilder(
-              animation: _glowAnimation,
-              builder: (context, child) {
-                return Container(
-                  height: 260,
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      center: Alignment.topCenter,
-                      radius: 1.2,
-                      colors: [
-                        const Color(0xFF0D1B2A),
-                        const Color(0xFF1B2838).withOpacity(_glowAnimation.value),
-                      ],
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 50, 20, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // AI Inspiration Button
+                  GestureDetector(
+                    onTap: _showAIInspiration,
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                      ),
+                      child: const Icon(Icons.auto_awesome, color: Colors.amber, size: 24),
                     ),
                   ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Positioned(
-                        top: 10,
-                        child: Transform.flip(
-                          flipY: true,
-                          child: Opacity(
-                            opacity: 0.3,
-                            child: _buildScorpionLogo(isReflection: true),
-                          ),
-                        ),
-                      ),
-                      _buildScorpionLogo(isReflection: false),
-                      Positioned(
-                        top: 155,
+                  // Device Language Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      "🌐 $langName",
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Scorpion Logo + Mirror Reflection
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                // Mirror Reflection (above the logo)
+                AnimatedBuilder(
+                  animation: _reflectionAnimation,
+                  builder: (context, child) {
+                    return Transform.flip(
+                      flipY: true,
+                      child: Opacity(
+                        opacity: _reflectionAnimation.value,
                         child: Container(
-                          width: 200, height: 2,
+                          width: 100, height: 100,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.transparent, Colors.blueAccent.withOpacity(0.6), Colors.transparent],
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.blueAccent.withOpacity(0.2),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.blueAccent.withOpacity(0.15),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                            image: const DecorationImage(
+                              image: AssetImage('assets/images/scorpion_icon.jpeg'),
+                              fit: BoxFit.cover,
                             ),
                           ),
                         ),
                       ),
-                      Positioned(
-                        top: 165,
-                        child: Text(
-                          '🦂 ميرور سكربيون',
-                          style: TextStyle(
+                    );
+                  },
+                ),
+                const SizedBox(height: 5),
+                // Main Scorpion Logo (pulsing)
+                AnimatedBuilder(
+                  animation: _pulseAnimation,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _pulseAnimation.value,
+                      child: Container(
+                        width: 140, height: 140,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
                             color: Colors.blueAccent.withOpacity(0.5),
-                            fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blueAccent.withOpacity(0.3),
+                              blurRadius: 25,
+                              spreadRadius: 8,
+                            ),
+                          ],
+                          image: const DecorationImage(
+                            image: AssetImage('assets/images/scorpion_icon.jpeg'),
+                            fit: BoxFit.cover,
                           ),
                         ),
                       ),
-                    ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'ميرور سكربيون',
+                  style: TextStyle(
+                    color: Colors.blueAccent,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
                   ),
-                );
-              },
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'حيث تُصنع البدايات',
+                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13),
+                ),
+              ],
             ),
           ),
 
-          // فقاعة عائمة - مفتاح فتح/غلق
+          // Bubble Toggle Switch
           SliverToBoxAdapter(
             child: Center(
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                margin: const EdgeInsets.symmetric(vertical: 15),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.05),
@@ -224,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
 
-          // 6 كروت
+          // 6 Cards Grid
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             sliver: SliverGrid(
@@ -235,12 +282,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 childAspectRatio: 0.9,
               ),
               delegate: SliverChildListDelegate([
-                _buildCard(Icons.translate, 'ترجمة نصية', '100 لغة + مايك', Colors.blueAccent, '/translate'),
-                _buildCard(Icons.forum, 'حوار مترجم', 'محادثة ثنائية فورية', Colors.cyanAccent, '/dialogue'),
-                _buildCard(Icons.document_scanner, 'مستندات وعدسة', 'ترجمة صور وملفات', Colors.tealAccent, '/document'),
-                _buildCard(Icons.auto_stories, 'قصص وإلهام', 'مكتبة ذكية متكاملة', Colors.orangeAccent, '/stories'),
-                _buildCard(Icons.sports_esports, 'ألعاب 3D', 'شطرنج + روبيك', Colors.purpleAccent, '/games'),
-                _buildCard(Icons.settings, 'الإعدادات', 'تخصيص وترقية برو', Colors.blueGrey, '/settings'),
+                _buildCard(
+                  icon: Icons.translate,
+                  title: 'ترجمة نصية',
+                  subtitle: '100 لغة + مايك',
+                  color: Colors.blueAccent,
+                  onTap: () => Navigator.pushNamed(context, '/translate'),
+                ),
+                _buildCard(
+                  icon: Icons.forum,
+                  title: 'حوار مترجم',
+                  subtitle: 'محادثة ثنائية فورية',
+                  color: Colors.cyanAccent,
+                  onTap: () => Navigator.pushNamed(context, '/dialogue'),
+                ),
+                _buildCard(
+                  icon: Icons.document_scanner,
+                  title: 'مستندات وعدسة',
+                  subtitle: 'ترجمة صور وملفات',
+                  color: Colors.tealAccent,
+                  onTap: () => Navigator.pushNamed(context, '/document'),
+                ),
+                _buildCard(
+                  icon: Icons.auto_stories,
+                  title: 'قصص وإلهام',
+                  subtitle: 'مكتبة ذكية متكاملة',
+                  color: Colors.orangeAccent,
+                  onTap: () => Navigator.pushNamed(context, '/stories'),
+                ),
+                _buildCard(
+                  icon: Icons.sports_esports,
+                  title: 'ألعاب 3D',
+                  subtitle: 'شطرنج + روبيك',
+                  color: Colors.purpleAccent,
+                  onTap: () => _showGamesSelection(context),
+                ),
+                _buildCard(
+                  icon: Icons.settings,
+                  title: 'الإعدادات',
+                  subtitle: 'تخصيص وترقية برو',
+                  color: Colors.blueGrey,
+                  onTap: () => Navigator.pushNamed(context, '/settings'),
+                ),
               ]),
             ),
           ),
@@ -254,11 +337,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   opacity: 0.3,
                   child: Column(
                     children: [
-                      const Text("Mirror Scorpion", style: TextStyle(color: Colors.white)),
+                      const WatermarkText(text: "Mirror Scorpion"),
                       const SizedBox(height: 5),
                       Text(
-                        "v1.2.0 Build #199 - حيث تُصنع البدايات",
-                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                        "v1.0.0 Build Successful",
+                        style: TextStyle(color: Colors.white, fontSize: 10),
                       ),
                     ],
                   ),
@@ -271,48 +354,64 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildScorpionLogo({bool isReflection = false}) {
-    return AnimatedBuilder(
-      animation: _pulseAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: isReflection ? 1.0 : _pulseAnimation.value,
-          child: Container(
-            width: isReflection ? 120 : 140,
-            height: isReflection ? 120 : 140,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isReflection
-                    ? Colors.blueAccent.withOpacity(0.15)
-                    : Colors.blueAccent.withOpacity(0.5),
-                width: isReflection ? 1 : 2,
-              ),
-              boxShadow: isReflection
-                  ? []
-                  : [BoxShadow(color: Colors.blueAccent.withOpacity(0.3), blurRadius: 25, spreadRadius: 8)],
-              image: const DecorationImage(
-                image: AssetImage('assets/images/scorpion_icon.jpeg'),
-                fit: BoxFit.cover,
-              ),
+  void _showGamesSelection(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1B2838),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('اختر اللعبة', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.grid_view, color: Colors.purpleAccent, size: 32),
+              title: const Text('مكعب روبيك 3D', style: TextStyle(color: Colors.white)),
+              subtitle: const Text('جميع طرق الحل', style: TextStyle(color: Colors.white54)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/rubik');
+              },
             ),
-          ),
-        );
-      },
+            const Divider(color: Colors.white24),
+            ListTile(
+              leading: const Icon(Icons.castle, color: Colors.purpleAccent, size: 32),
+              title: const Text('شطرنج 3D', style: TextStyle(color: Colors.white)),
+              subtitle: const Text('لعبة شطرنج احترافية', style: TextStyle(color: Colors.white54)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/chess');
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildCard(IconData icon, String title, String subtitle, Color color, String route) {
+  Widget _buildCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4)),
+        ],
       ),
       child: Material(
         color: const Color(0xFF1B2838),
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
-          onTap: () => Navigator.pushNamed(context, route),
+          onTap: onTap,
           borderRadius: BorderRadius.circular(20),
           child: Container(
             padding: const EdgeInsets.all(16),
