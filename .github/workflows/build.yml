@@ -1,1 +1,45 @@
-[انسخ المحتوى كاملاً هنا]
+name: Mirror Scorpion Build
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Git Safe Directory
+        run: git config --global --add safe.directory /github/workspace
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+          cache: true
+
+      - name: إنشاء مجلد android نظيف
+        run: |
+          cd /tmp
+          flutter create --org com.tetocollctionway --project-name mirror_scorpion_v2 --platforms android .
+          cp -r android $GITHUB_WORKSPACE/
+          echo "✅ Fresh android folder created"
+
+      - name: إصلاح إعدادات Android
+        run: |
+          cat > android/gradle.properties << 'EOF'
+org.gradle.jvmargs=-Xmx4G
+android.useAndroidX=true
+android.enableJetifier=true
