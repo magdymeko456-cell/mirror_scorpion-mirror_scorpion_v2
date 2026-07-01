@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:math';
 import '../../services/database_service.dart';
 import '../../services/ai_service.dart';
 import '../../services/tts_service.dart';
-import '../../services/language_service.dart';
 
 class StoriesScreen extends StatefulWidget {
   const StoriesScreen({super.key});
@@ -12,387 +10,373 @@ class StoriesScreen extends StatefulWidget {
   State<StoriesScreen> createState() => _StoriesScreenState();
 }
 
-class _StoriesScreenState extends State<StoriesScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  String _selectedCategory = 'quran';
-  bool _showAsbab = false;
-
-  final List<Map<String, dynamic>> _categories = [
-    {'key': 'quran', 'label': 'قصص القرآن', 'icon': Icons.menu_book},
-    {'key': 'prophets', 'label': 'الأنبياء', 'icon': Icons.person},
-    {'key': 'women', 'label': 'النساء', 'icon': Icons.woman},
-    {'key': 'animals', 'label': 'الحيوان', 'icon': Icons.pets},
-    {'key': 'nations', 'label': 'الأقوام', 'icon': Icons.groups},
-    {'key': 'humans', 'label': 'الإنسان', 'icon': Icons.people},
-  ];
+class _StoriesScreenState extends State<StoriesScreen> with TickerProviderStateMixin {
+  String _selectedTab = 'hadith';
+  String? _currentInspiration;
+  bool _isInspirationEnabled = true;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _fadeController = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 600));
+    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut);
+    _loadInspiration();
+  }
+
+  void _loadInspiration() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      setState(() {
+        _currentInspiration = '﴿ إِنَّ مَعَ الْعُسْرِ يُسْرًا ﴾\nالشرح: 6';
+      });
+      _fadeController.forward();
+    }
+  }
+
+  void _refreshInspiration() async {
+    _fadeController.reverse();
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (mounted) {
+      setState(() {
+        _currentInspiration = AIService.getDailyInspiration() as String?;
+      });
+      _fadeController.forward();
+    }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final db = context.watch<DatabaseService>();
-    final ai = context.watch<AIService>();
-    final tts = context.watch<TTSService>();
-    final lang = context.watch<LanguageService>();
-    final deviceLang = lang.getDeviceLanguage();
-    final isArabic = deviceLang == 'ar';
+    final db = Provider.of<DatabaseService>(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D1B2A),
       appBar: AppBar(
-        title: const Text('📖 قصص وإلهام', style: TextStyle(color: Colors.white, fontSize: 16)),
+        title: const Text('أحاديث وقصص وإلهام', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF1B2838),
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.orangeAccent,
-          labelColor: Colors.orangeAccent,
-          unselectedLabelColor: Colors.white54,
-          tabs: const [
-            Tab(icon: Icon(Icons.auto_stories), text: 'قصص وأسباب نزول'),
-            Tab(icon: Icon(Icons.psychology), text: 'إلهام'),
-          ],
-        ),
+        iconTheme: const IconThemeData(color: Colors.purpleAccent),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          // ====== التبويب 1: قصص + أسباب نزول ======
-          _buildStoriesTab(db, tts, isArabic),
+          // --- Tabs: أحاديث | قصص | إلهام | أسباب نزول ---
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                _buildTab('hadith', 'أحاديث', Icons.book),
+                const SizedBox(width: 8),
+                _buildTab('stories', 'قصص', Icons.auto_stories),
+                const SizedBox(width: 8),
+                _buildTab('asbab', 'أسباب نزول', Icons.download),
+                const SizedBox(width: 8),
+                _buildTab('inspire', 'إلهام', Icons.auto_awesome),
+              ],
+            ),
+          ),
 
-          // ====== التبويب 2: إلهام ======
-          _buildInspirationTab(ai, tts, isArabic),
+          // --- محتوى حسب التبويب ---
+          Expanded(
+            child: _selectedTab == 'hadith' ? _buildHadithView(db)
+                : _selectedTab == 'stories' ? _buildStoriesView(db)
+                : _selectedTab == 'asbab' ? _buildAsbabView(db)
+                : _buildInspirationView(),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStoriesTab(DatabaseService db, TTSService tts, bool isArabic) {
-    return Column(
-      children: [
-        // تصنيفات القصص
-        Container(
-          height: 80,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _categories.length,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemBuilder: (_, i) {
-              final cat = _categories[i];
-              final active = _selectedCategory == cat['key'];
-              return GestureDetector(
-                onTap: () => setState(() => _selectedCategory = cat['key'] as String),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: active ? Colors.orangeAccent.withOpacity(0.2) : Colors.white.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(25),
-                    border: Border.all(color: active ? Colors.orangeAccent : Colors.white12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(cat['icon'] as IconData, color: active ? Colors.orangeAccent : Colors.white38, size: 20),
-                      const SizedBox(width: 8),
-                      Text(cat['label'] as String,
-                        style: TextStyle(color: active ? Colors.orangeAccent : Colors.white54, fontWeight: active ? FontWeight.bold : FontWeight.normal)),
-                    ],
-                  ),
-                ),
-              );
-            },
+  Widget _buildTab(String id, String label, IconData icon) {
+    bool isActive = _selectedTab == id;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedTab = id),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isActive ? Colors.purpleAccent.withOpacity(0.2) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isActive ? Colors.purpleAccent : Colors.white12,
+              width: isActive ? 1.5 : 0.5,
+            ),
           ),
-        ),
-
-        // زر أسباب النزول
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Row(
+          child: Column(
             children: [
-              Expanded(
-                child: TextButton.icon(
-                  onPressed: () => setState(() => _showAsbab = !_showAsbab),
-                  icon: Icon(_showAsbab ? Icons.book : Icons.info_outline, color: Colors.tealAccent, size: 18),
-                  label: Text(
-                    _showAsbab ? '🔽 إخفاء أسباب النزول' : '📖 أسباب النزول',
-                    style: const TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold),
-                  ),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.tealAccent.withOpacity(0.05),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: Colors.tealAccent.withOpacity(0.2))),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // زر الإلهام السريع
-              Consumer<AIService>(
-                builder: (_, aiSvc, __) => CircleAvatar(
-                  backgroundColor: Colors.amberAccent.withOpacity(0.15),
-                  radius: 22,
-                  child: IconButton(
-                    icon: const Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 20),
-                    onPressed: () async {
-                      final msg = await aiSvc.generateInspiration(context: 'story_page');
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('💡 $msg', style: const TextStyle(color: Colors.white)),
-                            backgroundColor: const Color(0xFF1B2838),
-                            duration: const Duration(seconds: 5),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ),
+              Icon(icon, color: isActive ? Colors.purpleAccent : Colors.white38, size: 20),
+              const SizedBox(height: 4),
+              Text(label, style: TextStyle(
+                color: isActive ? Colors.purpleAccent : Colors.white54,
+                fontSize: 10, fontWeight: isActive ? FontWeight.bold : FontWeight.normal),
               ),
             ],
           ),
-        ),
-
-        // محتوى أسباب النزول أو القصص
-        Expanded(
-          child: _showAsbab ? _buildAsbabList(db) : _buildStoriesList(db, tts),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAsbabList(DatabaseService db) {
-    final reasons = db.revelationReasons;
-    if (reasons.isEmpty) {
-      return Center(
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(Icons.info_outline, size: 50, color: Colors.tealAccent.withOpacity(0.3)),
-          const SizedBox(height: 10),
-          const Text('📖 أسباب النزول قادمة في التحديث', style: TextStyle(color: Colors.white38)),
-        ]),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: reasons.length,
-      itemBuilder: (_, i) {
-        final r = reasons[i];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.tealAccent.withOpacity(0.03),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.tealAccent.withOpacity(0.15)),
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: Colors.tealAccent.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
-                child: Text('${r['surah'] ?? ''} : ${r['ayah'] ?? ''}',
-                  style: const TextStyle(color: Colors.tealAccent, fontSize: 12, fontWeight: FontWeight.bold))),
-              const Spacer(),
-              Icon(Icons.info_outline, color: Colors.tealAccent.withOpacity(0.5), size: 16),
-            ]),
-            const SizedBox(height: 8),
-            Text(r['reason'] ?? r['text'] ?? '', style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.6)),
-          ]),
-        );
-      },
-    );
-  }
-
-  Widget _buildStoriesList(DatabaseService db, TTSService tts) {
-    final stories = db.getStoriesByCategory(_selectedCategory);
-    if (stories.isEmpty) {
-      return Center(
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(Icons.auto_stories, size: 60, color: Colors.orangeAccent.withOpacity(0.2)),
-          const SizedBox(height: 10),
-          const Text('📚 قصص هذه الفئة قادمة قريباً', style: TextStyle(color: Colors.white38)),
-        ]),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: stories.length,
-      itemBuilder: (_, i) {
-        final s = stories[i];
-        final title = s['title'] ?? 'قصة';
-        final text = s['text'] ?? '';
-        final summary = text.length > 200 ? '${text.substring(0, 200)}...' : text;
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Material(
-            color: const Color(0xFF1B2838),
-            borderRadius: BorderRadius.circular(20),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () => _showStoryDetail(context, title, text, tts),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.orangeAccent.withOpacity(0.15)),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft, end: Alignment.bottomRight,
-                    colors: [Colors.orangeAccent.withOpacity(0.05), Colors.transparent],
-                  ),
-                ),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Container(width: 4, height: 24, decoration: BoxDecoration(
-                      color: Colors.orangeAccent, borderRadius: BorderRadius.circular(2))),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(title, style: const TextStyle(color: Colors.orangeAccent, fontSize: 16, fontWeight: FontWeight.bold))),
-                    // سبيكر
-                    GestureDetector(onTap: () => tts.speak(text, language: 'ar'),
-                      child: Icon(Icons.volume_up, color: tts.isSpeaking ? Colors.cyanAccent : Colors.white38, size: 20)),
-                  ]),
-                  const SizedBox(height: 12),
-                  Text(summary, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.7)),
-                  const SizedBox(height: 8),
-                  Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                    Text('المزيد ←', style: TextStyle(color: Colors.orangeAccent.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.bold)),
-                  ]),
-                ]),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showStoryDetail(BuildContext context, String title, String text, TTSService tts) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1B2838),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (_, scrollController) => Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 16),
-            Row(children: [
-              Expanded(child: Text(title, style: const TextStyle(color: Colors.orangeAccent, fontSize: 18, fontWeight: FontWeight.bold))),
-              GestureDetector(onTap: () => tts.speak(text, language: 'ar'),
-                child: CircleAvatar(backgroundColor: Colors.cyanAccent.withOpacity(0.15), radius: 18,
-                  child: Icon(Icons.volume_up, color: Colors.cyanAccent, size: 20))),
-              const SizedBox(width: 8),
-            ]),
-            const Divider(color: Colors.white12),
-            Expanded(child: SingleChildScrollView(
-              controller: scrollController,
-              child: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.8)),
-            )),
-            const SizedBox(height: 8),
-            SizedBox(width: double.infinity, child: ElevatedButton.icon(
-              onPressed: () { /* المزيد - فتح رابط خفي */ },
-              icon: const Icon(Icons.open_in_new, size: 16),
-              label: const Text('📖 المزيد من القصة'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent.withOpacity(0.1),
-                foregroundColor: Colors.orangeAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15),
-                  side: BorderSide(color: Colors.orangeAccent.withOpacity(0.3)))))),
-          ]),
         ),
       ),
     );
   }
 
-  // ====== تبويب الإلهام ======
-  Widget _buildInspirationTab(AIService ai, TTSService tts, bool isArabic) {
-    return SingleChildScrollView(
+  Widget _buildHadithView(DatabaseService db) {
+    return ListView(
       padding: const EdgeInsets.all(16),
-      child: Column(children: [
-        // صندوق الإلهام اليومي
+      children: [
+        // حديث عشوائي
         Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-              colors: [Colors.amberAccent.withOpacity(0.1), Colors.orangeAccent.withOpacity(0.05)]),
-            borderRadius: BorderRadius.circular(25),
-            border: Border.all(color: Colors.amberAccent.withOpacity(0.2)),
-          ),
-          child: Column(children: [
-            const Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 40),
-            const SizedBox(height: 12),
-            Text(
-              ai.lastInspiration.isNotEmpty ? ai.lastInspiration : '💡 اضغط على الزر للحصول على رسالة ملهمة',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, height: 1.5),
+            gradient: LinearGradient(
+              colors: [Colors.purple.withOpacity(0.2), Colors.indigo.withOpacity(0.1)],
+              begin: Alignment.topRight, end: Alignment.bottomLeft,
             ),
-            const SizedBox(height: 16),
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              ElevatedButton.icon(
-                onPressed: () async {
-                  await ai.generateInspiration(context: 'inspiration_tab');
-                  setState(() {});
-                },
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('رسالة جديدة'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.amberAccent.withOpacity(0.15),
-                  foregroundColor: Colors.amberAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.purple.withOpacity(0.3)),
+          ),
+          child: Column(
+            children: [
+              const Text('🕌 حديث شريف', style: TextStyle(color: Colors.purpleAccent, fontSize: 14)),
+              const SizedBox(height: 16),
+              Text(
+                'عن عمر بن الخطاب رضي الله عنه قال: سمعت رسول الله ﷺ يقول: "إنما الأعمال بالنيات، وإنما لكل امرئ ما نوى"',
+                style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.8),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(width: 12),
-              CircleAvatar(
-                backgroundColor: Colors.cyanAccent.withOpacity(0.15), radius: 20,
-                child: IconButton(
-                  icon: Icon(Icons.volume_up, color: tts.isSpeaking ? Colors.cyanAccent : Colors.white60, size: 20),
-                  onPressed: () {
-                    if (ai.lastInspiration.isNotEmpty) {
-                      tts.speak(ai.lastInspiration, language: 'ar');
-                    }
-                  },
+              const SizedBox(height: 12),
+              Text('رواه البخاري ومسلم',
+                style: TextStyle(color: Colors.white38, fontSize: 12)),
+              const SizedBox(height: 16),
+              // سبيكر
+              Consumer<TTSService>(
+                builder: (_, tts, __) => IconButton(
+                  icon: Icon(Icons.volume_up,
+                    color: tts.isSpeaking ? Colors.purpleAccent : Colors.white54, size: 28),
+                  onPressed: () => tts.speak(
+                    'عن عمر بن الخطاب رضي الله عنه قال: سمعت رسول الله صلى الله عليه وسلم يقول: إنما الأعمال بالنيات، وإنما لكل امرئ ما نوى'),
                 ),
               ),
-            ]),
-          ]),
-        ),
-
-        const SizedBox(height: 24),
-
-        // اقتباسات ملهمة
-        const Text('🌟 رسائل ملهمة', style: TextStyle(color: Colors.white54, fontSize: 14, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-
-        ...List.generate(5, (i) => Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.02),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.amberAccent.withOpacity(0.08)),
+            ],
           ),
-          child: Row(children: [
-            Container(width: 3, height: 40, decoration: BoxDecoration(
-              color: Colors.amberAccent.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
-            const SizedBox(width: 12),
-            Expanded(child: Text(
-              ['لا تحزن إن الله معنا', 'بعد العسر يسراً', 'فإن مع العسر يسراً', 'واستعينوا بالصبر والصلاة', 'إن الله لا يضيع أجر المحسنين'][i],
-              style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5))),
-          ]),
-        )),
+        ),
+        const SizedBox(height: 16),
+        // قائمة الأحاديث
+        if (db.isLoaded && db.hadiths.isNotEmpty)
+          ...db.hadiths.take(10).map((hadith) => Card(
+            color: const Color(0xFF1B2838),
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              title: Text(hadith['text'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 14)),
+              subtitle: Text(hadith['source'] ?? '', style: const TextStyle(color: Colors.white38, fontSize: 11)),
+              leading: const Icon(Icons.format_quote, color: Colors.purpleAccent),
+            ),
+          )),
+      ],
+    );
+  }
 
-        const SizedBox(height: 20),
-        const Opacity(opacity: 0.2, child: Text('🦂 Mirror Scorpion', style: TextStyle(color: Colors.white, fontSize: 12))),
-      ]),
+  Widget _buildStoriesView(DatabaseService db) {
+    return DefaultTabController(
+      length: 6,
+      child: Column(
+        children: [
+          const TabBar(
+            isScrollable: true,
+            indicatorColor: Colors.purpleAccent,
+            labelColor: Colors.purpleAccent,
+            unselectedLabelColor: Colors.white38,
+            tabs: [
+              Tab(text: 'قرآن'),
+              Tab(text: 'أنبياء'),
+              Tab(text: 'نساء'),
+              Tab(text: 'حيوان'),
+              Tab(text: 'إنسان'),
+              Tab(text: 'أقوام'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _storyList(db.quranStories, 'قصة قرآنية'),
+                _storyList(db.prophetStories, 'قصة نبي'),
+                _storyList(db.womenStories, 'قصة امرأة'),
+                _storyList(db.animalStories, 'قصة حيوان'),
+                _storyList(db.humanStories, 'قصة إنسان'),
+                _storyList(db.nationsStories, 'قصة أمة'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _storyList(List stories, String type) {
+    if (stories.isEmpty) {
+      return const Center(
+        child: Text('📖 جارٍ تحميل القصص...', style: TextStyle(color: Colors.white54)),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: stories.length,
+      itemBuilder: (_, i) {
+        final story = stories[i];
+        return Card(
+          color: const Color(0xFF1B2838),
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            title: Text(story['title']?.toString() ?? story['name']?.toString() ?? 'قصة',
+              style: const TextStyle(color: Colors.white, fontSize: 14)),
+            subtitle: Text('${story['text']?.toString().substring(0, (story['text']?.toString().length ?? 50).clamp(10, 80))}...',
+              style: const TextStyle(color: Colors.white38, fontSize: 11)),
+            leading: const Icon(Icons.auto_stories, color: Colors.purpleAccent),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.volume_up, color: Colors.white54, size: 18),
+                  onPressed: () => Provider.of<TTSService>(context, listen: false)
+                      .speak(story['text']?.toString() ?? ''),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.play_circle_outline, color: Colors.white38, size: 18),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('🎬 تحويل القصة إلى فيديو (قريباً في النسخة القادمة)')),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAsbabView(DatabaseService db) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // أسباب نزول عشوائية
+        ...List.generate(5, (i) {
+          final asbab = db.getRandomAsbab();
+          return Card(
+            color: const Color(0xFF1B2838),
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('سورة ${asbab['surah'] ?? ''} - آية ${asbab['ayah'] ?? ''}',
+                    style: const TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text(asbab['reason']?.toString() ?? '',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.6)),
+                  const SizedBox(height: 6),
+                  Text('"${asbab['text'] ?? ''}"',
+                    style: const TextStyle(color: Colors.cyanAccent, fontSize: 14, height: 1.6)),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildInspirationView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // زر تشغيل/إيقاف الإلهام
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: Colors.purple.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(width: 16),
+                const Icon(Icons.auto_awesome, color: Colors.purpleAccent, size: 20),
+                const SizedBox(width: 8),
+                const Text('الإلهام الذكي', style: TextStyle(color: Colors.white, fontSize: 14)),
+                const SizedBox(width: 8),
+                Switch(
+                  value: _isInspirationEnabled,
+                  onChanged: (v) => setState(() => _isInspirationEnabled = v),
+                  activeColor: Colors.purpleAccent,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // بطاقة الإلهام
+          if (_currentInspiration != null)
+            FadeTransition(
+              opacity: _fadeAnimation,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.purple.withOpacity(0.3), Colors.indigo.withOpacity(0.2)],
+                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.purpleAccent.withOpacity(0.4)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.purple.withOpacity(0.2),
+                      blurRadius: 30,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const Text('💫 رسالة إلهام', style: TextStyle(color: Colors.purpleAccent, fontSize: 16)),
+                    const SizedBox(height: 16),
+                    Text(_currentInspiration!,
+                      style: const TextStyle(color: Colors.white, fontSize: 20, height: 1.8),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.refresh, color: Colors.purpleAccent, size: 28),
+                          onPressed: _refreshInspiration,
+                          tooltip: 'رسالة جديدة',
+                        ),
+                        const SizedBox(width: 16),
+                        Consumer<TTSService>(
+                          builder: (_, tts, __) => IconButton(
+                            icon: Icon(Icons.volume_up,
+                              color: tts.isSpeaking ? Colors.purpleAccent : Colors.white54, size: 26),
+                            onPressed: () => tts.speak(_currentInspiration!),
+                            tooltip: 'استماع',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
