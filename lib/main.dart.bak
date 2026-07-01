@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'features/home_screen.dart';
-import 'features/games/games_menu_screen.dart';
 import 'features/card1_translation/translation_screen.dart';
 import 'features/card2_dialogue/dialogue_screen.dart';
 import 'features/card3_document/document_screen.dart';
@@ -76,7 +75,6 @@ class MirrorScorpionApp extends StatelessWidget {
             '/document': (context) => const DocumentTranslationScreen(),
             '/stories': (context) => const StoriesScreen(),
             '/games': (context) => const GamesScreen(),
-        '/games-menu': (context) => const GamesMenuScreen(),
             '/settings': (context) => const SettingsScreen(),
           },
         );

@@ -9,6 +9,7 @@ class PremiumVerificationService extends ChangeNotifier {
 
   bool get isPremium => _isPremium;
   String get deviceId => _deviceId;
+  String get encryptedDeviceId => _deviceId; // ← مطلوب من settings_screen
   String get expiryDate => _expiryDate;
 
   Future initialize() async {
@@ -22,7 +23,6 @@ class PremiumVerificationService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     String? saved = prefs.getString('device_unique_id');
     if (saved != null && saved.isNotEmpty) return saved;
-    // توليد ID فريد
     final random = DateTime.now().microsecondsSinceEpoch.toString();
     final id = 'MS-${random.substring(random.length - 12)}-${Platform.localHostname.substring(0, 4).toUpperCase()}';
     await prefs.setString('device_unique_id', id);
