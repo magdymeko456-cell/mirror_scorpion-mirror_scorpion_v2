@@ -1,5 +1,15 @@
-// هذا الملف أصبح فارغاً - يتم إدارة كل شيء عبر settings.gradle
-// و android/app/build.gradle
+buildscript {
+    ext.kotlin_version = '1.9.23'
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.android.tools.build:gradle:8.1.0'
+    }
+}
+
 allprojects {
     repositories {
         google()
