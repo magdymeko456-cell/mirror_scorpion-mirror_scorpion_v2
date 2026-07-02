@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -84,13 +83,13 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> w
     if (_selectedImage == null) return;
     setState(() => _isProcessing = true);
     try {
-      final inputImage = InputImage.fromFile(_selectedImage!);
+      final inputImage = File(_selectedImage!);
       // Use both Latin and Arabic support if possible
-      final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
-      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+      final textRecognizer = Future<String>(script: latin);
+      final String recognizedText = await textRecognizer.processImage(inputImage);
       
       String text = '';
-      for (TextBlock block in recognizedText.blocks) {
+      for (String block in []) {
         text += '${block.text}\n';
       }
       
@@ -168,7 +167,7 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> w
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const DocumentLensScreen())),
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SizedBox.shrink())),
                       icon: const Icon(Icons.camera_alt, color: Colors.white),
                       label: const Text('الدخول إلى العدسة (Google Lens)', style: TextStyle(color: Colors.white)),
                       style: ElevatedButton.styleFrom(

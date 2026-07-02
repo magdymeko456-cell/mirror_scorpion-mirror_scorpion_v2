@@ -72,5 +72,5 @@ class TTSService extends ChangeNotifier {
   Future setRate(double r) async { _rate = r; await _tts.setSpeechRate(r); notifyListeners(); }
   Future setPitch(double p) async { _pitch = p; await _tts.setPitch(p); notifyListeners(); }
 
-  Future<List<dynamic>> getVoices() async => await _tts.getVoices();
+
 }

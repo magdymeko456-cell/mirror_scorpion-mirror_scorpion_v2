@@ -96,7 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'استخدم الوضع المظلم لحماية العينين',  
               Provider.of<ThemeProvider>(context).isDarkMode,  
               (value) {  
-                Provider.of<ThemeProvider>(context, listen: false).toggleTheme(value);  
+                Provider.of<ThemeProvider>(context, listen: false).setDarkMode(value);  
               },  
             ),  
             const SizedBox(height: 20),  
@@ -177,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               (value) async {  
                 setState(() => _bubbleEnabled = value);  
                 _saveSetting('bubble_enabled', value);  
-                await Provider.of<FloatingBubbleService>(context, listen: false).toggleBubble(context, value);  
+                await Provider.of<FloatingBubbleService>(context, listen: false).toggleBubble();  
               },  
             ),  
             if (_bubbleEnabled) ...[  
@@ -329,13 +329,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               IconButton(  
                 icon: const Icon(Icons.image, color: Colors.blueAccent),  
                 onPressed: () async {
-                  await Provider.of<BackgroundService>(context, listen: false).pickBackground();
+                  await Provider.of<BackgroundService>(context, listen: false).pickDocument();
                 },  
               ),  
               IconButton(  
                 icon: const Icon(Icons.restore, color: Colors.redAccent),  
                 onPressed: () async {
-                  await Provider.of<BackgroundService>(context, listen: false).removeBackground();
+                  Provider.of<BackgroundService>(context, listen: false).removeBackground();
                 },  
               ),  
             ],  

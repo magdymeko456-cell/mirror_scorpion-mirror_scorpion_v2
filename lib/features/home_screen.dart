@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/widgets/shared_widgets.dart';
 import '../services/floating_bubble_service.dart';
-import '../services/ai_enhanced_service.dart';
 import '../services/language_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -57,7 +56,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _showAIInspiration() async {
-    final aiService = Provider.of<AIEnhancedService>(context, listen: false);
     final inspiration = await aiService.generateInspiration(
       userMood: '',
       context: 'Home Screen',
@@ -97,7 +95,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final bubbleService = Provider.of<FloatingBubbleService>(context);
-    final aiService = Provider.of<AIEnhancedService>(context);
     final langService = Provider.of<LanguageService>(context);
     
     bool isBubbleActive = bubbleService.isStarted;

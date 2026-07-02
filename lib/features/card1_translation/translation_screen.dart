@@ -103,7 +103,8 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
   void _shareTranslation() {
     final text = '${_translatedController.text}\n\n— — — — — — — — — —\n🌐 تُرجم بواسطة ميرور سكربيون 🦂';
     Clipboard.setData(ClipboardData(text: text));
-    SharePlus.instance.share(ShareParams(text: text));
+    import "package:share_plus/share_plus.dart";
+    Share.share(text);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('✅ تم النسخ مع التوقيع - يمكنك المشاركة')),
     );
