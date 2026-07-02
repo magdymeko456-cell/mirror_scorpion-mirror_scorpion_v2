@@ -194,7 +194,7 @@ class _PremiumCardState extends State<PremiumCard> {
         ]),
         SizedBox(height: 12),
         Row(children: [
-          Icon(Icons.whatsapp, color: Colors.green, size: 18),
+          Icon(Icons.phone, color: Colors.green, size: 18),
           SizedBox(width: 8),
           Text('واتساب:', style: TextStyle(color: Colors.white54, fontSize: 12)),
         ]),
