@@ -10,7 +10,6 @@ class PremiumVerificationService extends ChangeNotifier {
   String _expiryDate = '';
   bool _isLoading = false;
 
-  // ⚠️ غيّر الرابط لرابط سيرفرك
   static const String _serverUrl = 'https://example.com/api/activate.php';
 
   bool get isPremium => _isPremium;
@@ -24,6 +23,7 @@ class PremiumVerificationService extends ChangeNotifier {
     _isPremium = prefs.getBool('is_premium') ?? false;
     _expiryDate = prefs.getString('expiry_date') ?? '';
     _deviceId = await _generateDeviceId();
+    if (_isPremium) await _verifyWithServer(showError: false);
   }
 
   Future<String> _generateDeviceId() async {
@@ -41,7 +41,8 @@ class PremiumVerificationService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('is_premium', true);
       await prefs.setString('activation_code', activationCode);
-      _expiryDate = '${DateTime.now().year + 1}/${DateTime.now().month}/${DateTime.now().day}';
+      final expiry = DateTime.now().add(const Duration(days: 365));
+      _expiryDate = '${expiry.year}/${expiry.month}/${expiry.day}';
       await prefs.setString('expiry_date', _expiryDate);
       _isPremium = true;
       notifyListeners();
@@ -82,6 +83,23 @@ class PremiumVerificationService extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
     return false;
+  }
+
+  Future<bool> _verifyWithServer({bool showError = true}) async {
+    try {
+      final response = await http.post(
+        Uri.parse(_serverUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'action': 'check', 'device_id': _deviceId}),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['valid'] == true) return true;
+      }
+    } catch (e) {
+      debugPrint('❌ Server check error: $e');
+    }
+    return _isPremium;
   }
 
   Future<void> deactivatePremium() async {

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../core/widgets/shared_widgets.dart';
 import '../services/floating_bubble_service.dart';
 import '../services/language_service.dart';
-import '../services/ai_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -57,7 +56,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _showAIInspiration() async {
-    inal aiService = Provider.of<AIService>(context, listen: false);
     final inspiration = await aiService.generateInspiration(
       userMood: '',
       context: 'Home Screen',

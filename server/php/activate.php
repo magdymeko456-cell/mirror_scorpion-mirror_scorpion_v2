@@ -30,6 +30,5 @@ switch ($action) {
         $devices = file_exists($dataFile) ? (json_decode(file_get_contents($dataFile), true) ?? []) : [];
         echo json_encode(['valid'=>isset($devices[$deviceId]),'expiry'=>$devices[$deviceId]['expiry']??'']);
         break;
-    default:
-        echo json_encode(['success'=>false,'error'=>'action غير معروف']);
+    default: echo json_encode(['success'=>false,'error'=>'action غير معروف']);
 }

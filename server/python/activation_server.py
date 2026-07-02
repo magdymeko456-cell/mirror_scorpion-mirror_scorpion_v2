@@ -28,8 +28,8 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self._respond(400,{'error':'action غير معروف'})
     def _respond(self,s,d):
-        self.send_response(s); self.end_headers(); self.wfile.write(json.dumps(d).encode())
-    def log_message(self,f,*a): print(f"[{datetime.now().strftime('%H:%M:%S')}] {a[0]} {a[1]} {a[2]}")
+        self.send_response(s)
+        self.end_headers()
+        self.wfile.write(json.dumps(d).encode())
 
-if __name__ == '__main__':
-    HTTPServer(('0.0.0.0', PORT), Handler).serve_forever()
+HTTPServer(('0.0.0.0', PORT), Handler).serve_forever()
