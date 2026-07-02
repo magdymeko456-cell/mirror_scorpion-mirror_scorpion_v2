@@ -37,7 +37,6 @@ class _PremiumCardState extends State<PremiumCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // العنوان
           const Row(
             children: [
               Icon(Icons.workspace_premium, color: Colors.amber, size: 28),
@@ -47,25 +46,14 @@ class _PremiumCardState extends State<PremiumCard> {
             ],
           ),
           const SizedBox(height: 20),
-
-          // معرف الجهاز
-          const Text('معرف الجهاز (ID):',
-              style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
           _buildDeviceIdRow(premiumService),
           const SizedBox(height: 20),
-
-          // التفعيل اليدوي
           _buildManualActivation(premiumService),
           const SizedBox(height: 20),
-
-          // التفعيل السحابي
           _buildCloudActivation(premiumService),
           const SizedBox(height: 20),
           const Divider(color: Colors.white24),
           const SizedBox(height: 8),
-
-          // معلومات الاتصال
           _buildContactInfo(),
         ],
       ),
@@ -78,10 +66,8 @@ class _PremiumCardState extends State<PremiumCard> {
       decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)),
       child: Row(
         children: [
-          Expanded(
-            child: Text(service.encryptedDeviceId,
-                style: const TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'monospace')),
-          ),
+          Expanded(child: Text(service.encryptedDeviceId,
+              style: const TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'monospace'))),
           IconButton(
             icon: const Icon(Icons.copy, color: Colors.amber, size: 20),
             onPressed: () {
@@ -147,12 +133,11 @@ class _PremiumCardState extends State<PremiumCard> {
             child: ElevatedButton.icon(
               onPressed: () async {
                 final success = await service.activatePremium(_codeController.text);
+                if (!mounted) return;
                 if (success) {
-                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('✅ تم تفعيل النسخة الاحترافية بنجاح')));
                 } else {
-                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('❌ كود التفعيل غير صحيح'), backgroundColor: Colors.red));
                 }
@@ -239,19 +224,25 @@ class _PremiumCardState extends State<PremiumCard> {
             ],
           ),
           SizedBox(height: 12),
-          Row(
-            children: [Icon(Icons.whatsapp, color: Colors.green, size: 18), SizedBox(width: 8), Text('واتساب:', style: TextStyle(color: Colors.white54, fontSize: 12))],
-          ),
+          _contactRow(Icons.whatsapp, Colors.green, 'واتساب:'),
           Padding(padding: EdgeInsets.only(left: 26), child: Text('01017341250', style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'monospace'))),
           Padding(padding: EdgeInsets.only(left: 26), child: Text('01031680816', style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'monospace'))),
           Padding(padding: EdgeInsets.only(left: 26), child: Text('01558203456', style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'monospace'))),
           SizedBox(height: 10),
-          Row(
-            children: [Icon(Icons.email, color: Colors.blue, size: 18), SizedBox(width: 8), Text('إيميل:', style: TextStyle(color: Colors.white54, fontSize: 12))],
-          ),
+          _contactRow(Icons.email, Colors.blue, 'إيميل:'),
           Padding(padding: EdgeInsets.only(left: 26), child: Text('dosoky.server@gmail.com', style: TextStyle(color: Colors.blueAccent, fontSize: 13, fontFamily: 'monospace'))),
         ],
       ),
+    );
+  }
+
+  static Widget _contactRow(IconData icon, Color color, String label) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 18),
+        SizedBox(width: 8),
+        Text(label, style: TextStyle(color: Colors.white54, fontSize: 12)),
+      ],
     );
   }
 }

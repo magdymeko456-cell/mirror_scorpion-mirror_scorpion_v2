@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""
-🦂 Mirror Scorpion Activation Server (Python)
-Usage: python3 activation_server.py
-"""
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json, os
 from datetime import datetime, timedelta
@@ -32,13 +28,11 @@ class ActivationHandler(BaseHTTPRequestHandler):
             }
             json.dump(devices, open(DATA_FILE, 'w'), indent=2)
             self._respond(200, {'success': True, 'message': '✅ تم التفعيل', 'expiry': expiry})
-
         elif body['action'] == 'check':
             self._respond(200, {
                 'valid': body['device_id'] in devices,
                 'expiry': devices.get(body['device_id'], {}).get('expiry', '')
             })
-
         else:
             self._respond(400, {'error': 'action غير معروف'})
 

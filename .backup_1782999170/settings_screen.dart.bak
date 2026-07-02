@@ -1,4 +1,4 @@
-Widget const PremiumCard() {
+Widget _buildPremiumCard() {
     final premiumService = Provider.of<PremiumVerificationService>(context);
     final TextEditingController _codeController = TextEditingController();
 
