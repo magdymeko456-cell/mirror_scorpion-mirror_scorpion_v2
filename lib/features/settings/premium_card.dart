@@ -42,7 +42,6 @@ class _PremiumCardState extends State<PremiumCard> {
           ]),
           const SizedBox(height: 20),
 
-          // Device ID
           const Text('معرف الجهاز (ID):',
               style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
@@ -61,17 +60,14 @@ class _PremiumCardState extends State<PremiumCard> {
             ])),
           const SizedBox(height: 20),
 
-          // تفعيل يدوي
           _manualBox(ps),
           const SizedBox(height: 20),
 
-          // تفعيل سحابي
           _cloudBox(ps),
           const SizedBox(height: 20),
           const Divider(color: Colors.white24),
           const SizedBox(height: 8),
 
-          // معلومات الاتصال
           _contactBox(),
         ],
       ),
@@ -197,20 +193,22 @@ class _PremiumCardState extends State<PremiumCard> {
               style: TextStyle(color: Colors.amber, fontSize: 13, fontWeight: FontWeight.bold)),
         ]),
         SizedBox(height: 12),
-        _c(Icons.whatsapp, Colors.green, 'واتساب:'),
+        Row(children: [
+          Icon(Icons.whatsapp, color: Colors.green, size: 18),
+          SizedBox(width: 8),
+          Text('واتساب:', style: TextStyle(color: Colors.white54, fontSize: 12)),
+        ]),
         Padding(padding: EdgeInsets.only(left: 26), child: Text('01017341250', style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'monospace'))),
         Padding(padding: EdgeInsets.only(left: 26), child: Text('01031680816', style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'monospace'))),
         Padding(padding: EdgeInsets.only(left: 26), child: Text('01558203456', style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'monospace'))),
         SizedBox(height: 10),
-        _c(Icons.email, Colors.blue, 'إيميل:'),
+        Row(children: [
+          Icon(Icons.email, color: Colors.blue, size: 18),
+          SizedBox(width: 8),
+          Text('إيميل:', style: TextStyle(color: Colors.white54, fontSize: 12)),
+        ]),
         Padding(padding: EdgeInsets.only(left: 26), child: Text('dosoky.server@gmail.com', style: TextStyle(color: Colors.blueAccent, fontSize: 13, fontFamily: 'monospace'))),
       ]),
     );
   }
-
-  static const _c = Row(children: [
-    Icon(Icons.whatsapp, color: Colors.green, size: 18),
-    SizedBox(width: 8),
-    Text('واتساب:', style: TextStyle(color: Colors.white54, fontSize: 12)),
-  ]);
 }

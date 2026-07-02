@@ -10,6 +10,7 @@ class PremiumVerificationService extends ChangeNotifier {
   String _expiryDate = '';
   bool _isLoading = false;
 
+  // ⚠️ غيّر الرابط إلى رابط السيرفر الخاص بك
   static const String _serverUrl = 'https://example.com/api/activate.php';
 
   bool get isPremium => _isPremium;

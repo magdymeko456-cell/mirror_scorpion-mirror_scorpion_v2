@@ -31,4 +31,5 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(s); self.end_headers(); self.wfile.write(json.dumps(d).encode())
     def log_message(self,f,*a): print(f"[{datetime.now().strftime('%H:%M:%S')}] {a[0]} {a[1]} {a[2]}")
 
-HTTPServer(('0.0.0.0', PORT), Handler).serve_forever()
+if __name__ == '__main__':
+    HTTPServer(('0.0.0.0', PORT), Handler).serve_forever()
