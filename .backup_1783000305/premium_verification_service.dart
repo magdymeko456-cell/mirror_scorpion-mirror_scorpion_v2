@@ -37,6 +37,7 @@ class PremiumVerificationService extends ChangeNotifier {
     return id;
   }
 
+  // التفعيل اليدوي
   Future<bool> activatePremium(String activationCode) async {
     if (activationCode.length >= 16) {
       final prefs = await SharedPreferences.getInstance();
@@ -52,6 +53,7 @@ class PremiumVerificationService extends ChangeNotifier {
     return false;
   }
 
+  // التفعيل السحابي
   Future<bool> activateWithServer() async {
     _isLoading = true;
     notifyListeners();
