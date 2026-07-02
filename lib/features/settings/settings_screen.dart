@@ -177,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               (value) async {  
                 setState(() => _bubbleEnabled = value);  
                 _saveSetting('bubble_enabled', value);  
-                await Provider.of<FloatingBubbleService>(context, listen: false).toggleBubble();  
+                Provider.of<FloatingBubbleService>(context, listen: false).toggleBubble();  
               },  
             ),  
             if (_bubbleEnabled) ...[  
