@@ -1,19 +1,43 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 
 class FloatingBubbleService extends ChangeNotifier {
   bool _isEnabled = false;
+  bool _isStarted = false;
   double _opacity = 0.8;
-  double _size = 120;
+  double _bubbleSize = 120;
   bool _autoTranslate = true;
 
   bool get isEnabled => _isEnabled;
+  bool get isStarted => _isStarted;
   double get opacity => _opacity;
-  double get size => _size;
+  double get bubbleSize => _bubbleSize;
   bool get autoTranslate => _autoTranslate;
 
+  Future<void> initialize() async {
+    _isEnabled = true;
+    _isStarted = false;
+    notifyListeners();
+  }
+
+  Future<void> startBubble(BuildContext context) async {
+    _isStarted = true;
+    _isEnabled = true;
+    notifyListeners();
+  }
+
+  Future<void> stopBubble() async {
+    _isStarted = false;
+    notifyListeners();
+  }
+
   void toggleBubble() {
-    _isEnabled = !_isEnabled;
+    if (_isStarted) {
+      _isStarted = false;
+      _isEnabled = false;
+    } else {
+      _isStarted = true;
+      _isEnabled = true;
+    }
     notifyListeners();
   }
 
@@ -22,8 +46,8 @@ class FloatingBubbleService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setSize(double value) {
-    _size = value;
+  void setBubbleSize(double value) {
+    _bubbleSize = value;
     notifyListeners();
   }
 

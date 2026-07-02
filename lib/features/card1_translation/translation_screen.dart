@@ -1,9 +1,9 @@
+import "package:share_plus/share_plus.dart";
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:file_picker/file_picker.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../services/language_service.dart';
 import '../../services/tts_service.dart';
 
@@ -103,7 +103,6 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
   void _shareTranslation() {
     final text = '${_translatedController.text}\n\n— — — — — — — — — —\n🌐 تُرجم بواسطة ميرور سكربيون 🦂';
     Clipboard.setData(ClipboardData(text: text));
-    import "package:share_plus/share_plus.dart";
     Share.share(text);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('✅ تم النسخ مع التوقيع - يمكنك المشاركة')),
