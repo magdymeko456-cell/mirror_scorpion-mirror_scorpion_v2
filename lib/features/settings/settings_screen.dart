@@ -1,310 +1,97 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../services/premium_verification_service.dart';
 import 'premium_card.dart';
-Widget const PremiumCard() {
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _darkMode = true;
+
+  @override
+  Widget build(BuildContext context) {
     final premiumService = Provider.of<PremiumVerificationService>(context);
-    final TextEditingController _codeController = TextEditingController();
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.amber.withOpacity(0.15), Colors.orange.withOpacity(0.05)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D0D0D),
+      appBar: AppBar(
+        title: const Text('الإعدادات', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ---- عنوان القسم ----
-          const Row(
-            children: [
-              Icon(Icons.workspace_premium, color: Colors.amber, size: 28),
-              SizedBox(width: 12),
-              Text('تفعيل النسخة البرو (PRO)',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // ---- معرف الجهاز ----
-          const Text('معرف الجهاز (ID):',
-              style: TextStyle(
-                  color: Colors.amber,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration:
-                BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(premiumService.encryptedDeviceId,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontFamily: 'monospace')),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.copy, color: Colors.amber, size: 20),
-                  onPressed: () {
-                    Clipboard.setData(
-                        ClipboardData(text: premiumService.encryptedDeviceId));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('تم نسخ معرف الجهاز')));
-                  },
-                ),
-              ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // كارت التفعيل البرو الجديد المضمون والمستقل
+            const PremiumCard(),
+            
+            const SizedBox(height: 25),
+            const Text(
+              'العامة',
+              style: TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold),
             ),
-          ),
-          const SizedBox(height: 20),
-
-          // ========    1. التفعيل اليدوي (بالكود)    ========
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.withOpacity(0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.key, color: Colors.blue, size: 18),
-                    SizedBox(width: 8),
-                    Text('التفعيل اليدوي (كود التفعيل)',
-                        style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text('ألصق كود التفعيل:',
-                    style: TextStyle(color: Colors.white70, fontSize: 14)),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _codeController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'باتش التفعيل...',
-                          hintStyle:
-                              TextStyle(color: Colors.white.withOpacity(0.3)),
-                          filled: true,
-                          fillColor: Colors.black26,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.paste, color: Colors.amber),
-                      onPressed: () async {
-                        final data = await Clipboard.getData('text/plain');
-                        if (data != null) _codeController.text = data.text!;
+            const SizedBox(height: 10),
+            
+            // خيارات الإعدادات العامة الافتراضية للتطبيق
+            Card(
+              color: Colors.white.withOpacity(0.05),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.dark_mode, color: Colors.amber),
+                    title: const Text('الوضع الداكن', style: TextStyle(color: Colors.white)),
+                    trailing: Switch(
+                      value: _darkMode,
+                      activeColor: Colors.amber,
+                      onChanged: (val) {
+                        setState(() {
+                          _darkMode = val;
+                        });
                       },
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      final success =
-                          await premiumService.activatePremium(_codeController.text);
-                      if (success) {
-                        setState(() => _isPremium = true);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                            content: Text('✅ تم تفعيل النسخة الاحترافية بنجاح')));
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                            content: Text('❌ كود التفعيل غير صحيح'),
-                            backgroundColor: Colors.red));
-                      }
+                  ),
+                  const Divider(color: Colors.white10, height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.download, color: Colors.amber),
+                    title: const Text('تحميل الحزم اللغوية (Offline)', style: TextStyle(color: Colors.white)),
+                    trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 16),
+                    onTap: () {
+                      // مسار تحميل اللغات
                     },
-                    icon: const Icon(Icons.lock_open, size: 18),
-                    label: const Text('تفعيل بالكود',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-
-          // ========    2. التفعيل السحابي (عبر السيرفر)    ========
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green.withOpacity(0.2)),
+            
+            const SizedBox(height: 20),
+            const Text(
+              'عن التطبيق',
+              style: TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.cloud, color: Colors.green, size: 18),
-                    SizedBox(width: 8),
-                    Text('التفعيل السحابي (أونلاين)',
-                        style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'سيتم إرسال معرف جهازك إلى السيرفر للتحقق والتفعيل الفوري',
-                  style: TextStyle(color: Colors.white54, fontSize: 12),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: premiumService.isLoading
-                        ? null
-                        : () async {
-                            final success =
-                                await premiumService.activateWithServer();
-                            if (success) {
-                              setState(() => _isPremium = true);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          '✅ تم التفعيل السحابي بنجاح')));
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          '❌ فشل التفعيل السحابي، تحقق من اتصالك أو راجع السيرفر'),
-                                      backgroundColor: Colors.red));
-                            }
-                          },
-                    icon: premiumService.isLoading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.cloud_upload, size: 18),
-                    label: Text(
-                      premiumService.isLoading ? 'جاري التفعيل...' : 'تفعيل سحابي',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 10),
+            
+            Card(
+              color: Colors.white.withOpacity(0.05),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              child: const ListTile(
+                leading: Icon(Icons.info_outline, color: Colors.amber),
+                title: Text('المطور', style: TextStyle(color: Colors.white)),
+                subtitle: Text('tetocollctionway', style: TextStyle(color: Colors.white54)),
+                trailing: Text('v2.7', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-
-          // ---- الفاصل ----
-          const Divider(color: Colors.white24),
-          const SizedBox(height: 8),
-
-          // ========    معلومات الاتصال (تحت المستطيل)    ========
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.contact_support, color: Colors.amber, size: 20),
-                    SizedBox(width: 8),
-                    Text('معلومات الاتصال للحصول على الكود',
-                        style: TextStyle(
-                            color: Colors.amber,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.whatsapp, color: Colors.green, size: 18),
-                    SizedBox(width: 8),
-                    Text('واتساب:',
-                        style: TextStyle(
-                            color: Colors.white54, fontSize: 12)),
-                  ],
-                ),
-                SizedBox(height: 4),
-                Padding(
-                  padding: EdgeInsets.only(left: 26),
-                  child: Text('01017341250',
-                      style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          fontFamily: 'monospace')),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(left: 26),
-                  child: Text('01031680816',
-                      style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          fontFamily: 'monospace')),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(left: 26),
-                  child: Text('01558203456',
-                      style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          fontFamily: 'monospace')),
-                ),
-                SizedBox(height: 10),
-                Row(
-                  children: [
-                    Icon(Icons.email, color: Colors.blue, size: 18),
-                    SizedBox(width: 8),
-                    Text('إيميل:',
-                        style: TextStyle(
-                            color: Colors.white54, fontSize: 12)),
-                  ],
-                ),
-                SizedBox(height: 4),
-                Padding(
-                  padding: EdgeInsets.only(left: 26),
-                  child: Text('dosoky.server@gmail.com',
-                      style: TextStyle(
-                          color: Colors.blueAccent,
-                          fontSize: 13,
-                          fontFamily: 'monospace')),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
