@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace "com.mirror.scorpion.v2"
-    compileSdkVersion 34
+    compileSdk 36
     ndkVersion "27.0.12077973"
 
     compileOptions {
@@ -20,8 +20,8 @@ android {
 
     defaultConfig {
         applicationId "com.mirror.scorpion.v2"
-        minSdkVersion 24
-        targetSdkVersion 34
+        minSdk 24
+        targetSdk 36
         versionCode 1
         versionName "1.2.0"
         multiDexEnabled true
