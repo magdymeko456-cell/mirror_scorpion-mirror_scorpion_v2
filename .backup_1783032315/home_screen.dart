@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _showAIInspiration() async {
-    final aiService = Provider.of<AIService>(context, listen: false);
+    inal aiService = Provider.of<AIService>(context, listen: false);
     final inspiration = await aiService.generateInspiration(
       userMood: '',
       context: 'Home Screen',

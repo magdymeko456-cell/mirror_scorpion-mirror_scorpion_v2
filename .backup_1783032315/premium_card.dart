@@ -180,7 +180,7 @@ class _PremiumCardState extends State<PremiumCard> {
                   style: TextStyle(color: Colors.amber, fontSize: 13, fontWeight: FontWeight.bold)),
             ]),
             SizedBox(height: 12),
-            Row(children: [Icon(Icons.chat, color: Colors.green, size: 18), SizedBox(width: 8), Text('واتساب:', style: TextStyle(color: Colors.white54, fontSize: 12))]),
+            Row(children: [Icon(Icons.whatsapp, color: Colors.green, size: 18), SizedBox(width: 8), Text('واتساب:', style: TextStyle(color: Colors.white54, fontSize: 12))]),
             Padding(padding: EdgeInsets.only(left: 26), child: Text('01017341250', style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'monospace'))),
             Padding(padding: EdgeInsets.only(left: 26), child: Text('01031680816', style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'monospace'))),
             Padding(padding: EdgeInsets.only(left: 26), child: Text('01558203456', style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'monospace'))),
