@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
+"""
+🦂 Mirror Scorpion Activation Server (Python)
+Usage: python3 activation_server.py
+"""
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import json
-import os
+import json, os
 from datetime import datetime, timedelta
 
-DATA_FILE = "activated_devices.json"
+DATA_FILE = os.path.join(os.path.dirname(__file__), "devices.json")
 PORT = 8080
 
 class ActivationHandler(BaseHTTPRequestHandler):
@@ -18,73 +21,35 @@ class ActivationHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Content-Type', 'application/json')
+        body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+        devices = json.load(open(DATA_FILE)) if os.path.exists(DATA_FILE) else {}
 
-        content_length = int(self.headers['Content-Length'])
-        body = json.loads(self.rfile.read(content_length))
-
-        action = body.get('action', '')
-        device_id = body.get('device_id', '')
-
-        devices = {}
-        if os.path.exists(DATA_FILE):
-            with open(DATA_FILE, 'r') as f:
-                devices = json.load(f)
-
-        if action == 'activate':
-            if not device_id:
-                self._respond(400, {'success': False, 'error': 'device_id مطلوب'})
-                return
-
-            if device_id in devices:
-                self._respond(200, {
-                    'success': True,
-                    'message': 'مفعل مسبقًا',
-                    'expiry': devices[device_id]['expiry']
-                })
-                return
-
+        if body['action'] == 'activate':
             expiry = (datetime.now() + timedelta(days=365)).strftime('%Y/%m/%d')
-            devices[device_id] = {
+            devices[body['device_id']] = {
                 'activated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'expiry': expiry,
-                'device_name': body.get('device_name', 'unknown')
-            }
-
-            with open(DATA_FILE, 'w') as f:
-                json.dump(devices, f, indent=2)
-
-            self._respond(200, {
-                'success': True,
-                'message': '✅ تم التفعيل',
                 'expiry': expiry
-            })
+            }
+            json.dump(devices, open(DATA_FILE, 'w'), indent=2)
+            self._respond(200, {'success': True, 'message': '✅ تم التفعيل', 'expiry': expiry})
 
-        elif action == 'check':
-            valid = device_id in devices
+        elif body['action'] == 'check':
             self._respond(200, {
-                'valid': valid,
-                'expiry': devices[device_id]['expiry'] if valid else ''
-              })
-
-        elif action == 'list':
-            self._respond(200, {
-                'devices': devices,
-                'count': len(devices)
+                'valid': body['device_id'] in devices,
+                'expiry': devices.get(body['device_id'], {}).get('expiry', '')
             })
 
         else:
             self._respond(400, {'error': 'action غير معروف'})
 
-    def _respond(self, status, data):
-        self.send_response(status)
-        self.send_header('Content-Type', 'application/json')
+    def _respond(self, s, d):
+        self.send_response(s)
         self.end_headers()
-        self.wfile.write(json.dumps(data).encode())
+        self.wfile.write(json.dumps(d).encode())
 
-    def log_message(self, format, *args):
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] {args[0]} {args[1]} {args[2]}")
+    def log_message(self, f, *a):
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] {a[0]} {a[1]} {a[2]}")
 
 if __name__ == '__main__':
-    server = HTTPServer(('0.0.0.0', PORT), ActivationHandler)
-    print(f"🚀 Server running on port {PORT}")
-    server.serve_forever()
+    print(f"🚀 Activation Server running on http://0.0.0.0:{PORT}")
+    HTTPServer(('0.0.0.0', PORT), ActivationHandler).serve_forever()
