@@ -17,12 +17,13 @@ allprojects {
     }
 }
 
-// 🔥 فرض compileSdkVersion=36 على كل المشاريع الفرعية
-// هذا يحل مشكلة speech_to_text التي لا تجد flutter.compileSdkVersion
+// 🧠 السر هنا: afterEvaluate يفرض compileSdkVersion=36
+// على كل مكتبة بعد تحميل build.gradle الخاص بها
+// هذا يحل مشكلة speech_to_text التي تقول compileSdkVersion is not specified
 subprojects {
     afterEvaluate { project ->
         if (project.hasProperty('android')) {
-            project.android.compileSdkVersion = 36
+            project.android.compileSdkVersion 36
         }
     }
 }
