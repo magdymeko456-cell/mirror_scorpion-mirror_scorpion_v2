@@ -20,6 +20,22 @@ jobs:
         run: |
           set -e
           flutter pub get
+
+          # Fix compileSdk in all gradle files (including dependencies in pub cache)
+          # This prevents "does not specify compileSdk" errors with AGP 8.9.1
+          find ~/.pub-cache -name "build.gradle" -exec sed -i '1i\android { compileSdk = 36 }\n' {} \; 2>/dev/null || true
+          find ~/.pub-cache -name "build.gradle.kts" -exec sed -i '1i\android { compileSdk = 36 }\n' {} \; 2>/dev/null || true
+
+          # Also fix android subproject files in project itself
+          find android -name "build.gradle*" -exec sed -i 's/compileSdk .*/compileSdk = 36/g' {} +
+          find android -name "build.gradle*" -exec sed -i 's/targetSdk .*/targetSdk = 35/g' {} +
+          find packages -name "build.gradle*" -exec sed -i 's/compileSdk .*/compileSdk = 36/g' {} +
+          find packages -name "build.gradle*" -exec sed -i 's/targetSdk .*/targetSdk = 35/g' {} +
+
+          # Fix double equals issues from sed
+          find android -name "build.gradle*" -exec sed -i 's/==/=/g' {} +
+          find packages -name "build.gradle*" -exec sed -i 's/==/=/g' {} +
+
           flutter build apk --release --no-tree-shake-icons
           mkdir -p output_apk
           cp build/app/outputs/flutter-apk/app-release.apk output_apk/
