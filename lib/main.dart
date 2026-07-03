@@ -19,6 +19,7 @@ import 'features/games/games_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/about/about_app_screen.dart';
 import 'features/admin/key_generator_screen.dart';
+import 'features/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,8 +74,9 @@ class MirrorScorpionApp extends StatelessWidget {
               Locale('en'),
             ],
             locale: const Locale('ar'),
-            home: const HomeScreen(),
+            home: const SplashScreen(),
             routes: {
+              '/home': (context) => const HomeScreen(),
               '/translate': (context) => const TranslateScreen(),
               '/dialogue': (context) => const DialogueScreen(),
               '/document': (context) => const DocumentScreen(),

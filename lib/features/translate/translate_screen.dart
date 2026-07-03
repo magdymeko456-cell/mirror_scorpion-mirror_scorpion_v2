@@ -230,7 +230,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                           Expanded(
                             child: TextField(
                               controller: _targetController,
-                              style: const TextStyle(color: Colors.green.shade300, fontSize: 16),
+                              style: TextStyle(color: Colors.green.shade300, fontSize: 16),
                               decoration: InputDecoration(
                                 hintText: 'الترجمة...',
                                 hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
