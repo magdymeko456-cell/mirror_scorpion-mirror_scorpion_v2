@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:mirror_scorpion/core/services/tts_service.dart';
-import 'package:mirror_scorpion/core/widgets/shared_widgets.dart';
-import 'package:mirror_scorpion/core/services/database_service.dart';
+import '../core/services/tts_service.dart';
+import '../core/widgets/shared_widgets.dart';
+import '../core/services/database_service.dart';
 
 class TranslateScreen extends StatefulWidget {
   const TranslateScreen({super.key});
@@ -21,8 +21,6 @@ class _TranslateScreenState extends State<TranslateScreen> {
   bool _isTranslating = false;
   String _selectedVoice = 'Seif';
   bool _showWatermark = true;
-  final DatabaseService _dbService = DatabaseService();
-  List<Map<String, dynamic>> _history = [];
   bool _isListening = false;
 
   final List<String> _voices = ['Seif', 'Salma', 'Sama', 'Sara', 'User'];
@@ -41,15 +39,9 @@ class _TranslateScreenState extends State<TranslateScreen> {
   @override
   void initState() {
     super.initState();
-    _loadHistory();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<DatabaseService>(context, listen: false).incrementCardUsage('translate');
     });
-  }
-
-  Future<void> _loadHistory() async {
-    final h = await _dbService.getTranslationHistory();
-    if (mounted) setState(() => _history = h);
   }
 
   Future<void> _translate() async {
@@ -66,15 +58,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
         }),
       );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _targetController.text = data['translatedText'];
-        await _dbService.saveTranslation(
-          _sourceController.text,
-          _targetController.text,
-          _sourceLang,
-          _targetLang,
-        );
-        await _loadHistory();
+        _targetController.text = jsonDecode(response.body)['translatedText'];
       }
     } catch (e) {
       _targetController.text = '[🔁 ترجمة تجريبية] ${_sourceController.text}';
@@ -84,27 +68,17 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
   void _speak(String text, String lang) {
     if (_selectedVoice == 'User') {
-      _showSpeechInput();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('🎤 صوت المستخدم: قم بالتسجيل من الإعدادات')),
+      );
       return;
     }
     context.read<TtsService>().speak(text, lang, _selectedVoice);
   }
 
-  void _showSpeechInput() {
-    setState(() => _isListening = true);
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() => _isListening = false);
-        _sourceController.text = '🎤 تجربة الإدخال الصوتي';
-      }
-    });
-  }
-
   void _swapLanguages() {
     setState(() {
-      final temp = _sourceLang;
-      _sourceLang = _targetLang;
-      _targetLang = temp;
+      final temp = _sourceLang; _sourceLang = _targetLang; _targetLang = temp;
       final tempText = _sourceController.text;
       _sourceController.text = _targetController.text;
       _targetController.text = tempText;
@@ -125,134 +99,84 @@ class _TranslateScreenState extends State<TranslateScreen> {
       ),
       body: Column(
         children: [
-          Container(
+          // Source text
+          Expanded(flex: 3, child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Card(child: TextField(
+              controller: _sourceController, maxLines: null, expands: true,
+              textAlign: TextAlign.right,
+              decoration: const InputDecoration(
+                hintText: 'اكتب النص للترجمة...',
+                border: OutlineInputBorder(), contentPadding: EdgeInsets.all(16),
+              ),
+            )),
+          )),
+          // Language + buttons
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _sourceLang,
-                    decoration: const InputDecoration(labelText: 'من'),
-                    items: _languages.map((l) => DropdownMenuItem(
-                      value: l['code'],
-                      child: Text(l['name']!),
-                    )).toList(),
-                    onChanged: (v) => setState(() => _sourceLang = v!),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.swap_horiz),
-                  onPressed: _swapLanguages,
-                ),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _targetLang,
-                    decoration: const InputDecoration(labelText: 'إلى'),
-                    items: _languages.map((l) => DropdownMenuItem(
-                      value: l['code'],
-                      child: Text(l['name']!),
-                    )).toList(),
-                    onChanged: (v) => setState(() => _targetLang = v!),
-                  ),
-                ),
+                Expanded(child: DropdownButtonFormField<String>(
+                  value: _sourceLang,
+                  decoration: const InputDecoration(labelText: 'من'),
+                  items: _languages.map((l) => DropdownMenuItem(value: l['code'], child: Text(l['name']!))).toList(),
+                  onChanged: (v) => setState(() => _sourceLang = v!),
+                )),
+                IconButton(icon: const Icon(Icons.swap_horiz), onPressed: _swapLanguages),
+                Expanded(child: DropdownButtonFormField<String>(
+                  value: _targetLang,
+                  decoration: const InputDecoration(labelText: 'إلى'),
+                  items: _languages.map((l) => DropdownMenuItem(value: l['code'], child: Text(l['name']!))).toList(),
+                  onChanged: (v) => setState(() => _targetLang = v!),
+                )),
               ],
             ),
           ),
-          Expanded(
-            flex: 3,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                child: TextField(
-                  controller: _sourceController,
-                  maxLines: null,
-                  expands: true,
-                  textAlign: TextAlign.right,
-                  decoration: const InputDecoration(
-                    hintText: 'اكتب النص للترجمة...',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.all(16),
-                  ),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+            IconButton(
+              icon: Icon(_isListening ? Icons.mic : Icons.mic_none, color: _isListening ? Colors.red : null),
+              onPressed: () => setState(() => _isListening = !_isListening),
+            ),
+            ElevatedButton.icon(
+              onPressed: _isTranslating ? null : _translate,
+              icon: _isTranslating
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.translate),
+              label: Text(_isTranslating ? 'جارٍ...' : 'ترجمة'),
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16)),
+            ),
+            SpeakerButton(voice: _selectedVoice, onPressed: () => _speak(_targetController.text, _targetLang)),
+          ]),
+          // Target text
+          Expanded(flex: 3, child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Card(child: Stack(children: [
+              TextField(
+                controller: _targetController, maxLines: null, expands: true,
+                textAlign: TextAlign.right,
+                decoration: const InputDecoration(
+                  hintText: 'ستظهر الترجمة هنا...',
+                  border: OutlineInputBorder(), contentPadding: EdgeInsets.all(16),
                 ),
               ),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              MicButton(
-                isListening: _isListening,
-                onPressed: _showSpeechInput,
-              ),
-              ElevatedButton.icon(
-                onPressed: _isTranslating ? null : _translate,
-                icon: _isTranslating
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.translate),
-                label: Text(_isTranslating ? 'جارٍ الترجمة...' : 'ترجمة'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                ),
-              ),
-              SpeakerButton(
-                voice: _selectedVoice,
-                onPressed: () => _speak(_targetController.text, _targetLang),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            flex: 3,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                child: Stack(
-                  children: [
-                    TextField(
-                      controller: _targetController,
-                      maxLines: null,
-                      expands: true,
-                      textAlign: TextAlign.right,
-                      decoration: const InputDecoration(
-                        hintText: 'ستظهر الترجمة هنا...',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.all(16),
-                      ),
-                    ),
-                    if (_showWatermark)
-                      const Positioned(
-                        bottom: 8,
-                        right: 8,
-                        child: WatermarkText(fontSize: 12),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (_showWatermark)
-            const Padding(
-              padding: EdgeInsets.all(4),
-              child: WatermarkText(fontSize: 10),
-            ),
+              if (_showWatermark)
+                Positioned(bottom: 8, right: 8, child: WatermarkText(fontSize: 12)),
+            ])),
+          )),
+          // Voice + watermark
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              children: [
-                const Text('🎤 الصوت: '),
-                const SizedBox(width: 8),
-                DropdownButton<String>(
-                  value: _selectedVoice,
-                  items: _voices.map((v) => DropdownMenuItem(
-                    value: v,
-                    child: Text(v),
-                  )).toList(),
-                  onChanged: (v) => setState(() => _selectedVoice = v!),
-                ),
-              ],
-            ),
+            child: Row(children: [
+              const Text('🎤 الصوت: '),
+              DropdownButton<String>(
+                value: _selectedVoice, underline: const SizedBox(),
+                items: _voices.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (v) => setState(() => _selectedVoice = v!),
+              ),
+              const Spacer(),
+              if (_showWatermark) const WatermarkText(fontSize: 10),
+            ]),
           ),
-          const SizedBox(height: 8),
         ],
       ),
     );
