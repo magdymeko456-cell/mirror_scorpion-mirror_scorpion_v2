@@ -156,8 +156,9 @@ class ShareButton extends StatelessWidget {
 
 class WatermarkText extends StatelessWidget {
   final String text;
+  final double? fontSize;
 
-  const WatermarkText({super.key, required this.text});
+  const WatermarkText({super.key, required this.text, this.fontSize});
 
   @override
   Widget build(BuildContext context) {

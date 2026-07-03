@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _card(context, 'الإعدادات', Icons.settings, Colors.teal, const SettingsScreen()),
         ],
       )),
-      if (_showWm) const Padding(padding: EdgeInsets.only(bottom: 4), child: WatermarkText(fontSize: 10)),
+      if (_showWm) const Padding(padding: EdgeInsets.only(bottom: 4), child: WatermarkText()),
     ])));
   }
 
