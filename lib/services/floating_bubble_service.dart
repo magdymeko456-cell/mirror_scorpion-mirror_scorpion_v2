@@ -1,112 +1,37 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class FloatingBubbleService extends ChangeNotifier {
-  bool _isEnabled = false;
-  bool _isStarted = false;
-  double _opacity = 0.8;
-  double _bubbleSize = 60;
-  bool _autoTranslate = true;
+  bool _isEnabled = false, _isStarted = false, _autoTranslate = true, _isOverlayVisible = false;
+  double _opacity = 0.8, _bubbleSize = 60;
+  String _sourceLang = 'auto', _targetLang = 'ar';
+  static const MethodChannel _channel = MethodChannel('mirror_scorpion/overlay');
+  final StreamController<Map<String, dynamic>> _cmdCtrl = StreamController<Map<String, dynamic>>.broadcast();
 
-  // إعدادات الترجمة من الفقاعة
-  String _sourceLang = 'auto';
-  String _targetLang = 'ar';
-  bool _isOverlayVisible = false;
+  Stream<Map<String, dynamic>> get commands => _cmdCtrl.stream;
+  bool get isEnabled => _isEnabled; bool get isStarted => _isStarted; double get opacity => _opacity;
+  double get bubbleSize => _bubbleSize; bool get autoTranslate => _autoTranslate;
+  bool get isOverlayVisible => _isOverlayVisible; String get sourceLang => _sourceLang; String get targetLang => _targetLang;
 
-  // Stream للتواصل مع خدمة الـ Overlay الفعلية
-  final StreamController<Map<String, dynamic>> _commandController =
-      StreamController<Map<String, dynamic>>.broadcast();
-  Stream<Map<String, dynamic>> get commands => _commandController.stream;
+  Future<void> initialize() async { _isEnabled = true; _isStarted = false; notifyListeners(); }
 
-  bool get isEnabled => _isEnabled;
-  bool get isStarted => _isStarted;
-  double get opacity => _opacity;
-  double get bubbleSize => _bubbleSize;
-  bool get autoTranslate => _autoTranslate;
-  bool get isOverlayVisible => _isOverlayVisible;
-  String get sourceLang => _sourceLang;
-  String get targetLang => _targetLang;
-
-  Future<void> initialize() async {
-    _isEnabled = true;
-    _isStarted = false;
-    notifyListeners();
+  Future<void> startBubble() async {
+    try { await _channel.invokeMethod('createFloatingBubble', {'sourceLanguage': _sourceLang, 'targetLanguage': _targetLang});
+      _isStarted = true; _isEnabled = true; _isOverlayVisible = true;
+      _cmdCtrl.add({'action':'show','sourceLang':_sourceLang,'targetLang':_targetLang}); notifyListeners();
+    } catch (e) { debugPrint('Bubble Error: $e'); }
   }
 
-  Future<void> startBubble(BuildContext context) async {
-    _isStarted = true;
-    _isEnabled = true;
-    _isOverlayVisible = true;
-    _commandController.add({
-      'action': 'show',
-      'sourceLang': _sourceLang,
-      'targetLang': _targetLang,
-    });
-    notifyListeners();
-  }
+  Future<void> stopBubble() async { try { await _channel.invokeMethod('destroyFloatingBubble'); } catch (_) {}
+    _isStarted = false; _isOverlayVisible = false; _cmdCtrl.add({'action':'hide'}); notifyListeners(); }
 
-  Future<void> stopBubble() async {
-    _isStarted = false;
-    _isOverlayVisible = false;
-    _commandController.add({'action': 'hide'});
-    notifyListeners();
-  }
-
-  void toggleBubble() {
-    if (_isStarted) {
-      stopBubble();
-    } else {
-      _isStarted = true;
-      _isEnabled = true;
-      _isOverlayVisible = true;
-      _commandController.add({
-        'action': 'show',
-        'sourceLang': _sourceLang,
-        'targetLang': _targetLang,
-      });
-    }
-    notifyListeners();
-  }
-
-  /// عند إغلاق الفقاعة من قبل المستخدم، تعود النصوص المترجمة للغتها الأصلية
-  void onBubbleClosed() {
-    _isStarted = false;
-    _isOverlayVisible = false;
-    _commandController.add({'action': 'restore_original'});
-    notifyListeners();
-  }
-
-  void setSourceLang(String lang) {
-    _sourceLang = lang;
-    _commandController.add({'action': 'update_lang', 'sourceLang': lang});
-    notifyListeners();
-  }
-
-  void setTargetLang(String lang) {
-    _targetLang = lang;
-    _commandController.add({'action': 'update_lang', 'targetLang': lang});
-    notifyListeners();
-  }
-
-  void setOpacity(double value) {
-    _opacity = value;
-    notifyListeners();
-  }
-
-  void setBubbleSize(double value) {
-    _bubbleSize = value;
-    notifyListeners();
-  }
-
-  void setAutoTranslate(bool value) {
-    _autoTranslate = value;
-    _commandController.add({'action': 'auto_translate', 'enabled': value});
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _commandController.close();
-    super.dispose();
-  }
+  void toggleBubble() { if (_isStarted) stopBubble(); else startBubble(); }
+  void onBubbleClosed() { _isStarted = false; _isOverlayVisible = false; _cmdCtrl.add({'action':'restore_original'}); notifyListeners(); }
+  void setSourceLang(String l) { _sourceLang = l; _cmdCtrl.add({'action':'update_lang','sourceLang':l}); notifyListeners(); }
+  void setTargetLang(String l) { _targetLang = l; _cmdCtrl.add({'action':'update_lang','targetLang':l}); notifyListeners(); }
+  void setOpacity(double v) { _opacity = v; notifyListeners(); }
+  void setBubbleSize(double v) { _bubbleSize = v; notifyListeners(); }
+  void setAutoTranslate(bool v) { _autoTranslate = v; _cmdCtrl.add({'action':'auto_translate','enabled':v}); notifyListeners(); }
+  @override void dispose() { _cmdCtrl.close(); super.dispose(); }
 }
