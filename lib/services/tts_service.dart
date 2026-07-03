@@ -7,6 +7,7 @@ class TTSService extends ChangeNotifier {
   double _volume = 1.0, _rate = 0.5, _pitch = 1.0;
   String _currentVoiceId = 'ar-xa';
   String _currentVoiceName = 'سارة';
+  int _currentVoiceIndex = 0;
 
   bool get isSpeaking => _isSpeaking;
   double get volume => _volume;
@@ -14,30 +15,42 @@ class TTSService extends ChangeNotifier {
   double get pitch => _pitch;
   String get currentVoiceId => _currentVoiceId;
   String get currentVoiceName => _currentVoiceName;
+  int get currentVoiceIndex => _currentVoiceIndex;
 
-  static const List<Map<String, String>> availableVoices = [
-    {'id': 'ar-xa', 'name': 'سارة', 'gender': 'أنثى', 'lang': 'ar'},
-    {'id': 'ar-xa-female', 'name': 'سلمى', 'gender': 'أنثى', 'lang': 'ar'},
-    {'id': 'ar-xa-male', 'name': 'سيف', 'gender': 'ذكر', 'lang': 'ar'},
-    {'id': 'ar-xa-warm', 'name': 'سما', 'gender': 'أنثى', 'lang': 'ar'},
-    {'id': 'voice_premium_clone', 'name': 'صوت المستخدم', 'gender': 'نسخ', 'lang': 'ar'},
+  // ===== 5 أصوات حقيقية =====
+  static const List<Map<String, dynamic>> availableVoices = [
+    {'id': 'ar-xa',     'name': 'سارة',  'gender': 'أنثى', 'desc': 'صوت أنثوي عربي دافئ'},
+    {'id': 'ar-xa-warm','name': 'سلمى',  'gender': 'أنثى', 'desc': 'صوت أنثوي عربي ناعم'},
+    {'id': 'ar-xa-female', 'name': 'سما', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي واضح'},
+    {'id': 'ar-xa-male',   'name': 'سيف',  'gender': 'ذكر',  'desc': 'صوت ذكوري عربي قوي'},
+    {'id': 'voice_clone_premium', 'name': 'المستخدم', 'gender': 'نسخ', 'desc': 'نسخة من صوتك (PRO)'},
   ];
 
   final Map<String, String> voiceLanguageMap = {
-    'ar-xa': 'ar', 'ar-xa-female': 'ar', 'ar-xa-male': 'ar',
-    'ar-xa-warm': 'ar', 'voice_premium_clone': 'ar',
-    'en-US': 'en', 'fr-FR': 'fr', 'de-DE': 'de', 'es-ES': 'es',
+    'ar-xa': 'ar',
+    'ar-xa-warm': 'ar',
+    'ar-xa-female': 'ar',
+    'ar-xa-male': 'ar',
+    'voice_clone_premium': 'ar',
   };
 
   TTSService() {
-    _tts.setCompletionHandler(() { _isSpeaking = false; notifyListeners(); });
-    _tts.setErrorHandler((_) { _isSpeaking = false; notifyListeners(); });
+    _tts.setCompletionHandler(() {
+      _isSpeaking = false;
+      notifyListeners();
+    });
+    _tts.setErrorHandler((_) {
+      _isSpeaking = false;
+      notifyListeners();
+    });
   }
 
-  Future speak(String text, {String language = 'ar'}) async {
+  /// النطق مع دعم اللغة
+  Future<void> speak(String text, {String language = 'ar'}) async {
     if (text.isEmpty) return;
     _isSpeaking = true;
     notifyListeners();
+
     try {
       await _tts.setLanguage(language);
       await _tts.setSpeechRate(_rate);
@@ -45,32 +58,59 @@ class TTSService extends ChangeNotifier {
       await _tts.setPitch(_pitch);
       await _tts.speak(text);
     } catch (e) {
+      debugPrint('TTS Error: $e');
       _isSpeaking = false;
       notifyListeners();
     }
   }
 
-  Future stop() async {
+  /// إيقاف النطق
+  Future<void> stop() async {
     await _tts.stop();
     _isSpeaking = false;
     notifyListeners();
   }
 
-  Future setVoice(String voiceId) async {
+  /// التنقل بين الأصوات الـ 5
+  Future<void> setVoice(String voiceId) async {
     _currentVoiceId = voiceId;
-    final found = availableVoices.firstWhere(
-      (v) => v['id'] == voiceId,
-      orElse: () => availableVoices[0],
-    );
-    _currentVoiceName = found['name']!;
+    final found = availableVoices.indexWhere((v) => v['id'] == voiceId);
+    if (found >= 0) {
+      _currentVoiceName = availableVoices[found]['name']!;
+      _currentVoiceIndex = found;
+    }
     final lang = voiceLanguageMap[voiceId] ?? 'ar';
     await _tts.setLanguage(lang);
     notifyListeners();
   }
 
-  Future setVolume(double v) async { _volume = v; await _tts.setVolume(v); notifyListeners(); }
-  Future setRate(double r) async { _rate = r; await _tts.setSpeechRate(r); notifyListeners(); }
-  Future setPitch(double p) async { _pitch = p; await _tts.setPitch(p); notifyListeners(); }
+  /// التبديل للصوت التالي من الـ 5
+  Future<void> nextVoice() async {
+    _currentVoiceIndex = (_currentVoiceIndex + 1) % availableVoices.length;
+    await setVoice(availableVoices[_currentVoiceIndex]['id']!);
+  }
 
+  /// التبديل للصوت السابق
+  Future<void> previousVoice() async {
+    _currentVoiceIndex = (_currentVoiceIndex - 1 + availableVoices.length) % availableVoices.length;
+    await setVoice(availableVoices[_currentVoiceIndex]['id']!);
+  }
 
+  Future<void> setVolume(double v) async {
+    _volume = v.clamp(0.0, 1.0);
+    await _tts.setVolume(_volume);
+    notifyListeners();
+  }
+
+  Future<void> setRate(double r) async {
+    _rate = r.clamp(0.0, 1.0);
+    await _tts.setSpeechRate(_rate);
+    notifyListeners();
+  }
+
+  Future<void> setPitch(double p) async {
+    _pitch = p.clamp(0.5, 2.0);
+    await _tts.setPitch(_pitch);
+    notifyListeners();
+  }
 }

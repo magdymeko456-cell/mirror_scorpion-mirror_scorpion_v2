@@ -67,14 +67,3 @@ class LanguageService extends ChangeNotifier {
     notifyListeners();
   }
 }
-  /// آخر زوج لغات استخدمه المستخدم في الترجمة
-  Future<void> saveLastLanguagePair(String screen, String source, String target) async {
-    final p = await SharedPreferences.getInstance();
-    await p.setString('last_source_$screen', source);
-    await p.setString('last_target_$screen', target);
-  }
-
-  Map<String, String> getLastLanguagePair(String screen) {
-    // يتم تحميله في saveLanguageForScreen أصلاً
-    return {};
-  }
