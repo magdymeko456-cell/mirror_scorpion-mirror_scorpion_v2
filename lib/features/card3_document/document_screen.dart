@@ -59,7 +59,10 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
 
 $_translatedText");
 
-$_translatedText")
+$_translatedText");
+
+$_translatedText");
+
   }
 
   @override
