@@ -343,7 +343,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                         child: Column(
                           children: [
                             Text(
-                              _currentStory!.titleAr,
+                              _currentStory!.titleArAr,
                               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.amber),
                               textAlign: TextAlign.center,
                             ),
