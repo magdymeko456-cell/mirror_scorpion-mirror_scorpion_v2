@@ -39,7 +39,7 @@ dependencies:
     path: packages/dash_bubble_local
 
   # Utilities
-  intl: ^0.20.2
+  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:
