@@ -56,7 +56,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
     if (text.trim().isEmpty) return; setState(() => _isTranslating = true);
     try {
       final ts = context.read<TranslationService>();
-      final r = await ts.translate(text, _langFrom, _langTo);
+      final r = await ts.translate(text, from: _langFrom, to: _langTo);
       if (mounted) setState(() { _translatedController.text = r; _isTranslating = false; });
     } catch (e) { if (mounted) { setState(() => _isTranslating = false); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشلت الترجمة: $e'))); } }
   }
@@ -79,7 +79,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
   @override
   Widget build(BuildContext context) {
     final ls = context.watch<LanguageService>();
-    final codes = ls.getAvailableLanguages();
+    final codes = ls.getLanguageCodes();
     return Scaffold(
       backgroundColor: const Color(0xFF0D1B2A),
       appBar: AppBar(title: const Text('حوار مترجم', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

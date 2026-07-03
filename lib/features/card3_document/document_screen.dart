@@ -44,9 +44,9 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
         final content = await file.readAsString();
         if (mounted) setState(() => _extractedText = content.isNotEmpty ? content : 'الملف فارغ');
         if (content.isNotEmpty) {
-          await Future.delayed(const Duration(seconds: 3));
+          await Future.delayed(const Duration(seconds: 3
           final ts = context.read<TranslationService>();
-          final r = await ts.translate(content.length > 5000 ? content.substring(0, 5000) : content, 'auto', _targetLang);
+          final r = await ts.translate(content.length > 5000 ? content.substring(0, 5000) : content, from: 'auto', to: _targetLang);
           if (mounted) setState(() { _translatedText = r; _isProcessing = false; _showOriginal = false; });
         } else { if (mounted) setState(() => _isProcessing = false); }
       } else { if (mounted) setState(() => _isProcessing = false); }
@@ -55,7 +55,7 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
 
   void _shareTranslated() {
     if (_translatedText.isEmpty) return;
-    SharePlus.instance.share(ShareParams(text: "ترجم هذا المستند بواسطة Mirror Scorpion 🦂\n\n$_translatedText"));
+    Share.share("ترجم هذا المستند بواسطة Mirror Scorpion 🦂\n\n$_translatedText"
   }
 
   @override

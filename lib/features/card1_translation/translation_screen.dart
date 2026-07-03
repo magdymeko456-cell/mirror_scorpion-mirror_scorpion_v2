@@ -89,7 +89,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
     setState(() => _isTranslating = true);
     try {
       final ts = context.read<TranslationService>();
-      final result = await ts.translate(_sourceController.text, _sourceLang, _targetLang);
+      final result = await ts.translate(_sourceController.text, from: _sourceLang, to: _targetLang);
       if (mounted) setState(() { _translatedController.text = result; _isTranslating = false; });
     } catch (e) {
       if (mounted) { setState(() => _isTranslating = false);
@@ -101,13 +101,13 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
   void _shareTranslation() {
     final t = _translatedController.text.trim();
     if (t.isEmpty) return;
-    SharePlus.instance.share(ShareParams(text: "ترجم هذا النص بواسطة Mirror Scorpion 🦂\n\n$t"));
+    Share.share("ترجم هذا النص بواسطة Mirror Scorpion 🦂\n\n$t"
   }
   void _copyTranslation() {
     final t = _translatedController.text.trim();
     if (t.isEmpty) return;
-    Clipboard.setData(ClipboardData(text: "ترجم هذا النص بواسطة Mirror Scorpion 🦂\n\n$t"));
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم النسخ مع توقيع Mirror Scorpion')));
+    Clipboard.setData(ClipboardData(text: "ترجم هذا النص بواسطة Mirror Scorpion 🦂\n\n$t"
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم النسخ مع توقيع Mirror Scorpion')
   }
 
   Future<void> _pickAudioFile() async {
@@ -116,7 +116,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
     if (result != null && result.files.single.path != null) {
       setState(() => _isProcessingAudio = true);
       try {
-        await Future.delayed(const Duration(seconds: 2));
+        await Future.delayed(const Duration(seconds: 2
         if (mounted) {
           setState(() { _sourceController.text = "تم استلام الملف: ${result.files.single.name}"; _isProcessingAudio = false; });
           _performTranslation();
@@ -135,7 +135,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
   Widget build(BuildContext context) {
     final langService = context.watch<LanguageService>();
     final tts = context.watch<TTSService>();
-    final langCodes = langService.getAvailableLanguages();
+    final langCodes = langService.getLanguageCodes();
     return Scaffold(
       backgroundColor: const Color(0xFF0D1B2A),
       appBar: AppBar(title: const Text('ترجمة نصية', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

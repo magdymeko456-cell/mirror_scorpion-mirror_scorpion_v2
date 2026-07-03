@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       await service.stopBubble();
       setState(() => _bubbleActive = false);
     } else {
-      await service.startBubble(context);
+      await service.startBubble();
       setState(() => _bubbleActive = service.isStarted);
     }
   }
