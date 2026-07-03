@@ -1,4 +1,4 @@
-name: Mirror Scorpion Build
+name: 🦂 Build Mirror Scorpion APK
 on:
   push:
     branches: [ main, master ]
@@ -20,9 +20,43 @@ jobs:
         run: |
           set -e
           flutter pub get
+          
+          # إنشاء مشروع Flutter نظيف (هذا يصنع ملفات android متوافقة مع SDK)
+          rm -rf /tmp/clean_project
+          flutter create --org com.mirror.scorpion --project-name mirror_scorpion_translate /tmp/clean_project
+          
+          # نسخ ملفات المشروع الحقيقية
+          cp -r lib /tmp/clean_project/
+          cp -r assets /tmp/clean_project/
+          cp pubspec.yaml /tmp/clean_project/
+          cp -r packages /tmp/clean_project/
+          cp -r scripts /tmp/clean_project/
+          
+          cd /tmp/clean_project
+          flutter pub get
+          
+          # تشغيل سكريبتات التعديل
+          python3 scripts/patch_gradle.py 2>/dev/null || true
+          python3 scripts/patch_manifest.py 2>/dev/null || true
+          python3 scripts/patch_dash_bubble_compilesdk.py 2>/dev/null || true
+          
+          # تعديل SDK versions
+          find android -name "build.gradle*" -exec sed -i 's/compileSdk .*/compileSdk = 36/g' {} +
+          find android -name "build.gradle*" -exec sed -i 's/targetSdk .*/targetSdk = 36/g' {} +
+          find android -name "build.gradle*" -exec sed -i 's/minSdk .*/minSdk = 21/g' {} +
+          
+          # تصحيح NDK
+          find android -name "build.gradle*" -exec sed -i 's/ndkVersion .*/ndkVersion = "27.0.12077973"/g' {} +
+          
+          # إصلاح أي تكرار =
+          find android -name "build.gradle*" -exec sed -i 's/==/=/g' {} +
+          
+          # بناء APK
           flutter build apk --release --no-tree-shake-icons
-          mkdir -p output_apk
-          cp build/app/outputs/flutter-apk/app-release.apk output_apk/
+          
+          mkdir -p $GITHUB_WORKSPACE/output_apk
+          cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/output_apk/
+          
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
