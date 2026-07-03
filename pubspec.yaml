@@ -4,47 +4,29 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.2.0 <4.0.0'    # <-- متوافق مع Dart 3.5.4
+  sdk: '>=3.2.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  
-  # === الأساسيات المتوافقة مع Dart 3.5.4 ===
-  path_provider: 2.1.1          # <-- يستخدم ^3.2.0 (متوافق)
-  path: 1.9.0                   # متوافق
-  http: 1.2.1                   # متوافق
-  intl: 0.19.0                  # توطين
-  provider: 6.1.2               # state management
-  shared_preferences: 2.3.1     # تخزين محلي
-  
-  # === الترجمة ===
-  translator: 1.0.2             # ترجمة
-  speech_to_text: 6.6.2         # تحويل صوت لنص
-  flutter_tts: 4.0.2            # نطق
-  
-  # === الملفات والكاميرا ===
-  file_picker: 8.1.3            # اختيار ملفات
-  image_picker: 1.1.2           # الكاميرا والصور
-  
-  # === المستندات والعرض ===
-  open_file: 3.5.3              # فتح ملفات
-  url_launcher: 6.3.0           # فتح روابط
-  webview_flutter: 4.10.0       # عرض ويب داخلي
-  
-  # === الألعاب ثلاثية الأبعاد ===
-  vector_math: 2.1.4            # رياضيات 3D
-  
-  # === التشفير والحماية ===
-  flutter_secure_storage: 9.2.2 # تخزين مشفر
-  
-  # === مشاركة ===
-  share_plus: 10.1.0            # مشاركة
-  
-  # === إشعارات ===
+  path_provider: 2.1.1
+  path: 1.9.0
+  http: 1.2.1
+  intl: 0.19.0
+  provider: 6.1.2
+  shared_preferences: 2.3.1
+  translator: 1.0.2
+  speech_to_text: 6.6.2
+  flutter_tts: 4.0.2
+  file_picker: 8.1.3
+  image_picker: 1.1.2
+  open_file: 3.5.3
+  url_launcher: 6.3.0
+  webview_flutter: 4.10.0
+  vector_math: 2.1.4
+  flutter_secure_storage: 9.2.2
+  share_plus: 10.1.0
   flutter_local_notifications: 18.0.1
-  
-  # === أذونات ===
   permission_handler: 11.3.1
 
 dev_dependencies:
@@ -60,4 +42,3 @@ flutter:
     - assets/sounds/
     - assets/images/
     - assets/data/
-
