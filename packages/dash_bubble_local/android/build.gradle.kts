@@ -3,8 +3,6 @@ version = "2.0.0"
 
 plugins {
     id("com.android.library")
-    // kotlin-android plugin غير مطلوب مع AGP 9+ 
-    // Kotlin مضمن في AGP
 }
 
 android {

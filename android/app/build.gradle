@@ -1,6 +1,5 @@
 plugins {
     id "com.android.application"
-    // لا حاجة لـ kotlin-android — AGP 8.9+ يدعم Kotlin مدمجاً
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -32,9 +31,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // kotlinOptions غير مدعومة في AGP 8.9+ 
-    // استخدم kotlin.compilerOptions بدلاً من ذلك
-
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
@@ -51,12 +47,6 @@ android {
         release {
             signingConfig = signingConfigs.debug
         }
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 
