@@ -1,117 +1,62 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
-import 'features/home_screen.dart';
-import 'features/card1_translation/translation_screen.dart';
-import 'features/card2_dialogue/dialogue_screen.dart';
-import 'features/card3_document/document_screen.dart';
-import 'features/card4_stories/stories_screen.dart';
-import 'features/card5_games/games_screen.dart';
-import 'features/settings/settings_screen.dart';
-import 'features/games/games_menu_screen.dart';
-import 'features/games/chess_screen.dart';
-import 'features/games/rubik_screen.dart';
-
-import 'services/language_service.dart';
-import 'services/floating_bubble_service.dart';
-import 'services/tts_service.dart';
-import 'services/database_service.dart';
-import 'services/premium_verification_service.dart';
-import 'services/ai_service.dart';
-import 'services/translation_service.dart';
-import 'core/theme/theme_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'app.dart';
+import 'core/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  final languageService = LanguageService();
-  await languageService.initialize();
-  final databaseService = DatabaseService();
-  await databaseService.initialize();
-  final premiumService = PremiumVerificationService();
-  await premiumService.initialize();
-  final bubbleService = FloatingBubbleService();
-  await bubbleService.initialize();
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: languageService),
-        ChangeNotifierProvider.value(value: bubbleService),
-        ChangeNotifierProvider(create: (_) => TTSService()),
-        ChangeNotifierProvider.value(value: databaseService),
-        ChangeNotifierProvider.value(value: premiumService),
-        ChangeNotifierProvider(create: (_) => AIService()),
-        ChangeNotifierProvider(create: (_) => TranslationService()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-      ],
-      child: const MirrorScorpionApp(),
-    ),
-  );
+  
+  final prefs = await SharedPreferences.getInstance();
+  final savedLocale = prefs.getString('app_locale') ?? 
+      WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+  final isDark = prefs.getBool('dark_mode') ?? false;
+  
+  runApp(MirrorScorpionApp(
+    initialLocale: savedLocale,
+    isDarkMode: isDark,
+  ));
 }
 
 class MirrorScorpionApp extends StatelessWidget {
-  const MirrorScorpionApp({super.key});
+  final String initialLocale;
+  final bool isDarkMode;
+  
+  const MirrorScorpionApp({
+    super.key,
+    required this.initialLocale,
+    required this.isDarkMode,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final langService = Provider.of<LanguageService>(context);
-    final deviceLang = langService.getDeviceLanguage();
-
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, _) {
-        return MaterialApp(
-          title: 'Mirror Scorpion',
-          debugShowCheckedModeBanner: false,
-          locale: Locale(deviceLang),
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: const [
-            Locale('ar'), Locale('en'), Locale('fr'), Locale('de'),
-            Locale('es'), Locale('tr'), Locale('ur'), Locale('fa'),
-            Locale('hi'), Locale('zh'), Locale('ja'), Locale('ko'),
-            Locale('ru'), Locale('pt'), Locale('it'), Locale('id'),
-          ],
-          localeResolutionCallback: (locale, supportedLocales) {
-            if (locale == null) return const Locale('ar');
-            for (final supported in supportedLocales) {
-              if (supported.languageCode == locale.languageCode) {
-                return supported;
-              }
-            }
-            return const Locale('ar');
-          },
-          theme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.dark,
-            scaffoldBackgroundColor: const Color(0xFF0D1B2A),
-            colorSchemeSeed: Colors.blueAccent,
-          ),
-          initialRoute: '/',
-          routes: {
-            '/': (context) => const HomeScreen(),
-            '/translate': (context) => const TextTranslationScreen(),
-            '/dialogue': (context) => const DialogueTranslationScreen(),
-            '/document': (context) => const DocumentTranslationScreen(),
-            '/stories': (context) => const StoriesScreen(),
-            '/games': (context) => const GamesScreen(),
-            '/games-menu': (context) => const GamesMenuScreen(),
-            '/chess': (context) => const ChessScreen(),
-            '/rubik': (context) => const RubikScreen(),
-            '/settings': (context) => const SettingsScreen(),
-          },
-        );
-      },
+    return MaterialApp(
+      title: 'Mirror Scorpion',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      locale: Locale(initialLocale),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: [
+        const Locale('ar'),
+        const Locale('en'),
+        const Locale('fr'),
+        const Locale('es'),
+        const Locale('ur'),
+        const Locale('tr'),
+        const Locale('de'),
+        const Locale('zh'),
+        const Locale('hi'),
+        const Locale('pt'),
+        const Locale('ru'),
+        const Locale('ja'),
+      ],
+      home: const MainApp(),
     );
   }
 }
