@@ -20,6 +20,30 @@ jobs:
         run: |
           set -e
           flutter pub get
+
+          # 🦂 تصحيح speech_to_text في pub cache
+          echo "=== البحث عن speech_to_text build.gradle ==="
+          find ~/.pub-cache -name "build.gradle" -path "*/speech_to_text*/android/*" -type f 2>/dev/null | while read f; do
+            echo "🔧 تصحيح: $f"
+            
+            # 1. compileSdk
+            grep -q 'flutter.compileSdkVersion' "$f" && \
+              sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk 36/' "$f"
+            
+            # 2. ndkVersion
+            grep -q 'flutter.ndkVersion' "$f" && \
+              sed -i 's/ndkVersion = flutter.ndkVersion/ndkVersion "27.0.12077973"/' "$f"
+            
+            # 3. kotlin { compilerOptions { ... } } — إزالة باستخدام awk
+            awk '
+            /kotlin *\{.*compilerOptions/ { skip = 1 }
+            skip && /^\}/ { skip = 0; next }
+            !skip
+            ' "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
+            
+            echo "✅ تم التصحيح"
+          done
+
           flutter build apk --release --no-tree-shake-icons
           mkdir -p output_apk
           cp build/app/outputs/flutter-apk/app-release.apk output_apk/
