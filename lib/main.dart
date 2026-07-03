@@ -30,16 +30,12 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // تهيئة الخدمات
   final languageService = LanguageService();
   await languageService.initialize();
-
   final databaseService = DatabaseService();
   await databaseService.initialize();
-
   final premiumService = PremiumVerificationService();
   await premiumService.initialize();
-
   final bubbleService = FloatingBubbleService();
   await bubbleService.initialize();
 
