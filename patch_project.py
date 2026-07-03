@@ -2,21 +2,20 @@
 import os, re
 
 def patch_gradle():
-    paths = [
-        "android/app/build.gradle",
-        "android/build.gradle",
-        "packages/dash_bubble_local/android/build.gradle"
-    ]
-    for path in paths:
-        if os.path.exists(path):
-            with open(path, "r") as f:
-                content = f.read()
-            content = re.sub(r'compileSdk\s+\d+', 'compileSdk 36', content)
-            content = re.sub(r'minSdk\s+\d+', 'minSdk 21', content)
-            content = re.sub(r'targetSdk\s+\d+', 'targetSdk 36', content)
-            with open(path, "w") as f:
-                f.write(content)
-            print(f"✅ {path} patched")
+    gradle_files = []
+    for root, dirs, files in os.walk("."):
+        for f in files:
+            if f == "build.gradle" and (root.endswith("android") or "dash_bubble_local" in root):
+                gradle_files.append(os.path.join(root, f))
+    for path in gradle_files:
+        with open(path, "r") as f:
+            content = f.read()
+        content = re.sub(r'compileSdk\s+\d+', 'compileSdk 36', content)
+        content = re.sub(r'minSdk\s+\d+', 'minSdk 21', content)
+        content = re.sub(r'targetSdk\s+\d+', 'targetSdk 36', content)
+        with open(path, "w") as f:
+            f.write(content)
+        print(f"✅ {path} -> compileSdk=36")
 
-patch_gradle()
-print("✅ All patches applied")
+if __name__ == "__main__":
+    patch_gradle()
