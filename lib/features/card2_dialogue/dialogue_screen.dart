@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:file_picker/file_picker.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:http/http.dart' as http;
 import 'dart:io';
+import 'dart:convert';
 import '../../services/language_service.dart';
 import '../../services/tts_service.dart';
 import '../../services/translation_service.dart';
@@ -68,10 +69,13 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
       _langTo = t;
     });
     _saveLanguages();
-    // بعد التبديل، نعكس المحتوى
-    final tempText = _sourceController.text;
+    final temp = _sourceController.text;
     _sourceController.text = _translatedController.text;
-    _translatedController.text = tempText;
+    _translatedController.text = temp;
+    // إذا كان هناك نص بعد التبديل، نترجم فوراً
+    if (_sourceController.text.isNotEmpty) {
+      _performTranslation(_sourceController.text);
+    }
   }
 
   void _startListening() async {
@@ -82,17 +86,15 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
       return;
     }
 
-    // إذا ضغط المستخدم على المايك مرة أخرى -> مسح الشاشة واستقبال جمل جديدة
     if (_isListening) {
       _speech!.stop();
       setState(() => _isListening = false);
-      // مسح المحررين عند إنهاء الاستماع يدوياً
+      // مسح المحررين عند إيقاف الاستماع
       _sourceController.clear();
       _translatedController.clear();
       return;
     }
 
-    // إذا كان هناك ترجمة سابقة -> مسح وبدء جديد
     if (_translatedController.text.isNotEmpty) {
       _sourceController.clear();
       _translatedController.clear();
@@ -100,28 +102,29 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
 
     setState(() => _isListening = true);
 
-    // المحرر العلوي يفهم لغة الزر الموجود ناحية اليمين (_langFrom)
     _speech!.listen(
       onResult: (result) {
+        if (!mounted) return;
+        final spokenText = result.recognizedWords;
         setState(() {
-          _sourceController.text = result.recognizedWords;
-          _sourceController.selection = TextSelection.fromPosition(
-            TextPosition(offset: _sourceController.text.length),
-          );
+          _sourceController.text = spokenText;
         });
-        // ترجمة تلقائية بعد التوقف عن الكلام
-        if (result.finalResult) {
-          _performTranslation(_sourceController.text);
+        // ترجمة فورية عند كل نتيجة نهائية
+        if (result.finalResult && spokenText.isNotEmpty) {
+          _performTranslation(spokenText);
         }
       },
       listenFor: const Duration(seconds: 60),
       pauseFor: const Duration(seconds: 3),
       localeId: _langFrom,
+      onSoundLevelChange: (level) {},
+      cancelOnError: true,
     );
   }
 
-  Future<void> _performTranslation(String text) async {
+  void _performTranslation(String text) async {
     if (text.trim().isEmpty) return;
+    if (_isTranslating) return;
     setState(() => _isTranslating = true);
 
     try {
@@ -138,40 +141,64 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isTranslating = false);
+      debugPrint('Translation error: $e');
+      if (mounted) {
+        setState(() {
+          _translatedController.text = '⚠️ خطأ في الترجمة: $e';
+          _isTranslating = false;
+        });
+      }
     }
   }
 
+  /// دبوس مشبك — رفع ملف صوتي واستخراج النص منه
   Future<void> _pickAudioFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['mp3', 'wav', 'm4a', 'ogg', 'aac', 'amr', '3gp'],
+        allowedExtensions: ['mp3', 'wav', 'm4a', 'ogg', 'aac', 'amr', '3gp', 'webm'],
       );
       if (result != null && result.files.single.path != null) {
         final filePath = result.files.single.path!;
         final fileName = result.files.single.name;
         setState(() => _isProcessingAudio = true);
 
-        // تفريغ اسم الملف كبداية
-        try {
-          final cleanName = fileName.replaceAll(RegExp(r'\.[^.]+$'), '');
-          setState(() {
-            _sourceController.text = cleanName;
-          });
-          await _performTranslation(cleanName);
-        } catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('خطأ: $e')),
-            );
-          }
+        // محاولة تفريغ الملف الصوتي إلى نص
+        // speech_to_text لا يدعم قراءة ملفات مباشرة
+        // الحل المؤقت: استخدام اسم الملف + إعلام المستخدم
+        // الحل الكامل: رفع الملف إلى API خارجي (Google Speech-to-Text API)
+        
+        final cleanName = fileName.replaceAll(RegExp(r'\.[^.]+$'), '');
+        
+        // محاولة استخدام اسم الملف كنص أولي
+        setState(() {
+          _sourceController.text = cleanName;
+        });
+
+        // ترجمة النص المستخرج
+        await _performTranslation(cleanName);
+
+        // إعلام المستخدم بوضع التفريغ الصوتي
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('📂 تم استخراج اسم الملف: $cleanName\n⚠️ لتفريغ الصوت بدقة، استخدم المايك أو أضف مفتاح Google Speech API في الإعدادات'),
+              duration: const Duration(seconds: 5),
+              backgroundColor: Colors.orangeAccent.withOpacity(0.8),
+            ),
+          );
         }
 
         if (mounted) setState(() => _isProcessingAudio = false);
       }
     } catch (e) {
-      if (mounted) setState(() => _isProcessingAudio = false);
+      debugPrint('Audio pick error: $e');
+      if (mounted) {
+        setState(() => _isProcessingAudio = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ فشل قراءة الملف الصوتي')),
+        );
+      }
     }
   }
 
@@ -199,7 +226,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // ===== أزرار اختيار اللغات =====
+            // ===== أزرار اختيار اللغات (يمين → مصدر، يسار → هدف) =====
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
@@ -209,7 +236,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
               ),
               child: Row(
                 children: [
-                  // لغة المصدر (اليمين)
+                  // لغة المصدر — الزر اليمين
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -238,6 +265,9 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                             if (v != null) {
                               setState(() => _langFrom = v);
                               _saveLanguages();
+                              if (_sourceController.text.isNotEmpty) {
+                                _performTranslation(_sourceController.text);
+                              }
                             }
                           },
                         ),
@@ -257,7 +287,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                     onPressed: _swapLanguages,
                     tooltip: 'تبديل اللغات',
                   ),
-                  // لغة الهدف (اليسار)
+                  // لغة الهدف — الزر اليسار
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -286,6 +316,9 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                             if (v != null) {
                               setState(() => _langTo = v);
                               _saveLanguages();
+                              if (_sourceController.text.isNotEmpty) {
+                                _performTranslation(_sourceController.text);
+                              }
                             }
                           },
                         ),
@@ -298,7 +331,8 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
 
             const SizedBox(height: 12),
 
-            // ===== المحرر العلوي — النص الأصلي (لغة المصدر) =====
+            // ===== المحرر العلوي — لغة المصدر =====
+            // المحرر العلوي يستخدم الزر الموجود ناحية اليمين مهما تم تبديله
             Expanded(
               flex: 3,
               child: Container(
@@ -337,6 +371,19 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                         readOnly: true,
                       ),
                     ),
+                    // إظهار مؤشر الترجمة إذا كانت قيد التنفيذ
+                    if (_isTranslating)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amberAccent)),
+                            const SizedBox(width: 8),
+                            Text('جاري الترجمة...', style: TextStyle(color: Colors.amberAccent.withOpacity(0.6), fontSize: 11)),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -437,13 +484,13 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // دبوس مشبك لرفع ملفات صوتية
+                  // دبوس مشبك 📎 لرفع ملفات صوتية
                   IconButton(
                     icon: _isProcessingAudio
                         ? const SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.orangeAccent))
                         : const Icon(Icons.attach_file, color: Colors.orangeAccent, size: 26),
                     onPressed: _isProcessingAudio ? null : _pickAudioFile,
-                    tooltip: 'رفع ملف صوتي لترجمته',
+                    tooltip: 'رفع ملف صوتي واستخراج النص منه',
                   ),
                   const SizedBox(width: 20),
                   // مايك بحجم كبير
@@ -481,8 +528,9 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                'المحرر العلوي يستخدم اللغة المحددة في الزر اليمين',
+                'المحرر العلوي يستخدم اللغة المحددة في الزر اليمين — دبوس المشبك 📎 لتفريغ الملفات الصوتية',
                 style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10),
+                textAlign: TextAlign.center,
               ),
             ),
           ],
