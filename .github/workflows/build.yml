@@ -1,4 +1,4 @@
-name: 🦂 Build Mirror Scorpion APK
+name: Mirror Scorpion Build
 on:
   push:
     branches: [ main, master ]
@@ -19,55 +19,45 @@ jobs:
       - name: Prepare Project and Build
         run: |
           set -e
+          # Get dependencies
           flutter pub get
 
-          # Clean project approach (same as successful build 669eb2a)
+          # Setup build directory
           rm -rf /tmp/clean_project
           flutter create --org com.tetocollctionway --project-name mirror_scorpion_translate /tmp/clean_project
 
-          # Copy project files
+          # Copy essential files from current project
           cp -r lib /tmp/clean_project/
           cp -r assets /tmp/clean_project/
           cp pubspec.yaml /tmp/clean_project/
           cp -r packages /tmp/clean_project/
           cp -r scripts /tmp/clean_project/
 
+          # Move to clean project
           cd /tmp/clean_project
           flutter pub get
 
-          # Patch scripts (same as 669eb2a)
-          python3 scripts/patch_dash_bubble_compilesdk.py || true
-          python3 scripts/patch_gradle.py || true
-          python3 scripts/patch_manifest.py || true
+          # Run patch scripts
+          python3 scripts/patch_dash_bubble_compilesdk.py
+          python3 scripts/patch_gradle.py
+          python3 scripts/patch_manifest.py
 
-          # Fix compileSdk 36 & targetSdk 35 everywhere
+          # Fix SDK versions - Updated to 36 as required by latest dependencies
           find android -name "build.gradle*" -exec sed -i 's/compileSdk .*/compileSdk = 36/g' {} +
           find android -name "build.gradle*" -exec sed -i 's/targetSdk .*/targetSdk = 35/g' {} +
+
+          # Fix for any accidental double equals or missing spaces
           find android -name "build.gradle*" -exec sed -i 's/==/=/g' {} +
           find android -name "build.gradle*" -exec sed -i 's/compileSdk=/compileSdk = /g' {} +
           find android -name "build.gradle*" -exec sed -i 's/targetSdk=/targetSdk = /g' {} +
 
-          # Fix speech_to_text: add flutter plugin if missing
-          find ~/.pub-cache -path "*/speech_to_text*/android/build.gradle" -exec sh -c '
-            for f; do
-              if ! grep -q "flutter.gradle" "$f"; then
-                echo "⚡ Patching $f"
-                sed -i "s|apply plugin.*||g" "$f"
-                sed -i "1i apply plugin: \"com.android.library\"\napply from: \"\$flutterRoot/packages/flutter_tools/gradle/flutter.gradle\"" "$f"
-              fi
-            done
-          ' sh {} + 2>/dev/null || true
+          # Build APK
+          flutter build apk --release
 
-          # Fix compileSdk in pub cache
-          find ~/.pub-cache -name "build.gradle" -exec sed -i 's/compileSdk [0-9]*/compileSdk 36/g' {} \; 2>/dev/null || true
-          find ~/.pub-cache -name "build.gradle.kts" -exec sed -i 's/compileSdk = [0-9]*/compileSdk = 36/g' {} \; 2>/dev/null || true
-
-          # Build
-          flutter build apk --release --no-tree-shake-icons
-
-          # Copy output
+          # Move output to workspace
           mkdir -p $GITHUB_WORKSPACE/output_apk
           cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/output_apk/
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
