@@ -76,7 +76,14 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
         setState(() {
           _sourceController.text = result.recognizedWords;
         });
+        if (result.finalResult) {
+          setState(() => _isListening = false);
+          if (result.recognizedWords.isNotEmpty) {
+            _performTranslation();
+          }
+        }
       },
+      localeId: 'ar_SA',
       listenFor: const Duration(seconds: 30),
       pauseFor: const Duration(seconds: 3),
       partialResults: true,
@@ -96,14 +103,17 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
     if (text.isEmpty) return;
     setState(() => _isTranslating = true);
     try {
-      final result = await TranslationService().translate(
-        text, from: _sourceLang, to: _targetLang,
-      );
-      _translatedController.text = result;
+      final ts = context.read<TranslationService>();
+      final result = await ts.translate(text, from: _sourceLang, to: _targetLang);
+      if (mounted) {
+        setState(() => _translatedController.text = result);
+      }
     } catch (e) {
-      _translatedController.text = 'خطأ في الترجمة: $e';
+      if (mounted) {
+        setState(() => _translatedController.text = 'خطأ في الترجمة: $e');
+      }
     }
-    setState(() => _isTranslating = false);
+    if (mounted) setState(() => _isTranslating = false);
     _saveLanguages();
   }
 
@@ -136,15 +146,21 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
       if (result != null && result.files.single.path != null) {
         setState(() {
           _isProcessingAudio = true;
-          _sourceController.text = 'ملف صوتي: ${result.files.single.name}\n(جاري المعالجة...)';
+          _sourceController.text = 'ملف صوتي: ${result.files.single.name}\n(المعالجة قيد التفعيل)';
         });
         await Future.delayed(const Duration(seconds: 2));
-        _sourceController.text = 'ملف صوتي: ${result.files.single.name}\n(خدمة استخراج النص قيد التفعيل)';
+        if (mounted) {
+          setState(() {
+            _sourceController.text = 'ملف: ${result.files.single.name}\n(خدمة استخراج النص من الصوت ستتوفر قريباً)';
+          });
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
     } finally {
-      setState(() => _isProcessingAudio = false);
+      if (mounted) setState(() => _isProcessingAudio = false);
     }
   }
 
@@ -175,7 +191,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // زر تحديد اللغة - منتصف الشاشة العلوي
+            // زر تحديد اللغة في منتصف الشاشة العلوي
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -201,7 +217,13 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                         child: Text(langService.getLanguageName(code),
                           style: const TextStyle(color: Colors.white, fontSize: 13)),
                       )).toList(),
-                      onChanged: (v) { if (v != null) { setState(() => _sourceLang = v); _saveLanguages(); } },
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() => _sourceLang = v);
+                          _saveLanguages();
+                          if (_sourceController.text.isNotEmpty) _performTranslation();
+                        }
+                      },
                     ),
                   ),
                   Container(
@@ -224,14 +246,21 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                         child: Text(langService.getLanguageName(code),
                           style: const TextStyle(color: Colors.white, fontSize: 13)),
                       )).toList(),
-                      onChanged: (v) { if (v != null) { setState(() => _targetLang = v); _saveLanguages(); } },
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() => _targetLang = v);
+                          _saveLanguages();
+                          if (_sourceController.text.isNotEmpty) _performTranslation();
+                        }
+                      },
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            // المحرر العلوي
+
+            // المحرر العلوي - مصدر النص
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF1B2838),
@@ -305,7 +334,8 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // المحرر السفلي
+
+            // المحرر السفلي - الترجمة
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF1B2838),

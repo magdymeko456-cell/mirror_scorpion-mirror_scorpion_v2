@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../services/language_service.dart';
 import '../../services/translation_service.dart';
@@ -71,42 +70,31 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
       final file = File(_selectedFilePath!);
       if (await file.exists()) {
         final content = await file.readAsString();
-        setState(() => _extractedText = content.isNotEmpty ? content : 'الملف فارغ');
-        if (_extractedText.isNotEmpty && _extractedText != 'الملف فارغ') {
-          final translated = await TranslationService().translate(
-            _extractedText.substring(0, _extractedText.length > 5000 ? 5000 : _extractedText.length),
-            from: 'auto', to: _targetLang,
-          );
-          _translatedText = translated;
+        if (mounted) {
+          setState(() => _extractedText = content.isNotEmpty ? content : 'الملف فارغ');
         }
+
+        if (content.isNotEmpty) {
+          // ترجمة النص كاملاً
+          final textToTranslate = content.length > 5000 ? content.substring(0, 5000) : content;
+          final ts = context.read<TranslationService>();
+          final translated = await ts.translate(textToTranslate, from: 'auto', to: _targetLang);
+          if (mounted) {
+            setState(() {
+              _translatedText = translated;
+              if (content.length > 5000) {
+                _translatedText += '\n\n(تم ترجمة أول 5000 حرف فقط - النسخة المدفوعة تترجم بالكامل)';
+              }
+            });
+          }
+        }
+      } else {
+        if (mounted) setState(() => _extractedText = 'الملف غير موجود');
       }
     } catch (e) {
-      setState(() => _extractedText = 'خطأ: $e');
+      if (mounted) setState(() => _extractedText = 'خطأ: $e');
     }
-    setState(() => _isProcessing = false);
-  }
-
-  Future<void> _captureWithLens() async {
-    try {
-      final picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.camera);
-      if (image == null) return;
-      setState(() => _isProcessing = true);
-
-      // محاكاة التعرف على النص (لأن google_mlkit قد لا يكون متاحاً)
-      await Future.delayed(const Duration(seconds: 2));
-      setState(() {
-        _extractedText = 'تم التقاط الصورة بنجاح\n(خدمة التعرف على النص من الصور قيد التفعيل الكامل)';
-      });
-
-      final translated = await TranslationService().translate(
-        _extractedText, from: 'auto', to: _targetLang,
-      );
-      _translatedText = translated;
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
-    }
-    setState(() => _isProcessing = false);
+    if (mounted) setState(() => _isProcessing = false);
   }
 
   void _shareTranslated() {
@@ -131,7 +119,11 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.camera_alt, color: Colors.tealAccent, size: 26),
-            onPressed: _captureWithLens,
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('عدسة الترجمة قيد التفعيل الكامل')),
+              );
+            },
             tooltip: 'عدسة الترجمة',
           ),
         ],
@@ -172,6 +164,10 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
                         if (v != null) {
                           setState(() => _targetLang = v);
                           langService.saveLanguageForScreen('document_lang', v);
+                          // إذا كان هناك نص مترجم بالفعل، أعد الترجمة باللغة الجديدة
+                          if (_extractedText.isNotEmpty && _translatedText.isNotEmpty) {
+                            _extractAndTranslate();
+                          }
                         }
                       },
                     ),
@@ -302,13 +298,16 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
                   SizedBox(width: 60, height: 60,
                     child: CircularProgressIndicator(color: Colors.tealAccent, strokeWidth: 4)),
                   SizedBox(height: 20),
-                  Text('جاري المعالجة والترجمة...',
+                  Text('جاري قراءة الملف وترجمته...',
                     style: TextStyle(color: Colors.white54, fontSize: 15)),
+                  SizedBox(height: 8),
+                  Text('قد تستغرق العملية بضع ثوانٍ',
+                    style: TextStyle(color: Colors.white24, fontSize: 12)),
                 ],
               ),
             ),
 
-            // عرض النص المترجم مع التبديل بالضغط المطول
+            // عرض النص المترجم مع التبديل بالضغط
             if (_translatedText.isNotEmpty && !_isProcessing)
             GestureDetector(
               onLongPress: () => setState(() => _showOriginal = true),
@@ -320,7 +319,9 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
                   color: const Color(0xFF1B2838),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: _showOriginal ? Colors.teal.withOpacity(0.3) : Colors.amberAccent.withOpacity(0.4),
+                    color: _showOriginal
+                      ? Colors.teal.withOpacity(0.3)
+                      : Colors.amberAccent.withOpacity(0.4),
                     width: 1.5,
                   ),
                 ),
@@ -376,7 +377,7 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
                 const SizedBox(height: 40),
                 Icon(Icons.description_outlined, size: 100, color: Colors.white.withOpacity(0.1)),
                 const SizedBox(height: 16),
-                Text('اختر ملفاً أو صوّر نصاً للترجمة',
+                Text('اختر ملفاً لبدء الترجمة',
                   style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 16)),
                 const SizedBox(height: 24),
                 Row(
@@ -395,7 +396,11 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
                     ),
                     const SizedBox(width: 16),
                     ElevatedButton.icon(
-                      onPressed: _captureWithLens,
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('عدسة الترجمة قيد التفعيل')),
+                        );
+                      },
                       icon: const Icon(Icons.camera_alt, size: 20),
                       label: const Text('عدسة'),
                       style: ElevatedButton.styleFrom(

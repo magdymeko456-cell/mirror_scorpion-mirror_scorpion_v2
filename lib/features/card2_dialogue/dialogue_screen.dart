@@ -6,7 +6,6 @@ import '../../services/language_service.dart';
 import '../../services/tts_service.dart';
 import '../../services/translation_service.dart';
 import '../../core/widgets/shared_widgets.dart';
-import 'dart:async';
 
 class DialogueTranslationScreen extends StatefulWidget {
   const DialogueTranslationScreen({super.key});
@@ -59,6 +58,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
       _langTo = temp;
     });
     _saveLanguages();
+    if (_sourceController.text.isNotEmpty) _performTranslation(_sourceController.text);
   }
 
   void _startListening() async {
@@ -73,7 +73,6 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
       setState(() => _isListening = false);
       return;
     }
-    // مسح المحررين عند بدء استماع جديد
     _sourceController.clear();
     _translatedController.clear();
     setState(() => _isListening = true);
@@ -84,9 +83,11 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
           _sourceController.text = result.recognizedWords;
         });
         if (result.finalResult && result.recognizedWords.isNotEmpty) {
+          setState(() => _isListening = false);
           _performTranslation(result.recognizedWords);
         }
       },
+      localeId: 'ar_SA',
       listenFor: const Duration(seconds: 45),
       pauseFor: const Duration(seconds: 3),
       partialResults: true,
@@ -98,14 +99,17 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
     if (text.isEmpty) return;
     setState(() => _isTranslating = true);
     try {
-      final result = await TranslationService().translate(
-        text, from: _langFrom, to: _langTo,
-      );
-      _translatedController.text = result;
+      final ts = context.read<TranslationService>();
+      final result = await ts.translate(text, from: _langFrom, to: _langTo);
+      if (mounted) {
+        setState(() => _translatedController.text = result);
+      }
     } catch (e) {
-      _translatedController.text = 'خطأ: $e';
+      if (mounted) {
+        setState(() => _translatedController.text = 'خطأ: $e');
+      }
     }
-    setState(() => _isTranslating = false);
+    if (mounted) setState(() => _isTranslating = false);
   }
 
   void _speakTranslation() {
@@ -124,15 +128,21 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
       if (result != null && result.files.single.path != null) {
         setState(() {
           _isProcessingAudio = true;
-          _sourceController.text = 'معالجة الملف: ${result.files.single.name}';
+          _sourceController.text = 'معالجة: ${result.files.single.name}';
         });
         await Future.delayed(const Duration(seconds: 2));
-        _sourceController.text = 'ملف صوتي: ${result.files.single.name}';
+        if (mounted) {
+          setState(() {
+            _sourceController.text = 'ملف: ${result.files.single.name}';
+          });
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
     } finally {
-      setState(() => _isProcessingAudio = false);
+      if (mounted) setState(() => _isProcessingAudio = false);
     }
   }
 
@@ -191,7 +201,10 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                             style: const TextStyle(color: Colors.white, fontSize: 12)),
                         )).toList(),
                         onChanged: (v) {
-                          if (v != null) { setState(() => _langFrom = v); _saveLanguages(); }
+                          if (v != null) {
+                            setState(() => _langFrom = v);
+                            _saveLanguages();
+                          }
                         },
                       ),
                     ),
@@ -227,7 +240,10 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                             style: const TextStyle(color: Colors.white, fontSize: 12)),
                         )).toList(),
                         onChanged: (v) {
-                          if (v != null) { setState(() => _langTo = v); _saveLanguages(); }
+                          if (v != null) {
+                            setState(() => _langTo = v);
+                            _saveLanguages();
+                          }
                         },
                       ),
                     ),
@@ -236,7 +252,8 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // المحرر العلوي (مصدر النص)
+
+            // المحرر العلوي (مصدر النص) - يفهم اللغة الموجودة في الزر اليمين
             Expanded(
               flex: 3,
               child: Container(
@@ -245,22 +262,55 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.pinkAccent.withOpacity(0.3)),
                 ),
-                child: TextField(
-                  controller: _sourceController,
-                  maxLines: 8,
-                  minLines: 4,
-                  style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.5),
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(16),
-                    hintText: 'سيظهر هنا ما تلتقطه...',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.2)),
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.pinkAccent.withOpacity(0.1),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      ),
+                      child: Text(
+                        'النص الأصلي (${langService.getLanguageName(_langFrom)})',
+                        style: TextStyle(color: Colors.pinkAccent.withOpacity(0.8), fontSize: 11),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _sourceController,
+                        maxLines: null,
+                        expands: true,
+                        style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.5),
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.all(16),
+                          hintText: 'سيظهر هنا ما يلتقطه المايك...',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.2)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
             const SizedBox(height: 8),
-            // المحرر السفلي (الترجمة)
+
+            // سهم التوجيه
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.amberAccent.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.arrow_downward, color: Colors.amberAccent, size: 18),
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // المحرر السفلي (الترجمة) حسب اللغة في الزر اليسار
             Expanded(
               flex: 3,
               child: Container(
@@ -270,12 +320,25 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                   border: Border.all(color: Colors.amberAccent.withOpacity(0.3)),
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.amberAccent.withOpacity(0.1),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      ),
+                      child: Text(
+                        'الترجمة (${langService.getLanguageName(_langTo)})',
+                        style: TextStyle(color: Colors.amberAccent.withOpacity(0.8), fontSize: 11),
+                      ),
+                    ),
                     Expanded(
                       child: TextField(
                         controller: _translatedController,
-                        maxLines: 8,
-                        minLines: 4,
+                        maxLines: null,
+                        expands: true,
                         style: const TextStyle(color: Colors.amberAccent, fontSize: 15, height: 1.5),
                         decoration: InputDecoration(
                           border: InputBorder.none,
@@ -297,7 +360,6 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            const Spacer(),
                             IconButton(
                               icon: const Icon(Icons.volume_up, color: Colors.greenAccent, size: 24),
                               onPressed: _speakTranslation,
@@ -311,6 +373,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
               ),
             ),
             const SizedBox(height: 12),
+
             // الأزرار السفلية
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -331,25 +394,27 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
                     tooltip: 'رفع ملف صوتي للترجمة',
                   ),
                   const SizedBox(width: 16),
-                  Container(
-                    width: 62,
-                    height: 62,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _isListening ? Colors.red.withOpacity(0.2) : Colors.pinkAccent.withOpacity(0.1),
-                      border: Border.all(
-                        color: _isListening ? Colors.red : Colors.pinkAccent,
-                        width: 2,
+                  GestureDetector(
+                    onTap: _startListening,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 62,
+                      height: 62,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _isListening
+                          ? Colors.red.withOpacity(0.2)
+                          : Colors.pinkAccent.withOpacity(0.1),
+                        border: Border.all(
+                          color: _isListening ? Colors.red : Colors.pinkAccent,
+                          width: 2,
+                        ),
                       ),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
+                      child: Icon(
                         _isListening ? Icons.mic : Icons.mic_none,
                         color: _isListening ? Colors.red : Colors.pinkAccent,
                         size: 28,
                       ),
-                      onPressed: _startListening,
-                      tooltip: 'اضغط للتحدث',
                     ),
                   ),
                 ],
