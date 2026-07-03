@@ -110,7 +110,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
           );
         });
         // ترجمة تلقائية بعد التوقف عن الكلام
-        if (result.isFinal) {
+        if (result.finalResult) {
           _performTranslation(_sourceController.text);
         }
       },

@@ -95,7 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   leading: const Icon(Icons.record_voice_over, color: Colors.pinkAccent),
                   title: const Text('الصوت الحالي', style: TextStyle(color: Colors.white)),
                   subtitle: Text(
-                    '${tts.currentVoiceName} — ${tts.availableVoices[tts.currentVoiceIndex]['desc'] ?? ''}',
+                    '${tts.currentVoiceName} — ${TTSService.availableVoices[tts.currentVoiceIndex]['desc'] ?? ''}',
                     style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                   trailing: Row(
@@ -105,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         icon: const Icon(Icons.chevron_left, color: Colors.white70),
                         onPressed: () => tts.previousVoice(),
                       ),
-                      Text('${tts.currentVoiceIndex + 1}/${tts.availableVoices.length}',
+                      Text('${tts.currentVoiceIndex + 1}/${TTSService.availableVoices.length}',
                           style: const TextStyle(color: Colors.white54, fontSize: 12)),
                       IconButton(
                         icon: const Icon(Icons.chevron_right, color: Colors.white70),

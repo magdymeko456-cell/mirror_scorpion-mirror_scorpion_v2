@@ -152,7 +152,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
           // الواجهة المؤقتة: نستخدم اسم الملف
           final cleanName = fileName.replaceAll(RegExp(r'\.[^.]+$'), '');
           _sourceController.text = cleanName;
-          await _performTranslation();
+          _performTranslation();
         } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
