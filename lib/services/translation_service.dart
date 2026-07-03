@@ -127,7 +127,7 @@ class TranslationService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        if (data['responseStatus'] as int? == 200) {
+        if (data['responseStatus'] == 200) {
           final translated = data['responseData']?['translatedText'] as String?;
           if (translated != null && translated.isNotEmpty) {
             return _addSignature(translated);
