@@ -1,119 +1,144 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'dart:io';
-import 'package:file_picker/file_picker.dart';
-import 'package:share_plus/share_plus.dart';
-import '../core/services/tts_service.dart';
-import '../core/widgets/shared_widgets.dart';
-import '../core/services/database_service.dart';
 
 class DocumentScreen extends StatefulWidget {
   const DocumentScreen({super.key});
-
   @override
   State<DocumentScreen> createState() => _DocumentScreenState();
 }
 
 class _DocumentScreenState extends State<DocumentScreen> {
-  String _content = '', _translated = '';
-  String _sourceLang = 'auto', _targetLang = 'ar';
-  bool _isTranslating = false;
-  String _voice = 'Seif';
-  bool _showWm = true;
-  String? _fileName;
-  final List<String> _voices = ['Seif', 'Salma', 'Sama', 'Sara', 'User'];
+  final TextEditingController _urlController = TextEditingController();
+  String? _selectedFilePath;
 
-  Future<void> _pick() async {
-    try {
-      final r = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['txt','json','csv','md','html','xml']);
-      if (r != null && r.files.single.path != null) {
-        final file = File(r.files.single.path!);
-        final content = await file.readAsString();
-        setState(() { _content = content; _fileName = r.files.single.name; _translated = ''; });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e')));
-    }
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
   }
 
-  Future<void> _translate() async {
-    if (_content.isEmpty) return;
-    setState(() => _isTranslating = true);
-    try {
-      final chunks = _split(_content, 500);
-      String result = '';
-      for (final chunk in chunks) {
-        final resp = await http.post(Uri.parse('https://libretranslate.com/translate'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'q': chunk, 'source': _sourceLang == 'auto' ? 'auto' : _sourceLang, 'target': _targetLang}));
-        if (resp.statusCode == 200) result += jsonDecode(resp.body)['translatedText'] + ' ';
-        await Future.delayed(const Duration(milliseconds: 200));
-      }
-      setState(() => _translated = result.trim());
-    } catch (e) {
-      setState(() => _translated = '[🔁 تجريبي]\n${_content.split(' ').map((w) => '$w🌐').join(' ')}');
-    }
-    setState(() => _isTranslating = false);
+  void _openLens() {
+    // سيتم فتح الكاميرا بعدسة جوجل
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('جاري فتح العدسة...')),
+    );
   }
 
-  List<String> _split(String text, int size) {
-    final w = text.split(' '); final r = <String>[];
-    for (int i = 0; i < w.length; i += size) r.add(w.sublist(i, i + size > w.length ? w.length : i + size).join(' '));
-    return r;
+  void _browseFile() {
+    // سيتم فتح مستعرض الملفات
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('جاري فتح المستعرض...')),
+    );
   }
 
-  void _speak(String text, String lang) {
-    if (_voice == 'User') { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎤 صوت المستخدم'))); return; }
-    context.read<TtsService>().speak(text, lang, _voice);
+  void _translateDocument() {
+    if (_urlController.text.trim().isEmpty) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('جاري ترجمة المستند...')),
+    );
   }
-
-  void _share() { SharePlus.instance.share(ShareParams(text: '🦂 Mirror Scorpion\n\n$_translated')); }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('🦂 ترجمة مستندات'), actions: [
-        IconButton(icon: Icon(_showWm ? Icons.visibility : Icons.visibility_off), onPressed: () => setState(() => _showWm = !_showWm)),
-      ]),
-      body: Column(children: [
-        Padding(padding: const EdgeInsets.all(16), child: Row(children: [
-          ElevatedButton.icon(onPressed: _pick, icon: const Icon(Icons.upload_file), label: Text(_fileName ?? 'اختيار ملف')),
-          if (_fileName != null) ...[const SizedBox(width: 8), Chip(label: Text(_fileName!), onDeleted: () => setState(() { _fileName = null; _content = ''; _translated = ''; }))],
-        ])),
-        Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Row(children: [
-          Expanded(child: Card(child: Padding(padding: const EdgeInsets.all(8), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('📄 النص الأصلي', style: TextStyle(fontWeight: FontWeight.bold)),
-            const Divider(),
-            Expanded(child: SingleChildScrollView(child: Text(_content.isEmpty ? 'اختر ملفاً' : _content))),
-          ])))),
-          const SizedBox(width: 8),
-          Expanded(child: Card(child: Padding(padding: const EdgeInsets.all(8), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('🌐 الترجمة', style: TextStyle(fontWeight: FontWeight.bold)),
-            const Divider(),
-            Expanded(child: SingleChildScrollView(child: Stack(children: [
-              Text(_translated.isEmpty ? 'اضغط ترجمة' : _translated),
-              if (_showWm && _translated.isNotEmpty) Positioned(bottom: 0, right: 0, child: WatermarkText(fontSize: 10)),
-            ]))),
-          ])))),
-        ]))),
-        Padding(padding: const EdgeInsets.all(8), child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-          ElevatedButton.icon(onPressed: _content.isEmpty ? null : _translate,
-            icon: _isTranslating ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.translate),
-            label: Text(_isTranslating ? 'جارٍ...' : 'ترجمة')),
-          SpeakerButton(voice: _voice, onPressed: () => _speak(_translated, _targetLang)),
-          IconButton(icon: const Icon(Icons.share), onPressed: _share),
-        ])),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Row(children: [
-          const Text('🎤 '),
-          DropdownButton<String>(value: _voice, underline: const SizedBox(),
-            items: _voices.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-            onChanged: (v) => setState(() => _voice = v!)),
-          const Spacer(),
-          if (_showWm) const WatermarkText(fontSize: 10),
-        ])),
-      ]),
+      appBar: AppBar(title: const Text('🦂 ترجمة مستندات وعدسة')),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0D1B2A), Color(0xFF1B2838)],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ✅ زر العدسة
+                ElevatedButton.icon(
+                  onPressed: _openLens,
+                  icon: const Icon(Icons.camera_alt, size: 28),
+                  label: const Text('📷 عدسة جوجل', style: TextStyle(fontSize: 18)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade800,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ✅ حقل إدخال الرابط
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _urlController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'الصق الرابط أو مسار الملف...',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.05),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          prefixIcon: const Icon(Icons.link, color: Colors.white38),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple.shade700,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.search, color: Colors.white),
+                        onPressed: _browseFile,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // ✅ زر فتح من المستعرض
+                ElevatedButton.icon(
+                  onPressed: _browseFile,
+                  icon: const Icon(Icons.folder_open),
+                  label: const Text('📂 فتح من المستعرض'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal.shade700,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ✅ زر الترجمة (يظهر في الثلث الأخير)
+                if (_urlController.text.isNotEmpty)
+                  ElevatedButton.icon(
+                    onPressed: _translateDocument,
+                    icon: const Icon(Icons.translate, size: 28),
+                    label: const Text('🌍 ترجمة المستند', style: TextStyle(fontSize: 18)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

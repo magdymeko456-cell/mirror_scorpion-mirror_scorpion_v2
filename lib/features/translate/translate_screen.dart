@@ -1,14 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../core/services/tts_service.dart';
-import '../core/widgets/shared_widgets.dart';
-import '../core/services/database_service.dart';
 
 class TranslateScreen extends StatefulWidget {
   const TranslateScreen({super.key});
-
   @override
   State<TranslateScreen> createState() => _TranslateScreenState();
 }
@@ -16,168 +9,300 @@ class TranslateScreen extends StatefulWidget {
 class _TranslateScreenState extends State<TranslateScreen> {
   final TextEditingController _sourceController = TextEditingController();
   final TextEditingController _targetController = TextEditingController();
-  String _sourceLang = 'ar';
-  String _targetLang = 'en';
-  bool _isTranslating = false;
-  String _selectedVoice = 'Seif';
-  bool _showWatermark = true;
+  String _sourceLang = 'auto';
+  String _targetLang = 'ar';
   bool _isListening = false;
+  bool _isTranslating = false;
 
-  final List<String> _voices = ['Seif', 'Salma', 'Sama', 'Sara', 'User'];
-  final List<Map<String, String>> _languages = [
-    {'code': 'ar', 'name': 'العربية'},
-    {'code': 'en', 'name': 'English'},
-    {'code': 'fr', 'name': 'Français'},
-    {'code': 'de', 'name': 'Deutsch'},
-    {'code': 'es', 'name': 'Español'},
-    {'code': 'tr', 'name': 'Türkçe'},
-    {'code': 'zh', 'name': '中文'},
-    {'code': 'ru', 'name': 'Русский'},
-    {'code': 'ur', 'name': 'اردو'},
+  final List<String> _languages = [
+    'auto','ar','en','fr','es','de','it','pt','ru','zh','ja','ko',
+    'tr','ur','fa','hi','bn','id','ms','nl','sv','no','da','fi',
+    'pl','cs','hu','ro','el','he','th','vi','sw','tl','mr','ta',
+    'te','gu','kn','ml','pa','ne','si','km','lo','my','ka','hy',
+    'az','uz','kk','mn','bo','dz','ps','sd','ckb','am','om','ti',
+    'ha','ig','yo','zu','xh','af','st','tn','ts','ss','ve','nr',
+    'rw','rn','mg','ny','sn','so','ja','jv','su','ceb','haw','sm',
+    'mi','gil','tet','fj','to','ty','chr','iku','iu','kl','se',
+    'smj','sms','sma','smn','sms','smj','sje','fit','rmy','rom',
+    'lmo','vec','sc','co','oc','an','ast','mwl','gl','ext','arg'
   ];
 
+  String _getLangName(String code) {
+    final names = {
+      'auto': 'الكشف التلقائي', 'ar': 'العربية', 'en': 'English',
+      'fr': 'Français', 'es': 'Español', 'de': 'Deutsch',
+      'it': 'Italiano', 'pt': 'Português', 'ru': 'Русский',
+      'zh': '中文', 'ja': '日本語', 'ko': '한국어',
+      'tr': 'Türkçe', 'ur': 'اردو', 'fa': 'فارسی',
+      'hi': 'हिन्दी', 'bn': 'বাংলা', 'id': 'Bahasa Indonesia',
+      'ms': 'Bahasa Melayu',
+    };
+    return names[code] ?? code;
+  }
+
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<DatabaseService>(context, listen: false).incrementCardUsage('translate');
-    });
+  void dispose() {
+    _sourceController.dispose();
+    _targetController.dispose();
+    super.dispose();
   }
 
-  Future<void> _translate() async {
-    if (_sourceController.text.isEmpty) return;
-    setState(() => _isTranslating = true);
-    try {
-      final response = await http.post(
-        Uri.parse('https://libretranslate.com/translate'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'q': _sourceController.text,
-          'source': _sourceLang,
-          'target': _targetLang,
-        }),
-      );
-      if (response.statusCode == 200) {
-        _targetController.text = jsonDecode(response.body)['translatedText'];
+  void _startListening() {
+    setState(() => _isListening = true);
+    // سيتم ربطها بمكتبة speech_to_text لاحقاً
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _sourceController.text = 'نص تجريبي للتعرف على الكلام...';
+          _isListening = false;
+        });
       }
-    } catch (e) {
-      _targetController.text = '[🔁 ترجمة تجريبية] ${_sourceController.text}';
-    }
-    setState(() => _isTranslating = false);
-  }
-
-  void _speak(String text, String lang) {
-    if (_selectedVoice == 'User') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('🎤 صوت المستخدم: قم بالتسجيل من الإعدادات')),
-      );
-      return;
-    }
-    context.read<TtsService>().speak(text, lang, _selectedVoice);
-  }
-
-  void _swapLanguages() {
-    setState(() {
-      final temp = _sourceLang; _sourceLang = _targetLang; _targetLang = temp;
-      final tempText = _sourceController.text;
-      _sourceController.text = _targetController.text;
-      _targetController.text = tempText;
     });
+  }
+
+  void _translate() {
+    if (_sourceController.text.trim().isEmpty) return;
+    setState(() => _isTranslating = true);
+    // سيتم ربطها بمكتبة الترجمة لاحقاً
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _targetController.text = '[ترجمة: ${_sourceController.text}]';
+          _isTranslating = false;
+        });
+      }
+    });
+  }
+
+  void _speakTarget() {
+    // سيتم ربطها بـ TTS
+  }
+
+  void _shareAudio() {
+    // مشاركة ملف الصوت
+  }
+
+  void _pickAudioFile() {
+    // رفع ملف صوتي للترجمة
+  }
+
+  void _copyTranslation() {
+    Clipboard.setData(ClipboardData(text: _targetController.text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم نسخ الترجمة')),
+    );
+  }
+
+  void _clearAll() {
+    _sourceController.clear();
+    _targetController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('🦂 ترجمة النصوص'),
-        actions: [
-          IconButton(
-            icon: Icon(_showWatermark ? Icons.visibility : Icons.visibility_off),
-            onPressed: () => setState(() => _showWatermark = !_showWatermark),
+      appBar: AppBar(title: const Text('🦂 ترجمة نصية')),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0D1B2A), Color(0xFF1B2838)],
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Source text
-          Expanded(flex: 3, child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Card(child: TextField(
-              controller: _sourceController, maxLines: null, expands: true,
-              textAlign: TextAlign.right,
-              decoration: const InputDecoration(
-                hintText: 'اكتب النص للترجمة...',
-                border: OutlineInputBorder(), contentPadding: EdgeInsets.all(16),
-              ),
-            )),
-          )),
-          // Language + buttons
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(child: DropdownButtonFormField<String>(
-                  value: _sourceLang,
-                  decoration: const InputDecoration(labelText: 'من'),
-                  items: _languages.map((l) => DropdownMenuItem(value: l['code'], child: Text(l['name']!))).toList(),
-                  onChanged: (v) => setState(() => _sourceLang = v!),
-                )),
-                IconButton(icon: const Icon(Icons.swap_horiz), onPressed: _swapLanguages),
-                Expanded(child: DropdownButtonFormField<String>(
-                  value: _targetLang,
-                  decoration: const InputDecoration(labelText: 'إلى'),
-                  items: _languages.map((l) => DropdownMenuItem(value: l['code'], child: Text(l['name']!))).toList(),
-                  onChanged: (v) => setState(() => _targetLang = v!),
-                )),
-              ],
-            ),
-          ),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-            IconButton(
-              icon: Icon(_isListening ? Icons.mic : Icons.mic_none, color: _isListening ? Colors.red : null),
-              onPressed: () => setState(() => _isListening = !_isListening),
-            ),
-            ElevatedButton.icon(
-              onPressed: _isTranslating ? null : _translate,
-              icon: _isTranslating
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.translate),
-              label: Text(_isTranslating ? 'جارٍ...' : 'ترجمة'),
-              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16)),
-            ),
-            SpeakerButton(voice: _selectedVoice, onPressed: () => _speak(_targetController.text, _targetLang)),
-          ]),
-          // Target text
-          Expanded(flex: 3, child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Card(child: Stack(children: [
-              TextField(
-                controller: _targetController, maxLines: null, expands: true,
-                textAlign: TextAlign.right,
-                decoration: const InputDecoration(
-                  hintText: 'ستظهر الترجمة هنا...',
-                  border: OutlineInputBorder(), contentPadding: EdgeInsets.all(16),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // ✅ زر اختيار اللغة في منتصف الشاشة العلوي
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildLangDropdown(_sourceLang, (v) {
+                      setState(() => _sourceLang = v!);
+                    }),
+                  ],
                 ),
               ),
-              if (_showWatermark)
-                Positioned(bottom: 8, right: 8, child: WatermarkText(fontSize: 12)),
-            ])),
-          )),
-          // Voice + watermark
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(children: [
-              const Text('🎤 الصوت: '),
-              DropdownButton<String>(
-                value: _selectedVoice, underline: const SizedBox(),
-                items: _voices.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-                onChanged: (v) => setState(() => _selectedVoice = v!),
+
+              // ✅ المحرر العلوي لإدخال النص
+              Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _sourceController,
+                              style: const TextStyle(color: Colors.white, fontSize: 16),
+                              decoration: InputDecoration(
+                                hintText: 'اكتب أو استخدم المايك...',
+                                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                                border: InputBorder.none,
+                              ),
+                              maxLines: null,
+                              expands: true,
+                              textAlign: TextAlign.right,
+                              onChanged: (v) {
+                                if (v.isEmpty) _clearAll();
+                              },
+                            ),
+                          ),
+                          // ✅ الأزرار أسفل المحرر العلوي
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // مايك لالتقاط الكلام
+                              GestureDetector(
+                                onTapDown: (_) => _startListening(),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: _isListening
+                                        ? Colors.red.withOpacity(0.2)
+                                        : Theme.of(context).primaryColor.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: _isListening ? Colors.red : Colors.white38,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    _isListening ? Icons.mic : Icons.mic_none,
+                                    color: _isListening ? Colors.red : Colors.white70,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              const Spacer(),
-              if (_showWatermark) const WatermarkText(fontSize: 10),
-            ]),
+
+              // ✅ زر الترجمة
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: ElevatedButton.icon(
+                  onPressed: _translate,
+                  icon: _isTranslating
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.translate),
+                  label: const Text('ترجمة'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple.shade700,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                  ),
+                ),
+              ),
+
+              // ✅ المحرر السفلي (الترجمة)
+              Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.deepPurple.withOpacity(0.3)),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _targetController,
+                              style: const TextStyle(color: Colors.green.shade300, fontSize: 16),
+                              decoration: InputDecoration(
+                                hintText: 'الترجمة...',
+                                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                                border: InputBorder.none,
+                              ),
+                              maxLines: null,
+                              expands: true,
+                              textAlign: TextAlign.right,
+                              readOnly: true,
+                            ),
+                          ),
+                          // ✅ أزرار أسفل الترجمة
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              // 🎵 سبيكر لنطق الترجمة
+                              IconButton(
+                                icon: const Icon(Icons.volume_up, color: Colors.green),
+                                onPressed: _speakTarget,
+                              ),
+                              // 📤 مشاركة ملف الصوت
+                              IconButton(
+                                icon: const Icon(Icons.share, color: Colors.blue),
+                                onPressed: _shareAudio,
+                              ),
+                              // 📎 رفع ملف صوتي
+                              IconButton(
+                                icon: const Icon(Icons.attach_file, color: Colors.orange),
+                                onPressed: _pickAudioFile,
+                              ),
+                              // 📋 نسخ الترجمة
+                              IconButton(
+                                icon: const Icon(Icons.copy, color: Colors.white70),
+                                onPressed: _copyTranslation,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLangDropdown(String value, ValueChanged<String?> onChanged) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          dropdownColor: const Color(0xFF1B2838),
+          style: const TextStyle(color: Colors.white, fontSize: 13),
+          icon: const Icon(Icons.language, color: Colors.white70, size: 18),
+          items: _languages.map((code) {
+            return DropdownMenuItem(
+              value: code,
+              child: Text(_getLangName(code), style: const TextStyle(fontSize: 12)),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
       ),
     );
   }
