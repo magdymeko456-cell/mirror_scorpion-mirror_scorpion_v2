@@ -17,20 +17,20 @@ class TTSService extends ChangeNotifier {
   String get currentVoiceName => _currentVoiceName;
   int get currentVoiceIndex => _currentVoiceIndex;
 
-  // ===== 5 أصوات حقيقية بمحركات مختلفة =====
+  // ===== 5 أصوات =====
   static const List<Map<String, String>> availableVoices = [
-    {'id': 'ar-xa', 'name': 'سارة', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي دافئ — Google TTS Arabic'},
-    {'id': 'com.apple.ttsbundle.Samantha-compact', 'name': 'سلمى', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي ناعم — Apple TTS'},
-    {'id': 'com.google.android.tts:ara-x-ara-x-aro-std', 'name': 'سما', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي واضح — Google TTS HD'},
-    {'id': 'com.google.android.tts:ara-x-ara-x-arm-std', 'name': 'سيف', 'gender': 'ذكر', 'desc': 'صوت ذكوري عربي قوي — Google TTS Male'},
-    {'id': 'voice_clone_premium', 'name': 'المستخدم', 'gender': 'نسخ', 'desc': 'نسخة من صوتك (PRO) — ElevenLabs API'},
+    {'id': 'ar-xa', 'name': 'سارة', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي دافئ'},
+    {'id': 'ar-xa-warm', 'name': 'سلمى', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي ناعم'},
+    {'id': 'ar-xa-female', 'name': 'سما', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي واضح'},
+    {'id': 'ar-xa-male', 'name': 'سيف', 'gender': 'ذكر', 'desc': 'صوت ذكوري عربي قوي'},
+    {'id': 'voice_clone_premium', 'name': 'المستخدم', 'gender': 'نسخ', 'desc': 'نسخة من صوتك (PRO)'},
   ];
 
   final Map<String, String> voiceLanguageMap = {
     'ar-xa': 'ar',
-    'com.apple.ttsbundle.Samantha-compact': 'ar',
-    'com.google.android.tts:ara-x-ara-x-aro-std': 'ar',
-    'com.google.android.tts:ara-x-ara-x-arm-std': 'ar',
+    'ar-xa-warm': 'ar',
+    'ar-xa-female': 'ar',
+    'ar-xa-male': 'ar',
     'voice_clone_premium': 'ar',
   };
 
@@ -57,22 +57,6 @@ class TTSService extends ChangeNotifier {
       await _tts.setSpeechRate(_rate);
       await _tts.setVolume(_volume);
       await _tts.setPitch(_pitch);
-
-      // محاولة استخدام الصوت المحدد
-      try {
-        final voices = await _tts.getVoices();
-        if (voices is List && voices.isNotEmpty) {
-          final matchedVoice = voices.firstWhere(
-            (v) => (v is Map && v['name'] == _currentVoiceId) ||
-                    (v is Map && v['locale']?.toString().contains(language) == true),
-            orElse: () => voices.first,
-          );
-          if (matchedVoice is Map && matchedVoice['name'] != null) {
-            await _tts.setVoice(matchedVoice);
-          }
-        }
-      } catch (_) {}
-
       await _tts.speak(text);
     } catch (e) {
       debugPrint('TTS Speak Error: $e');
