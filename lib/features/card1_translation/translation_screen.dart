@@ -101,13 +101,17 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
   void _shareTranslation() {
     final t = _translatedController.text.trim();
     if (t.isEmpty) return;
-    Share.share("ترجم هذا النص بواسطة Mirror Scorpion 🦂\n\n$t"
+    Share.share("ترجم هذا النص بواسطة Mirror Scorpion 🦂
+
+$t")
   }
   void _copyTranslation() {
     final t = _translatedController.text.trim();
     if (t.isEmpty) return;
-    Clipboard.setData(ClipboardData(text: "ترجم هذا النص بواسطة Mirror Scorpion 🦂\n\n$t"
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم النسخ مع توقيع Mirror Scorpion')
+    Clipboard.setData(ClipboardData(text: "ترجم هذا النص بواسطة Mirror Scorpion 🦂
+
+$t"))
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم النسخ مع توقيع Mirror Scorpion')))
   }
 
   Future<void> _pickAudioFile() async {
@@ -116,7 +120,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
     if (result != null && result.files.single.path != null) {
       setState(() => _isProcessingAudio = true);
       try {
-        await Future.delayed(const Duration(seconds: 2
+        await Future.delayed(const Duration(seconds: 2))
         if (mounted) {
           setState(() { _sourceController.text = "تم استلام الملف: ${result.files.single.name}"; _isProcessingAudio = false; });
           _performTranslation();
