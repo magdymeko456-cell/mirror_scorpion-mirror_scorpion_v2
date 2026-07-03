@@ -16,52 +16,49 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      - name: Prepare Project and Build
+      - name: Build APK
         run: |
           set -e
+
+          # 1. Get dependencies first
           flutter pub get
 
-          # ===========================================
-          # تصحيح speech_to_text-7.4.0 تحديداً
-          # المشكلة: compileSdk = flutter.compileSdkVersion
-          #          + kotlin { compilerOptions {} } في Groovy
-          # الحل: استبدال compileSdk + حذف kotlin block
-          # ===========================================
-          STT_FILE=$(find ~/.pub-cache -path "*/speech_to_text-*/android/build.gradle" | head -1)
+          # 2. Find the actual pub cache path used by Flutter on this runner
+          PUB_CACHE=$(dart pub cache list 2>/dev/null | head -1 || echo "")
+          if [ -z "$PUB_CACHE" ]; then
+            PUB_CACHE=$(find /opt/hostedtoolcache -name ".pub-cache" -type d 2>/dev/null | head -1)
+          fi
+          if [ -z "$PUB_CACHE" ]; then
+            PUB_CACHE=$(find / -path "*/flutter/*/.pub-cache" -type d 2>/dev/null | head -1)
+          fi
+          if [ -z "$PUB_CACHE" ]; then
+            PUB_CACHE=$(find / -name "pub-cache" -type d 2>/dev/null | head -1)
+          fi
+          echo "PUB_CACHE=$PUB_CACHE"
+
+          # 3. Find and patch speech_to_text build.gradle
+          STT_FILE=$(find / -path "*/speech_to_text*/android/build.gradle" -type f 2>/dev/null | head -1)
+          echo "STT_FILE=$STT_FILE"
+          
           if [ -n "$STT_FILE" ]; then
-            echo "⚡ Patching speech_to_text: $STT_FILE"
-            # استبدال compileSdk = flutter.compileSdkVersion بـ compileSdk 36
-            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk 36/g' "$STT_FILE"
-            sed -i 's/ndkVersion = flutter.ndkVersion/ndkVersion "27.0.12077973"/g' "$STT_FILE"
-            # حذف كتلة kotlin { compilerOptions { ... } } بالكامل
+            echo "=== Patching $STT_FILE ==="
+            cat "$STT_FILE"
+            
+            # Replace the problematic lines
+            # compileSdk = flutter.compileSdkVersion -> compileSdk 36
+            # ndkVersion = flutter.ndkVersion -> remove
+            # kotlin { compilerOptions { ... } } -> remove block
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk 36/' "$STT_FILE"
+            sed -i 's/ndkVersion = flutter.ndkVersion/ndkVersion "27.0.12077973"/' "$STT_FILE"
             sed -i '/^kotlin {/,/^}/d' "$STT_FILE"
-            echo "✅ speech_to_text build.gradle patched"
+            
+            echo "=== After patching ==="
+            cat "$STT_FILE"
+          else
+            echo "WARNING: speech_to_text build.gradle not found!"
           fi
 
-          # ===========================================
-          # تصحيح compileSdk لكل مكتبة لا تحدد compileSdk
-          # ===========================================
-          for f in $(find ~/.pub-cache -name "build.gradle" -path "*/android/*"); do
-            if ! grep -q "compileSdk" "$f"; then
-              echo "⚡ Adding compileSdk to: $f"
-              sed -i 's/apply plugin.*/apply plugin: "com.android.library"\nandroid {\n    compileSdk 36\n}\n/' "$f"
-            fi
-            # حذف أي kotlin { compilerOptions {} } في Groovy
-            sed -i '/^kotlin {/,/^}/d' "$f"
-          done 2>/dev/null || true
-
-          for f in $(find ~/.pub-cache -name "build.gradle.kts" -path "*/android/*"); do
-            if ! grep -q "compileSdk" "$f"; then
-              echo "⚡ Adding compileSdk to: $f"
-              sed -i 's/plugins {/plugins {\n    id("com.android.library")/' "$f"
-            fi
-            # تحديث compileSdk
-            sed -i 's/compileSdk = [0-9]*/compileSdk = 36/g' "$f"
-          done 2>/dev/null || true
-
-          # ===========================================
-          # إنشاء مشروع نظيف ونسخ الملفات
-          # ===========================================
+          # 4. Create clean project and build
           rm -rf /tmp/clean_project
           flutter create --org com.tetocollctionway --project-name mirror_scorpion_translate /tmp/clean_project
 
@@ -74,19 +71,26 @@ jobs:
           cd /tmp/clean_project
           flutter pub get
 
-          # تشغيل سكربتات التصحيح
+          # 5. Run patch scripts
           python3 scripts/patch_dash_bubble_compilesdk.py
           python3 scripts/patch_gradle.py
           python3 scripts/patch_manifest.py
 
-          # تصحيح compileSdk/targetSdk في المشروع
+          # 6. Fix all compileSdk/targetSdk
           find android -name "build.gradle*" -exec sed -i 's/compileSdk .*/compileSdk = 36/g' {} +
           find android -name "build.gradle*" -exec sed -i 's/targetSdk .*/targetSdk = 35/g' {} +
           find android -name "build.gradle*" -exec sed -i 's/==/=/g' {} +
-          find android -name "build.gradle*" -exec sed -i 's/compileSdk=/compileSdk = /g' {} +
-          find android -name "build.gradle*" -exec sed -i 's/targetSdk=/targetSdk = /g' {} +
 
-          # بناء
+          # 7. Patch speech_to_text AGAIN in case clean project has different path
+          STT_FILE2=$(find / -path "*/speech_to_text*/android/build.gradle" -type f 2>/dev/null | head -1)
+          if [ -n "$STT_FILE2" ]; then
+            echo "=== Patching (2nd pass) $STT_FILE2 ==="
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk 36/' "$STT_FILE2"
+            sed -i 's/ndkVersion = flutter.ndkVersion/ndkVersion "27.0.12077973"/' "$STT_FILE2"
+            sed -i '/^kotlin {/,/^}/d' "$STT_FILE2"
+          fi
+
+          # 8. Build
           flutter build apk --release
 
           mkdir -p $GITHUB_WORKSPACE/output_apk
