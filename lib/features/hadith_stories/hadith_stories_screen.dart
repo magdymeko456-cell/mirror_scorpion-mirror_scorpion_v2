@@ -272,7 +272,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              _currentHadith!.attribution,
+                              _currentHadith!.grade ?? _currentHadith!.bookName,
                               style: TextStyle(fontSize: 14, color: Colors.amber.shade300),
                             ),
                             const SizedBox(height: 16),
@@ -343,7 +343,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                         child: Column(
                           children: [
                             Text(
-                              _currentStory!.titleArAr,
+                              _currentStory!.titleAr,
                               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.amber),
                               textAlign: TextAlign.center,
                             ),
