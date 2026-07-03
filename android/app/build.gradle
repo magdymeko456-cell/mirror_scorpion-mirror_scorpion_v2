@@ -1,6 +1,5 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -23,6 +22,7 @@ if (flutterVersionName == null) {
 }
 
 android {
+    namespace = "com.mirror.scorpion.v2"
     ndkVersion = "27.0.12077973"
     compileSdk = 36
 
@@ -40,7 +40,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.mirrorscorpion.translate"
+        applicationId = "com.mirror.scorpion.v2"
         minSdk = 21
         targetSdk = 36
         versionCode = flutterVersionCode.toInteger()
