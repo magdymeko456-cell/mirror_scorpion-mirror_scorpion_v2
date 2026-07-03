@@ -1,123 +1,156 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/services.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:math';
 
 class DatabaseService extends ChangeNotifier {
+  // --- Translation History ---
+  static final DatabaseService _instance = DatabaseService._internal();
+  
+  factory DatabaseService() {
+    return _instance;
+  }
+  
+  DatabaseService._internal();
+
+  // --- Content Storage ---
   List<Map<String, dynamic>> _hadiths = [];
-  List<Map<String, dynamic>> _hadithQudsi = [];
-  List<Map<String, dynamic>> _stories = [];
-  List<Map<String, dynamic>> _reasons = [];
+  List<Map<String, dynamic>> _quranStories = [];
   List<Map<String, dynamic>> _prophetStories = [];
+  List<Map<String, dynamic>> _womenStories = [];
+  List<Map<String, dynamic>> _animalStories = [];
+  List<Map<String, dynamic>> _humanStories = [];
+  List<Map<String, dynamic>> _nationsStories = [];
+  List<Map<String, String>> _translationHistory = [];
+  
+  bool _isLoaded = false;
 
+  // --- Getters ---
   List<Map<String, dynamic>> get hadiths => _hadiths;
-  List<Map<String, dynamic>> get hadithQudsi => _hadithQudsi;
-  List<Map<String, dynamic>> get stories => _stories;
-  List<Map<String, dynamic>> get revelationReasons => _reasons;
+  List<Map<String, dynamic>> get quranStories => _quranStories;
   List<Map<String, dynamic>> get prophetStories => _prophetStories;
+  List<Map<String, dynamic>> get womenStories => _womenStories;
+  List<Map<String, dynamic>> get animalStories => _animalStories;
+  List<Map<String, dynamic>> get humanStories => _humanStories;
+  List<Map<String, dynamic>> get nationsStories => _nationsStories;
+  List<Map<String, String>> get translationHistory => _translationHistory;
+  bool get isLoaded => _isLoaded;
 
-  List<Map<String, dynamic>> get quranStories =>
-      _stories.where((s) => s['category'] == 'quran').toList();
-  List<Map<String, dynamic>> get prophetList =>
-      _prophetStories;
-  List<Map<String, dynamic>> get womenStories =>
-      _stories.where((s) => s['category'] == 'women').toList();
-  List<Map<String, dynamic>> get animalStories =>
-      _stories.where((s) => s['category'] == 'animal').toList();
-  List<Map<String, dynamic>> get humanStories =>
-      _stories.where((s) => s['category'] == 'human').toList();
-  List<Map<String, dynamic>> get nationsStories =>
-      _stories.where((s) => s['category'] == 'nations').toList();
+  // --- Load All Data ---
+  Future<void> loadAllData() async {
+    try {
+      // Load Hadith Qudsi as primary hadith source
+      final hadithsJson = await rootBundle.loadString('assets/data/hadith_qudsi.json');
+      final storiesJson = await rootBundle.loadString('assets/data/quran_stories.json');
+      
+      final hadithsData = jsonDecode(hadithsJson);
+      final storiesData = jsonDecode(storiesJson);
 
-  Future initialize() async {
-    await _loadData();
+      // Hadith Qudsi is a top-level array
+      _hadiths = (hadithsData as List).map((e) => {
+        'text': e['text_ar'],
+        'source': e['source'],
+        'explanation': e['explanation_ar'],
+        'narrator': 'حديث قدسي'
+      }).toList();
+
+      _quranStories = List<Map<String, dynamic>>.from(storiesData['quran'] ?? []);
+      _prophetStories = List<Map<String, dynamic>>.from(storiesData['prophets'] ?? []);
+      _womenStories = List<Map<String, dynamic>>.from(storiesData['women'] ?? []);
+      _animalStories = List<Map<String, dynamic>>.from(storiesData['animals'] ?? []);
+      _humanStories = List<Map<String, dynamic>>.from(storiesData['humans'] ?? []);
+      _nationsStories = List<Map<String, dynamic>>.from(storiesData['nations'] ?? []);
+      
+      // Ensure we catch any extra categories
+      storiesData.forEach((key, value) {
+        if (value is List && !['quran', 'prophets', 'women', 'animals', 'humans', 'nations'].contains(key)) {
+          // You could add them to a general list or handle specifically
+        }
+      });
+      
+      _isLoaded = true;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Database loading error: $e');
+    }
   }
 
-  Future _loadData() async {
-    // الأحاديث القدسية
-    try {
-      final d = await rootBundle.loadString('assets/data/hadith_qudsi.json');
-      _hadithQudsi = List<Map<String, dynamic>>.from(json.decode(d));
-    } catch (_) {
-      _hadithQudsi = [
-        {'text': 'يقول الله تعالى: أنا عند ظن عبدي بي', 'source': 'حديث قدسي'},
-        {'text': 'يقول الله تعالى: يا ابن آدم، إنك ما دعوتني ورجوتني غفرت لك', 'source': 'حديث قدسي'},
-        {'text': 'يقول الله تعالى: قسمتُ الصلاة بيني وبين عبدي نصفين', 'source': 'حديث قدسي'},
-      ];
+  // --- Translation History Management ---
+  Future<void> saveTranslation(String original, String translated, {String? sourceLang, String? targetLang}) async {
+    _translationHistory.insert(0, {
+      'original': original,
+      'translated': translated,
+      'sourceLang': sourceLang ?? 'unknown',
+      'targetLang': targetLang ?? 'unknown',
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+    
+    // Keep only last 100 translations
+    if (_translationHistory.length > 100) {
+      _translationHistory.removeLast();
     }
-
-    // الأحاديث النبوية
-    try {
-      final d = await rootBundle.loadString('assets/data/hadiths.json');
-      _hadiths = List<Map<String, dynamic>>.from(json.decode(d));
-    } catch (_) {
-      _hadiths = [
-        {'text': 'إنما الأعمال بالنيات', 'source': 'رواه البخاري'},
-        {'text': 'اتق الله حيثما كنت', 'source': 'رواه الترمذي'},
-        {'text': 'لا يؤمن أحدكم حتى يحب لأخيه ما يحب لنفسه', 'source': 'رواه البخاري'},
-      ];
-    }
-
-    // القصص
-    try {
-      final d = await rootBundle.loadString('assets/data/stories.json');
-      _stories = List<Map<String, dynamic>>.from(json.decode(d));
-    } catch (_) {
-      _stories = [
-        {'title': 'أصحاب الكهف', 'text': 'قصة الفتية الذين آمنوا بربهم وفرّوا بدينهم إلى الكهف...', 'category': 'quran'},
-        {'title': 'موسى والخضر', 'text': 'قصة نبي الله موسى عليه السلام مع الخضر...', 'category': 'quran'},
-        {'title': 'أصحاب الفيل', 'text': 'قصة أبرهة وجيشه وجيش الله...', 'category': 'quran'},
-        {'title': 'هاجر عليها السلام', 'text': 'قصة أم إسماعيل والسعي بين الصفا والمروة...', 'category': 'women'},
-        {'title': 'ناقة صالح', 'text': 'قصة ناقة نبي الله صالح عليه السلام...', 'category': 'animal'},
-        {'title': 'قارون', 'text': 'قصة الغني الذي خسف الله به الأرض...', 'category': 'human'},
-        {'title': 'قوم عاد', 'text': 'قوم هود الذين أهلكهم الله بريح صرصر...', 'category': 'nations'},
-        {'title': 'قوم ثمود', 'text': 'قوم صالح الذين عقروا الناقة...', 'category': 'nations'},
-      ];
-    }
-
-    // أسباب النزول
-    try {
-      final d = await rootBundle.loadString('assets/data/asbab_nuzul.json');
-      _reasons = List<Map<String, dynamic>>.from(json.decode(d));
-    } catch (_) {
-      _reasons = [
-        {'surah': 'الفاتحة', 'ayah': '1', 'text': 'بسم الله الرحمن الرحيم', 'reason': 'أول ما نزل من القرآن'},
-        {'surah': 'العلق', 'ayah': '1', 'text': 'اقرأ باسم ربك الذي خلق', 'reason': 'أول آية نزلت على النبي صلى الله عليه وسلم في غار حراء'},
-        {'surah': 'المسد', 'ayah': '1', 'text': 'تبت يدا أبي لهب', 'reason': 'نزلت في أبي لهب حين قال للنبي صلى الله عليه وسلم: تباً لك'},
-        {'surah': 'الكوثر', 'ayah': '1', 'text': 'إنا أعطيناك الكوثر', 'reason': 'نزلت تسلية للنبي صلى الله عليه وسلم حين قالوا: إنه أبتر'},
-      ];
-    }
-
-    // قصص الأنبياء (ابن كثير)
-    try {
-      final d = await rootBundle.loadString('assets/data/prophet_stories_ibn_kathir.json');
-      _prophetStories = List<Map<String, dynamic>>.from(json.decode(d));
-    } catch (_) {
-      _prophetStories = [
-        {'name': 'آدم عليه السلام', 'title': 'أبو البشر', 'text': 'خلق الله آدم من طين...'},
-        {'name': 'نوح عليه السلام', 'title': 'شيخ المرسلين', 'text': 'أول الرسل، دعا قومه ألف سنة إلا خمسين عاماً...'},
-        {'name': 'إبراهيم عليه السلام', 'title': 'خليل الرحمن', 'text': 'أبو الأنبياء، حطم الأصنام...'},
-        {'name': 'موسى عليه السلام', 'title': 'كليم الله', 'text': 'أرسل إلى فرعون وقومه...'},
-        {'name': 'عيسى عليه السلام', 'title': 'روح الله', 'text': 'ولد من غير أب، آتاه الله الإنجيل...'},
-        {'name': 'محمد صلى الله عليه وسلم', 'title': 'خاتم الأنبياء', 'text': 'أشرف الخلق، خاتم المرسلين...'},
-      ];
-    }
-
     notifyListeners();
   }
 
-  Map<String, dynamic> getRandomHadith() =>
-      _hadiths.isEmpty ? {'text': 'لا إله إلا الله', 'source': ''}
-          : _hadiths[Random().nextInt(_hadiths.length)];
+  Future<List<Map<String, String>>> getHistory() async {
+    return _translationHistory;
+  }
 
-  Map<String, dynamic> getRandomQudsi() =>
-      _hadithQudsi.isEmpty ? {'text': 'الله أكبر', 'source': ''}
-          : _hadithQudsi[Random().nextInt(_hadithQudsi.length)];
+  // --- Random Content Getters ---
+  Map<String, dynamic> getRandomHadith() {
+    if (_hadiths.isEmpty) {
+      return {
+        'text': 'عن عمر بن الخطاب رضي الله عنه قال: سمعت رسول الله صلى الله عليه وسلم يقول: "إنما الأعمال بالنيات"',
+        'source': 'رواه البخاري ومسلم',
+        'explanation': 'معنى الحديث: أن قيمة العمل تكون بنية صاحبه',
+      };
+    }
+    final random = Random();
+    return _hadiths[random.nextInt(_hadiths.length)];
+  }
 
-  Map<String, dynamic> getRandomAsbab() =>
-      _reasons.isEmpty ? {'surah': '', 'ayah': '', 'reason': '', 'text': ''}
-          : _reasons[Random().nextInt(_reasons.length)];
+  Map<String, dynamic> getRandomStory(String category) {
+    final random = Random();
+    List<Map<String, dynamic>> stories;
+    
+    switch (category) {
+      case 'quran':
+        stories = _quranStories;
+        break;
+      case 'prophets':
+        stories = _prophetStories;
+        break;
+      case 'women':
+        stories = _womenStories;
+        break;
+      case 'animals':
+        stories = _animalStories;
+        break;
+      case 'humans':
+        stories = _humanStories;
+        break;
+      case 'nations':
+        stories = _nationsStories;
+        break;
+      default:
+        stories = _quranStories;
+    }
 
-  List<Map<String, dynamic>> getStoriesByCategory(String c) =>
-      _stories.where((s) => s['category'] == c).toList();
+    if (stories.isEmpty) {
+      return {'title': 'قصة', 'text': 'يوجد قصة هنا', 'category': category};
+    }
+    return stories[random.nextInt(stories.length)];
+  }
+
+  // --- Load JSON Helper (for compatibility) ---
+  Future<Map<String, dynamic>> loadJson(String assetPath) async {
+    try {
+      final jsonString = await rootBundle.loadString(assetPath);
+      return jsonDecode(jsonString);
+    } catch (e) {
+      debugPrint('Error loading JSON from $assetPath: $e');
+      return {};
+    }
+  }
 }

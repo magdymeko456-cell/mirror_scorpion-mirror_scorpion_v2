@@ -2,116 +2,118 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 class TTSService extends ChangeNotifier {
-  final FlutterTts _tts = FlutterTts();
+  final FlutterTts _flutterTts = FlutterTts();
   bool _isSpeaking = false;
-  double _volume = 1.0, _rate = 0.5, _pitch = 1.0;
-  String _currentVoiceId = 'ar-xa';
-  String _currentVoiceName = 'سارة';
-  int _currentVoiceIndex = 0;
-
-  bool get isSpeaking => _isSpeaking;
-  double get volume => _volume;
-  double get rate => _rate;
-  double get pitch => _pitch;
-  String get currentVoiceId => _currentVoiceId;
-  String get currentVoiceName => _currentVoiceName;
-  int get currentVoiceIndex => _currentVoiceIndex;
-
-  // ===== 5 أصوات =====
+  bool _isPaused = false;
+  String _selectedVoice = 'voice_1_female';
+  
+  // 5 voices for the app as per requirements
   static const List<Map<String, String>> availableVoices = [
-    {'id': 'ar-xa', 'name': 'سارة', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي دافئ'},
-    {'id': 'ar-xa-warm', 'name': 'سلمى', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي ناعم'},
-    {'id': 'ar-xa-female', 'name': 'سما', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي واضح'},
-    {'id': 'ar-xa-male', 'name': 'سيف', 'gender': 'ذكر', 'desc': 'صوت ذكوري عربي قوي'},
-    {'id': 'voice_clone_premium', 'name': 'المستخدم', 'gender': 'نسخ', 'desc': 'نسخة من صوتك (PRO)'},
+    {'id': 'voice_1_female', 'name': 'سلمى'},
+    {'id': 'voice_2_male', 'name': 'سيف'},
+    {'id': 'voice_3_female_warm', 'name': 'سما'},
+    {'id': 'voice_4_female_soft', 'name': 'سارة'},
+    {'id': 'voice_5_premium_ai', 'name': 'صوت المستخدم'},
   ];
 
-  final Map<String, String> voiceLanguageMap = {
-    'ar-xa': 'ar',
-    'ar-xa-warm': 'ar',
-    'ar-xa-female': 'ar',
-    'ar-xa-male': 'ar',
-    'voice_clone_premium': 'ar',
-  };
+  bool get isSpeaking => _isSpeaking;
+  bool get isPaused => _isPaused;
+  String get selectedVoice => _selectedVoice;
 
   TTSService() {
-    _tts.setCompletionHandler(() {
+    _initTts();
+  }
+
+  Future<void> _initTts() async {
+    await _flutterTts.setLanguage('ar');
+    await _flutterTts.setSpeechRate(0.5);
+    await _flutterTts.setPitch(1.0);
+    
+    _flutterTts.setCompletionHandler(() {
       _isSpeaking = false;
       notifyListeners();
     });
-    _tts.setErrorHandler((msg) {
-      debugPrint('TTS Error: $msg');
+
+    _flutterTts.setErrorHandler((msg) {
       _isSpeaking = false;
+      debugPrint('TTS Error: $msg');
       notifyListeners();
     });
   }
 
-  /// النطق مع دعم اللغة والصوت المحدد
-  Future<void> speak(String text, {String language = 'ar'}) async {
-    if (text.isEmpty) return;
+  Future<void> setVoice(String voiceId) async {
+    _selectedVoice = voiceId;
+    
+    // Configure based on voice type
+    switch (voiceId) {
+      case 'voice_1_female': // سلمى (متزن)
+        await _flutterTts.setPitch(1.0);
+        await _flutterTts.setSpeechRate(0.5);
+        break;
+      case 'voice_2_male': // سيف (خشن/عميق)
+        await _flutterTts.setPitch(0.8);
+        await _flutterTts.setSpeechRate(0.45);
+        break;
+      case 'voice_3_female_warm': // سما (دافئ/ناعم)
+        await _flutterTts.setPitch(1.2);
+        await _flutterTts.setSpeechRate(0.45);
+        break;
+      case 'voice_4_female_soft': // سارة (رقيق)
+        await _flutterTts.setPitch(1.4);
+        await _flutterTts.setSpeechRate(0.5);
+        break;
+      case 'voice_5_premium_ai':
+        await _flutterTts.setPitch(1.0);
+        await _flutterTts.setSpeechRate(0.5);
+        break;
+    }
+    
+    notifyListeners();
+  }
+
+  Future<void> speak(String text, {String? language}) async {
+    if (_isSpeaking) {
+      await stop();
+    }
+
     _isSpeaking = true;
     notifyListeners();
 
-    try {
-      await _tts.setLanguage(language);
-      await _tts.setSpeechRate(_rate);
-      await _tts.setVolume(_volume);
-      await _tts.setPitch(_pitch);
-      await _tts.speak(text);
-    } catch (e) {
-      debugPrint('TTS Speak Error: $e');
-      _isSpeaking = false;
-      notifyListeners();
+    if (language != null) {
+      await _flutterTts.setLanguage(language);
+    } else {
+      await _flutterTts.setLanguage('ar');
     }
+
+    await _flutterTts.speak(text);
   }
 
-  /// إيقاف النطق
   Future<void> stop() async {
-    await _tts.stop();
+    await _flutterTts.stop();
     _isSpeaking = false;
+    _isPaused = false;
     notifyListeners();
   }
 
-  /// تعيين الصوت المحدد
-  Future<void> setVoice(String voiceId) async {
-    _currentVoiceId = voiceId;
-    final found = availableVoices.indexWhere((v) => v['id'] == voiceId);
-    if (found >= 0) {
-      _currentVoiceName = availableVoices[found]['name']!;
-      _currentVoiceIndex = found;
-    }
-    final lang = voiceLanguageMap[voiceId] ?? 'ar';
-    await _tts.setLanguage(lang);
+  Future<void> pause() async {
+    await _flutterTts.pause();
+    _isPaused = true;
     notifyListeners();
   }
 
-  /// التبديل للصوت التالي
-  Future<void> nextVoice() async {
-    _currentVoiceIndex = (_currentVoiceIndex + 1) % availableVoices.length;
-    await setVoice(availableVoices[_currentVoiceIndex]['id']!);
-  }
-
-  /// التبديل للصوت السابق
-  Future<void> previousVoice() async {
-    _currentVoiceIndex = (_currentVoiceIndex - 1 + availableVoices.length) % availableVoices.length;
-    await setVoice(availableVoices[_currentVoiceIndex]['id']!);
-  }
-
-  Future<void> setVolume(double v) async {
-    _volume = v.clamp(0.0, 1.0);
-    await _tts.setVolume(_volume);
+  Future<void> resume() async {
+    // Note: resume behavior depends on platform
+    _isPaused = false;
     notifyListeners();
   }
 
-  Future<void> setRate(double r) async {
-    _rate = r.clamp(0.0, 1.0);
-    await _tts.setSpeechRate(_rate);
-    notifyListeners();
+  Future<List<String>> getAvailableLanguages() async {
+    return await _flutterTts.getLanguages;
   }
 
-  Future<void> setPitch(double p) async {
-    _pitch = p.clamp(0.5, 2.0);
-    await _tts.setPitch(_pitch);
-    notifyListeners();
+  @override
+  void dispose() {
+    _flutterTts.stop();
+    super.dispose();
   }
 }

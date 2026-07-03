@@ -1,178 +1,245 @@
-import 'dart:convert';
-import 'dart:math';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-
-class AIService extends ChangeNotifier {
-  String _lastInspiration = '';
-  String _lastUserMood = '';
-  int _lastNotificationHour = -1;
-  bool _useApi = true;
-  String _apiKey = '';
-  String _deviceLanguage = 'ar';
-
-  String get apiKey => _apiKey;
-  String get lastInspiration => _lastInspiration;
-  String get deviceLanguage => _deviceLanguage;
-
-  set apiKey(String key) {
-    _apiKey = key;
-    notifyListeners();
-  }
-
-  set deviceLanguage(String lang) {
-    _deviceLanguage = lang;
-    notifyListeners();
-  }
-
-  // ===== القاعدة المحلية (Fallback) =====
-  final List<Map<String, String>> _inspirationDatabase = [
-    {'ar': '﴿ إِنَّ مَعَ الْعُسْرِ يُسْرًا ﴾ [الشرح: 6]', 'en': 'Indeed, with hardship comes ease. [Quran 94:6]'},
-    {'ar': '﴿ وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ ﴾ [هود: 88]', 'en': 'And my success is only through Allah. [Quran 11:88]'},
-    {'ar': '﴿ رَبِّ اشْرَحْ لِي صَدْرِي ﴾ [طه: 25]', 'en': 'My Lord, expand for me my breast. [Quran 20:25]'},
-    {'ar': '﴿ إِنَّ اللَّهَ لَا يُضِيعُ أَجْرَ الْمُحْسِنِينَ ﴾ [التوبة: 120]', 'en': 'Indeed, Allah does not allow to be lost the reward of the doers of good. [Quran 9:120]'},
-    {'ar': '﴿ وَمَن يَتَوَكَّلْ عَلَى اللَّهِ فَهُوَ حَسْبُهُ ﴾ [الطلاق: 3]', 'en': 'And whoever relies upon Allah – then He is sufficient for him. [Quran 65:3]'},
-    {'ar': '﴿ لَا تَقْنَطُوا مِن رَّحْمَةِ اللَّهِ ﴾ [الزمر: 53]', 'en': 'Do not despair of the mercy of Allah. [Quran 39:53]'},
-    {'ar': '﴿ أَلَمْ نَشْرَحْ لَكَ صَدْرَكَ ﴾ [الشرح: 1]', 'en': 'Did We not expand for you your breast? [Quran 94:1]'},
-    {'ar': '﴿ فَإِنَّ مَعَ الْعُسْرِ يُسْرًا ﴾ [الشرح: 5]', 'en': 'For indeed, with hardship comes ease. [Quran 94:5]'},
-    {'ar': '﴿ مَّا وَدَّعَكَ رَبُّكَ وَمَا قَلَىٰ ﴾ [الضحى: 3]', 'en': 'Your Lord has not taken leave of you, nor has He detested [you]. [Quran 93:3]'},
-    {'ar': '﴿ وَلَسَوْفَ يُعْطِيكَ رَبُّكَ فَتَرْضَىٰ ﴾ [الضحى: 5]', 'en': 'And your Lord is going to give you, and you will be satisfied. [Quran 93:5]'},
-    {'ar': 'قال النبي ﷺ: "عجباً لأمر المؤمن، إن أمره كله له خير"', 'en': 'The Prophet ﷺ said: "Amazing is the affair of the believer, all of it is good."'},
-    {'ar': 'قال النبي ﷺ: "لا تحقرن من المعروف شيئاً"', 'en': 'The Prophet ﷺ said: "Do not deem any act of kindness insignificant."'},
-    {'ar': 'قال النبي ﷺ: "تفاءلوا بالخير تجدوه"', 'en': 'The Prophet ﷺ said: "Be optimistic about good, you will find it."'},
-    {'ar': '﴿ وَأَمَّا بِنِعْمَةِ رَبِّكَ فَحَدِّثْ ﴾ [الضحى: 11]', 'en': 'And as for the favor of your Lord, report [it]. [Quran 93:11]'},
-    {'ar': '﴿ قُلْ بِفَضْلِ اللَّهِ وَبِرَحْمَتِهِ فَبِذَٰلِكَ فَلْيَفْرَحُوا ﴾ [يونس: 58]', 'en': 'Say: In the bounty of Allah and in His mercy – in that let them rejoice. [Quran 10:58]'},
-    {'ar': '﴿ إِنَّ اللَّهَ لَا يُضِيعُ أَجْرَ مَنْ أَحْسَنَ عَمَلًا ﴾ [الكهف: 30]', 'en': 'Indeed, Allah does not allow to be lost the reward of those who do good. [Quran 18:30]'},
-    {'ar': '﴿ وَقُل رَّبِّ زِدْنِي عِلْمًا ﴾ [طه: 114]', 'en': 'And say: My Lord, increase me in knowledge. [Quran 20:114]'},
-    {'ar': '﴿ فَإِذَا فَرَغْتَ فَانصَبْ ﴾ [الشرح: 7]', 'en': 'So when you have finished, then stand up [for worship]. [Quran 94:7]'},
-    {'ar': 'قال النبي ﷺ: "احرص على ما ينفعك واستعن بالله"', 'en': 'The Prophet ﷺ said: "Be keen on what benefits you and seek help from Allah."'},
-    {'ar': '﴿ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ﴾ [البقرة: 255]', 'en': 'His Kursi extends over the heavens and the earth. [Quran 2:255]'},
-    {'ar': 'لا تيأس، فبعد العسر يسراً، وبعد الضيق فرجاً', 'en': 'Do not despair, after hardship comes ease, after distress comes relief.'},
-    {'ar': '﴿ رَبِّ أَوْزِعْنِي أَنْ أَشْكُرَ نِعْمَتَكَ ﴾ [النمل: 19]', 'en': 'My Lord, enable me to be grateful for Your favor. [Quran 27:19]'},
-    {'ar': 'الحمد لله الذي بنعمته تتم الصالحات', 'en': 'Praise be to Allah by whose grace good deeds are completed.'},
+import 'dart:convert';  
+import 'package:http/http.dart' as http;  
+import 'package:flutter/foundation.dart';  
+  
+/// AIService - Provides AI-powered inspiration and spiritual support  
+/// Uses OpenAI API for generating personalized messages based on user mood/context  
+class AIService {  
+  static const String _apiEndpoint = 'https://api.openai.com/v1/chat/completions';  
+  static const String _modelName = 'gpt-3.5-turbo';  
+    
+  // For demo purposes, we'll use local inspirational messages  
+  // In production, replace with actual API calls  
+    
+  static final List<String> _inspirationalMessages = [  
+    'تذكّر أن كل تحدٍ هو فرصة لتصبح أقوى وأحكم. 🌟',  
+    'الصبر مفتاح الفرج، والدعاء سلاح المؤمن. 💪',  
+    'لا تستسلم للأحزان، فالفجر يأتي بعد أطول ليل. 🌅',  
+    'أنت أقوى مما تعتقد، وقادر على تحقيق أحلامك. ✨',  
+    'كل خطوة صغيرة نحو الأمام هي انتصار حقيقي. 🚀',  
+    'الحياة اختبار، والصبر هو المفتاح. 🔑',  
+    'تعلم من أخطائك، ولا تستسلم أبداً. 📚',  
+    'أنت تستحق السعادة والنجاح. 🎯',  
+    'الله معك في كل خطوة. 🤲',  
+    'هذا اليوم هو فرصة جديدة للبدء من جديد. 🌈',  
+  ];  
+  
+  static final List<String> _motivationalQuotes = [  
+    '"الحياة ليست عن الانتظار حتى تمر العاصفة، بل عن تعلم الرقص تحت المطر." - فيرا',  
+    '"النجاح لا يأتي من الحظ، بل من العمل الجاد والإصرار." - توماس إديسون',  
+    '"كل ما تحتاجه هو الإيمان والعزيمة." - محمد علي',  
+    '"لا تخافوا من الفشل، خافوا من عدم المحاولة." - جاك ما',  
+    '"الحياة جميلة عندما تركز على الأشياء الصغيرة." - جون رسكين',  
+    '"أنت لست وحدك في هذا الطريق." - أنت',  
+    '"الأمل هو أقوى سلاح لدينا." - نيلسون مانديلا',  
+    '"كل يوم جديد هو فرصة جديدة." - رالف مارستون',  
+    
+    '"لا يمكنك ترويض النهر بإجباره على الانحناء لإرادتك. يجب أن تستسلم لتياره، وتستخدم قوته كأنها قوتك الخاصة." - The Ancient One',  
+    '"تظن أنك تعرف كيف يعمل هذا العالم؟ انسَ كل ما تظن أنك تعرفه." - The Ancient One',  
+    '"النظر ليس هو الرؤية. الرؤية الحقيقية تتطلب أن ترى ما وراء الظاهر." - The Ancient One',  
+    '"أحياناً يجب أن نكسر قواعدنا لنكتشف قوتنا الحقيقية." - Doctor Strange',  
+    '"الوقت ليس خطياً. كل شيء يحدث في آن واحد." - The Ancient One',  
+    '"هناك فرق كبير بين أن تعرف الطريق، وبين أن تمشي فيه بالفعل." - تامر',  
+    '"الفولاذ الأكثر صلابة يجب أن يمر عبر النار الأكثر وهجاً ليتم صقله وتشكيله." - تامر',  
+    '"القوة الحقيقية هي أن تقف وحيداً في الظلام، وأنت تعلم يقيناً أنك تبني شروقك الخاص." - تامر',  
   ];
-
-  // ===== API Calls (Gemini) =====
-  Future<String> _callAIAPI(String prompt, {int maxTokens = 150}) async {
-    if (_apiKey.isEmpty) return '';
-    try {
-      final url = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/'
-        'gemini-2.0-flash:generateContent?key=$_apiKey'
-      );
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [{
-            'parts': [{'text': prompt}]
-          }],
-          'generationConfig': {
-            'maxOutputTokens': maxTokens,
-            'temperature': 0.7,
-          }
-        }),
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final text = data['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? '';
-        return text.toString().trim();
-      }
-    } catch (_) {}
-    return '';
-  }
-
-  /// توليد رسالة إلهام
-  Future<String> generateInspiration({
-    String userMood = '',
-    String context = '',
-  }) async {
-    _lastUserMood = userMood;
-
-    // محاولة API
-    if (_useApi && _apiKey.isNotEmpty) {
-      final lang = _deviceLanguage == 'en' ? 'English' : 'Arabic';
-      final prompt = userMood.isNotEmpty
-          ? 'The user is feeling: $userMood. Write a short Islamic inspirational message (verse, hadith, or wisdom) in $lang that suits their mood. Context: $context'
-          : 'Write a random short Islamic inspirational message (Quranic verse or hadith) in $lang. Keep it concise and impactful.';
-      final result = await _callAIAPI(prompt);
-      if (result.isNotEmpty && result.length > 10) {
-        _lastInspiration = result;
-        notifyListeners();
-        return _lastInspiration;
-      }
-    }
-
-    // Fallback محلي مع دعم اللغة
-    final langKey = _deviceLanguage == 'en' ? 'en' : 'ar';
-    final filtered = _inspirationDatabase
-        .where((m) => m.containsKey(langKey) && m[langKey]!.isNotEmpty)
-        .toList();
-    final pool = filtered.isNotEmpty ? filtered : _inspirationDatabase;
-    _lastInspiration = pool[Random().nextInt(pool.length)][langKey] ?? pool[0]['ar']!;
-    notifyListeners();
-    return _lastInspiration;
-  }
-
-  /// رسالة يومية
-  String getDailyInspiration() {
-    final langKey = _deviceLanguage == 'en' ? 'en' : 'ar';
-    final filtered = _inspirationDatabase
-        .where((m) => m.containsKey(langKey) && m[langKey]!.isNotEmpty)
-        .toList();
-    final pool = filtered.isNotEmpty ? filtered : _inspirationDatabase;
-    _lastInspiration = pool[DateTime.now().day % pool.length][langKey] ?? pool[0]['ar']!;
-    return _lastInspiration;
-  }
-
-  /// رسالة إشعار كل 3 ساعات
-  Future<String?> generateNotificationMessage() async {
-    final currentHour = DateTime.now().hour;
-    if (_lastNotificationHour == currentHour) return null;
-
-    if (currentHour % 3 == 0) {
-      _lastNotificationHour = currentHour;
-      if (_useApi && _apiKey.isNotEmpty) {
-        final lang = _deviceLanguage == 'en' ? 'English' : 'Arabic';
-        final result = await _callAIAPI(
-          'Write a very short Islamic inspirational message (one line) in $lang with a Quranic verse or hadith.'
-        );
-        if (result.isNotEmpty) return result;
-      }
-      return getDailyInspiration();
-    }
-    return null;
-  }
-
-  /// تحليل اهتمام المستخدم في القصص
-  Future<String> analyzeUserInterest(List<String> recentStoryTitles) async {
-    if (recentStoryTitles.isEmpty) return getDailyInspiration();
-    if (_useApi && _apiKey.isNotEmpty) {
-      final lang = _deviceLanguage == 'en' ? 'English' : 'Arabic';
-      final prompt = 'The user is interested in the story: "${recentStoryTitles.last}". '
-          'Write an inspirational message in $lang related to this story containing a lesson.';
-      final result = await _callAIAPI(prompt);
-      if (result.isNotEmpty) return result;
-    }
-    final lastTitle = recentStoryTitles.last;
-    return '📖 تأمل في قصة "$lastTitle" — فيها عبرة وعظة';
-  }
-
-  /// رسالة مخصصة
-  Future<String> generatePersonalizedMessage({
-    int storyCount = 0,
-    List<String> favoriteStories = const [],
-    String lastMood = '',
-  }) async {
-    if (_useApi && _apiKey.isNotEmpty) {
-      final lang = _deviceLanguage == 'en' ? 'English' : 'Arabic';
-      final stories = favoriteStories.take(3).join(', ');
-      final prompt = 'A user read $storyCount stories. Their recent stories: $stories. '
-          'Write an encouraging Islamic message in $lang for them.';
-      final result = await _callAIAPI(prompt, maxTokens: 200);
-      if (result.isNotEmpty) return result;
-    }
-    return getDailyInspiration();
-  }
-}
+  
+  static final List<String> _comfortMessages = [  
+    'أنت لست وحدك في هذا الشعور. الكثيرون يمرون بما تمر به. 🤝',  
+    'هذا الشعور مؤقت، وسيمر. تحلى بالصبر. ⏳',  
+    'تذكّر أن الله لا يضع عليك أكثر مما تستطيع تحمله. 🙏',  
+    'احرص على الاعتناء بنفسك أولاً. 💚',  
+    'لا تتردد في طلب المساعدة من الآخرين. 🤲',  
+    'أنت أقوى مما تعتقد، وستتجاوز هذا. 💪',  
+    'خذ نفساً عميقاً وركز على اللحظة الحالية. 🧘',  
+    'هذه اللحظة الصعبة ستمر، وستكون أقوى بعدها. 🌟',  
+  ];  
+  
+  static final List<String> _celebrationMessages = [  
+    'مبروك! أنت تستحق هذا النجاح! 🎉',  
+    'ما أجمل هذا الشعور! استمتع بلحظتك. 🌟',  
+    'أنت فعلاً رائع! تابع هذا الطريق. 🚀',  
+    'فخور بك! استمر في العطاء. 💪',  
+    'هذا هو بداية أشياء عظيمة. 🎯',  
+    'احتفل بإنجازاتك، مهما كانت صغيرة. 🎊',  
+    'أنت تثبت أنك قادر على تحقيق أحلامك. ✨',  
+    'هذا النجاح يستحق أن تفخر به. 👑',  
+  ];  
+  
+  /// Generate inspiration based on user mood/context  
+  static Future<String> generateInspiration({  
+    required String userMood,  
+    required String context,  
+    bool isPremium = false,  
+  }) async {  
+    try {  
+      // Analyze mood and return appropriate message  
+      String message = '';  
+      String personalPrefix = '';  
+        
+      if (userMood.isEmpty) {  
+        message = _inspirationalMessages[DateTime.now().microsecond % _inspirationalMessages.length];  
+        personalPrefix = "بناءً على ما قمت به من محاولات جادة اليوم، ميرور سكربيون يخبرك:";  
+      } else if (_isSadMood(userMood)) {  
+        message = _comfortMessages[DateTime.now().microsecond % _comfortMessages.length];  
+        personalPrefix = "يبدو أنك تمر بوقت عصيب، لكن تذكر:";  
+      } else if (_isHappyMood(userMood)) {  
+        message = _celebrationMessages[DateTime.now().microsecond % _celebrationMessages.length];  
+        personalPrefix = "نجاحك يسعدنا! نصيحة ميرور سكربيون لك:";  
+      } else {  
+        message = _motivationalQuotes[DateTime.now().microsecond % _motivationalQuotes.length];  
+        personalPrefix = "إليك جرعة إلهام مخصصة لك:";  
+      }  
+  
+      return "$personalPrefix\n\n$message\n\nتذكر دائماً.. قصتك لا تزال تُكتب، والنهاية لم يحن وقتها بعد. ✨";  
+    } catch (e) {  
+      debugPrint('Error generating inspiration: $e');  
+      return 'تذكّر أن الله معك دائماً. 🤲';  
+    }  
+  }  
+  
+  /// Generate an image prompt based on the inspiration message  
+  static String generateImagePrompt(String message) {  
+    // Manus-style prompt engineering  
+    return "Islamic spiritual art, $message, cinematic lighting, ethereal atmosphere, calligraphy elements, 8k resolution, serene landscape background, golden hour";  
+  }  
+  
+  /// Simulate Manus Image Generation  
+  static Future<String> generateManusImage(String prompt) async {  
+    // In a real app, this would call a DALL-E or Midjourney API  
+    // For now, we return a high-quality placeholder image based on the prompt  
+    await Future.delayed(const Duration(seconds: 2)); // Simulate generation time  
+    return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80";  
+  }  
+  
+  /// Get spiritual support message  
+  static Future<String> getSpiritualSupport({  
+    required String userState,  
+    bool isPremium = false,  
+  }) async {  
+    try {  
+      if (_isSadMood(userState)) {  
+        return 'يا رب، أنت تعلم ما في قلبي. ساعدني وقويني. 🤲';  
+      } else if (_isStressedMood(userState)) {  
+        return 'توكلت على الله، وهو حسبي. 🙏';  
+      } else {  
+        return 'الحمد لله على كل نعمه. 🌟';  
+      }  
+    } catch (e) {  
+      debugPrint('Error getting spiritual support: $e');  
+      return 'استعن بالله ولا تعجز. 💪';  
+    }  
+  }  
+  
+  /// Generate daily wisdom notification  
+  static Future<String> generateDailyWisdom() async {  
+    try {  
+      final random = DateTime.now().microsecond;  
+      final allMessages = [  
+        ..._inspirationalMessages,  
+        ..._motivationalQuotes,  
+        ..._comfortMessages,  
+      ];  
+      return allMessages[random % allMessages.length];  
+    } catch (e) {  
+      debugPrint('Error generating daily wisdom: $e');  
+      return 'بسم الله الرحمن الرحيم';  
+    }  
+  }  
+  
+  /// Analyze text sentiment for mood detection  
+  static Future<String> analyzeSentiment(String text) async {  
+    try {  
+      // Simple keyword-based sentiment analysis  
+      if (_isSadMood(text)) {  
+        return 'sad';  
+      } else if (_isHappyMood(text)) {  
+        return 'happy';  
+      } else if (_isStressedMood(text)) {  
+        return 'stressed';  
+      } else {  
+        return 'neutral';  
+      }  
+    } catch (e) {  
+      debugPrint('Error analyzing sentiment: $e');  
+      return 'neutral';  
+    }  
+  }  
+  
+  // --- Helper Methods ---  
+    
+  static bool _isSadMood(String text) {  
+    final sadKeywords = [  
+      'حزين', 'حزن', 'كئيب', 'مكتئب', 'اكتئاب', 'وحيد', 'وحدة',  
+      'يأس', 'يائس', 'فشل', 'فاشل', 'خسرت', 'خسارة', 'مؤلم',  
+      'ألم', 'تعب', 'متعب', 'إرهاق', 'مرهق', 'حزين', 'كسر',  
+      'مكسور', 'فقدت', 'فقدان', 'وفاة', 'مات', 'مرض', 'مريض',  
+      'sad', 'depressed', 'lonely', 'hurt', 'pain', 'loss', 'fail',  
+    ];  
+    return sadKeywords.any((keyword) => text.toLowerCase().contains(keyword));  
+  }  
+  
+  static bool _isHappyMood(String text) {  
+    final happyKeywords = [  
+      'سعيد', 'سعادة', 'فرح', 'فرحان', 'مسرور', 'سرور', 'بهجة',  
+      'نجح', 'نجاح', 'فاز', 'فوز', 'انتصار', 'رائع', 'عظيم',  
+      'ممتاز', 'جميل', 'جمال', 'حب', 'أحب', 'أحبك', 'عشق',  
+      'happy', 'joy', 'excited', 'wonderful', 'amazing', 'great',  
+      'success', 'won', 'love', 'beautiful', 'excellent',  
+    ];  
+    return happyKeywords.any((keyword) => text.toLowerCase().contains(keyword));  
+  }  
+  
+  static bool _isStressedMood(String text) {  
+    final stressedKeywords = [  
+      'قلق', 'قلق', 'خوف', 'خائف', 'توتر', 'متوتر', 'ضغط',  
+      'مضغوط', 'مشكلة', 'مشاكل', 'صعب', 'صعوبة', 'عسير',  
+      'محرج', 'حرج', 'خجل', 'خجول', 'خائب', 'خيبة',  
+      'stressed', 'anxious', 'worried', 'afraid', 'scared', 'problem',  
+      'difficult', 'hard', 'tough', 'pressure',  
+    ];  
+    return stressedKeywords.any((keyword) => text.toLowerCase().contains(keyword));  
+  }  
+  
+  /// Call OpenAI API (for premium version)  
+  static Future<String> callOpenAIAPI({  
+    required String prompt,  
+    required String apiKey,  
+  }) async {  
+    try {  
+      final response = await http.post(  
+        Uri.parse(_apiEndpoint),  
+        headers: {  
+          'Content-Type': 'application/json',  
+          'Authorization': 'Bearer $apiKey',  
+        },  
+        body: jsonEncode({  
+          'model': _modelName,  
+          'messages': [  
+            {  
+              'role': 'system',  
+              'content': 'أنت مساعد روحي ذكي يقدم الإلهام والدعم النفسي بطريقة إسلامية. '  
+                  'ركز على الأمل والإيمان والصبر. استجب باللغة العربية.',  
+            },  
+            {  
+              'role': 'user',  
+              'content': prompt,  
+            },  
+          ],  
+          'temperature': 0.8,  
+          'max_tokens': 150,  
+        }),  
+      );  
+  
+      if (response.statusCode == 200) {  
+        final data = jsonDecode(response.body);  
+        return data['choices'][0]['message']['content'] ?? 'تذكّر أن الله معك دائماً. 🤲';  
+      } else {  
+        return 'عذراً، حدث خطأ. حاول مرة أخرى. 🙏';  
+      }  
+    } catch (e) {  
+      debugPrint('Error calling OpenAI API: $e');  
+      return 'استعن بالله ولا تعجز. 💪';  
+    }  
+  }  
+}  

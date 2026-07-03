@@ -1,37 +1,190 @@
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
-class FloatingBubbleService extends ChangeNotifier {
-  bool _isEnabled = false, _isStarted = false, _autoTranslate = true, _isOverlayVisible = false;
-  double _opacity = 0.8, _bubbleSize = 60;
-  String _sourceLang = 'auto', _targetLang = 'ar';
-  static const MethodChannel _channel = MethodChannel('mirror_scorpion/overlay');
-  final StreamController<Map<String, dynamic>> _cmdCtrl = StreamController<Map<String, dynamic>>.broadcast();
-
-  Stream<Map<String, dynamic>> get commands => _cmdCtrl.stream;
-  bool get isEnabled => _isEnabled; bool get isStarted => _isStarted; double get opacity => _opacity;
-  double get bubbleSize => _bubbleSize; bool get autoTranslate => _autoTranslate;
-  bool get isOverlayVisible => _isOverlayVisible; String get sourceLang => _sourceLang; String get targetLang => _targetLang;
-
-  Future<void> initialize() async { _isEnabled = true; _isStarted = false; notifyListeners(); }
-
-  Future<void> startBubble() async {
-    try { await _channel.invokeMethod('createFloatingBubble', {'sourceLanguage': _sourceLang, 'targetLanguage': _targetLang});
-      _isStarted = true; _isEnabled = true; _isOverlayVisible = true;
-      _cmdCtrl.add({'action':'show','sourceLang':_sourceLang,'targetLang':_targetLang}); notifyListeners();
-    } catch (e) { debugPrint('Bubble Error: $e'); }
-  }
-
-  Future<void> stopBubble() async { try { await _channel.invokeMethod('destroyFloatingBubble'); } catch (_) {}
-    _isStarted = false; _isOverlayVisible = false; _cmdCtrl.add({'action':'hide'}); notifyListeners(); }
-
-  void toggleBubble() { if (_isStarted) stopBubble(); else startBubble(); }
-  void onBubbleClosed() { _isStarted = false; _isOverlayVisible = false; _cmdCtrl.add({'action':'restore_original'}); notifyListeners(); }
-  void setSourceLang(String l) { _sourceLang = l; _cmdCtrl.add({'action':'update_lang','sourceLang':l}); notifyListeners(); }
-  void setTargetLang(String l) { _targetLang = l; _cmdCtrl.add({'action':'update_lang','targetLang':l}); notifyListeners(); }
-  void setOpacity(double v) { _opacity = v; notifyListeners(); }
-  void setBubbleSize(double v) { _bubbleSize = v; notifyListeners(); }
-  void setAutoTranslate(bool v) { _autoTranslate = v; _cmdCtrl.add({'action':'auto_translate','enabled':v}); notifyListeners(); }
-  @override void dispose() { _cmdCtrl.close(); super.dispose(); }
-}
+import 'package:flutter/material.dart';  
+import 'package:shared_preferences/shared_preferences.dart';  
+import 'package:dash_bubble_local/dash_bubble_local.dart';  
+  
+/// Enhanced Floating Bubble Service with full control and fixed permissions  
+class FloatingBubbleService extends ChangeNotifier {  
+  static final FloatingBubbleService _instance = FloatingBubbleService._internal();  
+    
+  factory FloatingBubbleService() => _instance;  
+  FloatingBubbleService._internal();  
+    
+  late SharedPreferences _prefs;  
+  bool _isStarted = false;  
+  bool _isEnabled = false;  
+  double _opacity = 0.8;  
+  int _size = 120;  
+  String _selectedLanguage = 'en';  
+  bool _autoTranslate = true;  
+  bool _soundEnabled = true;  
+    
+  // Getters  
+  bool get isStarted => _isStarted;  
+  bool get isEnabled => _isEnabled;  
+  double get opacity => _opacity;  
+  int get size => _size;  
+  String get selectedLanguage => _selectedLanguage;  
+  bool get autoTranslate => _autoTranslate;  
+  bool get soundEnabled => _soundEnabled;  
+    
+  /// Initialize the service  
+  Future<void> initialize() async {  
+    _prefs = await SharedPreferences.getInstance();  
+    _loadSettings();  
+  }  
+    
+  /// Load settings from SharedPreferences  
+  void _loadSettings() {  
+    _isEnabled = _prefs.getBool('bubble_enabled') ?? false;  
+    _opacity = _prefs.getDouble('bubble_opacity') ?? 0.8;  
+    _size = _prefs.getInt('bubble_size') ?? 120;  
+    _selectedLanguage = _prefs.getString('bubble_language') ?? 'en';  
+    _autoTranslate = _prefs.getBool('bubble_auto_translate') ?? true;  
+    _soundEnabled = _prefs.getBool('bubble_sound') ?? true;  
+    notifyListeners();  
+  }  
+    
+  /// Save settings to SharedPreferences  
+  Future<void> _saveSettings() async {  
+    await _prefs.setBool('bubble_enabled', _isEnabled);  
+    await _prefs.setDouble('bubble_opacity', _opacity);  
+    await _prefs.setInt('bubble_size', _size);  
+    await _prefs.setString('bubble_language', _selectedLanguage);  
+    await _prefs.setBool('bubble_auto_translate', _autoTranslate);  
+    await _prefs.setBool('bubble_sound', _soundEnabled);  
+  }  
+    
+  /// Start the floating bubble  
+  Future<void> startBubble(BuildContext context) async {  
+    if (_isStarted) return;  
+      
+    try {  
+      // Check and request overlay permission  
+      final hasOverlay = await DashBubble.instance.hasOverlayPermission();  
+      if (!hasOverlay) {  
+        final granted = await DashBubble.instance.requestOverlayPermission();  
+        if (!granted) {  
+          if (context.mounted) {  
+            ScaffoldMessenger.of(context).showSnackBar(  
+              const SnackBar(content: Text('يجب تفعيل إذن الظهور فوق التطبيقات لتشغيل الفقاعة')),  
+            );  
+          }  
+          return;  
+        }  
+      }  
+        
+      debugPrint('🫧 Starting floating bubble...');  
+        
+      // Start the bubble with saved settings  
+      final started = await DashBubble.instance.startBubble(  
+        bubbleOptions: BubbleOptions(  
+          bubbleIcon: "launcher_icon",  
+          distanceToClose: 100,  
+          enableAnimateToEdge: true,  
+          enableClose: true,  
+          bubbleSize: _size.toDouble(),  
+          opacity: _opacity,  
+        ),  
+        onTap: () {  
+          debugPrint('🫧 Bubble Tapped!');  
+          _onBubbleTapped(context);  
+        },  
+      );  
+        
+      if (started) {  
+        _isStarted = true;  
+        _isEnabled = true;  
+        await _saveSettings();  
+        notifyListeners();  
+        debugPrint('🫧 Floating bubble started successfully!');  
+      }  
+    } catch (e) {  
+      debugPrint('❌ Error starting bubble: $e');  
+      _isStarted = false;  
+    }  
+  }  
+    
+  /// Stop the floating bubble  
+  Future<void> stopBubble() async {  
+    try {  
+      final stopped = await DashBubble.instance.stopBubble();  
+      if (stopped) {  
+        _isStarted = false;  
+        _isEnabled = false;  
+        await _saveSettings();  
+        notifyListeners();  
+        debugPrint('🫧 Floating bubble stopped');  
+      }  
+    } catch (e) {  
+      debugPrint('❌ Error stopping bubble: $e');  
+    }  
+  }  
+    
+  /// Toggle bubble on/off  
+  Future<void> toggleBubble(BuildContext context, bool enabled) async {  
+    if (enabled) {  
+      await startBubble(context);  
+    } else {  
+      await stopBubble();  
+    }  
+    notifyListeners();  
+  }  
+    
+  /// Update bubble opacity  
+  Future<void> setOpacity(double opacity) async {  
+    _opacity = opacity.clamp(0.3, 1.0);  
+    await _saveSettings();  
+    if (_isStarted) {  
+      await stopBubble();  
+    }  
+    notifyListeners();  
+  }  
+    
+  /// Update bubble size  
+  Future<void> setSize(int size) async {  
+    _size = size.clamp(60, 200);  
+    await _saveSettings();  
+    if (_isStarted) {  
+      await stopBubble();  
+    }  
+    notifyListeners();  
+  }  
+    
+  /// Set target language for translation  
+  Future<void> setTargetLanguage(String language) async {  
+    _selectedLanguage = language;  
+    await _saveSettings();  
+    notifyListeners();  
+  }  
+    
+  /// Toggle auto-translate feature  
+  Future<void> toggleAutoTranslate(bool enabled) async {  
+    _autoTranslate = enabled;  
+    await _saveSettings();  
+    notifyListeners();  
+  }  
+    
+  /// Handle bubble tap event  
+  void _onBubbleTapped(BuildContext context) {  
+    showDialog(  
+      context: context,  
+      builder: (context) => AlertDialog(  
+        title: const Text('ميرور سكربيون - ترجمة فورية'),  
+        content: Column(  
+          mainAxisSize: MainAxisSize.min,  
+          children: [  
+            const Text('الفقاعة العائمة نشطة وتعمل على ترجمة نصوص تطبيقات التواصل.'),  
+            const SizedBox(height: 10),  
+            Text('اللغة الحالية: $_selectedLanguage'),  
+          ],  
+        ),  
+        actions: [  
+          TextButton(  
+            onPressed: () => Navigator.pop(context),  
+            child: const Text('إغلاق'),  
+          ),  
+        ],  
+      ),  
+    );  
+  }  
+}  

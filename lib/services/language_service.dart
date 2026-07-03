@@ -1,80 +1,90 @@
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-class LanguageService extends ChangeNotifier {
-  String _deviceLang = 'ar';
-  final Map<String, String> _screenLangs = {};
-
-  String getDeviceLanguage() => _deviceLang;
-
-  final Map<String, String> _allLanguages = {
-    'auto': 'تحديد تلقائي', 'ar': 'العربية', 'en': 'English', 'fr': 'Français',
-    'de': 'Deutsch', 'es': 'Español', 'it': 'Italiano', 'pt': 'Português',
-    'ru': 'Русский', 'zh': '中文', 'ja': '日本語', 'ko': '한국어',
-    'hi': 'हिन्दी', 'tr': 'Türkçe', 'ur': 'اردو', 'fa': 'فارسی',
-    'nl': 'Nederlands', 'pl': 'Polski', 'sv': 'Svenska', 'da': 'Dansk',
-    'no': 'Norsk', 'fi': 'Suomi', 'cs': 'Čeština', 'ro': 'Română',
-    'hu': 'Magyar', 'el': 'Ελληνικά', 'he': 'עברית', 'th': 'ไทย',
-    'vi': 'Tiếng Việt', 'ms': 'Bahasa Melayu', 'id': 'Bahasa Indonesia',
-    'tl': 'Filipino', 'bn': 'বাংলা', 'ta': 'தமிழ்', 'te': 'తెలుగు',
-    'mr': 'मराठी', 'gu': 'ગુજરાતી', 'kn': 'ಕನ್ನಡ', 'ml': 'മലയാളം',
-    'si': 'සිංහල', 'ne': 'नेपाली', 'km': 'ខ្មែរ', 'my': 'မြန်မာ',
-    'ka': 'ქართული', 'hy': 'Հայերեն', 'az': 'Azərbaycan', 'kk': 'Қазақ',
-    'uz': 'O\'zbek', 'uk': 'Українська', 'be': 'Беларуская', 'sq': 'Shqip',
-    'bs': 'Bosanski', 'hr': 'Hrvatski', 'sr': 'Српски', 'mk': 'Македонски',
-    'bg': 'Български', 'lt': 'Lietuvių', 'lv': 'Latviešu', 'et': 'Eesti',
-    'is': 'Íslenska', 'ga': 'Gaeilge', 'cy': 'Cymraeg', 'mt': 'Malti',
-    'sw': 'Kiswahili', 'ha': 'Hausa', 'yo': 'Yorùbá', 'ig': 'Igbo',
-    'zu': 'isiZulu', 'xh': 'isiXhosa', 'af': 'Afrikaans', 'am': 'አማርኛ',
-    'sd': 'سنڌي', 'ps': 'پښتو', 'ku': 'Kurdî', 'ckb': 'کوردی',
-    'lo': 'ລາວ', 'bo': 'བོད་སྐད་', 'mn': 'Монгол', 'ug': 'Uyghurche',
-  };
-
-  final Map<String, bool> _downloadedLanguages = {};
-
-  Map<String, bool> get downloadedLanguages => Map.unmodifiable(_downloadedLanguages);
-
-  Future initialize() async {
-    final p = await SharedPreferences.getInstance();
-    _deviceLang = p.getString('device_language') ?? 'ar';
-  }
-
-  List<String> getLanguageCodes() => _allLanguages.keys.toList();
-  String getLanguageName(String code) => _allLanguages[code] ?? code;
-
-  String getLanguageForScreen(String screen) {
-    return _screenLangs[screen] ?? 'auto';
-  }
-
-  Future saveLanguageForScreen(String screen, String lang) async {
-    _screenLangs[screen] = lang;
-    final p = await SharedPreferences.getInstance();
-    await p.setString('lang_$screen', lang);
-    notifyListeners();
-  }
-
-  Future downloadLanguage(String lang) async {
-    _downloadedLanguages[lang] = true;
-    final p = await SharedPreferences.getInstance();
-    await p.setStringList('downloaded_langs', _downloadedLanguages.keys.toList());
-    notifyListeners();
-  }
-
-  Future deleteLanguage(String lang) async {
-    _downloadedLanguages.remove(lang);
-    final p = await SharedPreferences.getInstance();
-    await p.setStringList('downloaded_langs', _downloadedLanguages.keys.toList());
-    notifyListeners();
-  }
-}
-  /// آخر زوج لغات استخدمه المستخدم في الترجمة
-  Future<void> saveLastLanguagePair(String screen, String source, String target) async {
-    final p = await SharedPreferences.getInstance();
-    await p.setString('last_source_$screen', source);
-    await p.setString('last_target_$screen', target);
-  }
-
-  Map<String, String> getLastLanguagePair(String screen) {
-    // يتم تحميله في saveLanguageForScreen أصلاً
-    return {};
-  }
+import 'dart:ui';  
+import 'dart:convert';  
+import 'package:flutter/material.dart';  
+import 'package:shared_preferences/shared_preferences.dart';  
+  
+/// خدمة إدارة اللغات - اكتشاف لغة الجهاز وحفظ اللغة المختارة  
+class LanguageService extends ChangeNotifier {  
+  static final LanguageService _instance = LanguageService._internal();  
+    
+  factory LanguageService() => _instance;  
+  LanguageService._internal();  
+    
+  late SharedPreferences _prefs;  
+  String _currentLanguage = 'auto';  
+  Map<String, String> _savedLanguages = {};  
+    
+  // قائمة اللغات المدعومة  
+  static const Map<String, String> supportedLanguages = {  
+    'auto': 'تلقائي',  
+    'ar': 'العربية',  
+    'en': 'English',  
+    'fr': 'Français',  
+    'de': 'Deutsch',  
+    'es': 'Español',  
+    'it': 'Italiano',  
+    'pt': 'Português',  
+    'ru': 'Русский',  
+    'zh': '中文',  
+    'ja': '日本語',  
+    'ko': '한국어',  
+    'hi': 'हिन्दी',  
+    'tr': 'Türkçe',  
+    'fa': 'فارسی',  
+    'ur': 'اردو',  
+  };  
+    
+  // تهيئة الخدمة  
+  Future<void> initialize() async {  
+    try {  
+      _prefs = await SharedPreferences.getInstance();  
+      _currentLanguage = _prefs.getString('current_language') ?? 'auto';  
+        
+      String savedLanguagesJson = _prefs.getString('saved_languages') ?? '{}';  
+      _savedLanguages = Map<String, String>.from(jsonDecode(savedLanguagesJson));  
+        
+      notifyListeners();  
+    } catch (e) {  
+      print('Error initializing LanguageService: $e');  
+      _currentLanguage = 'auto';  
+      _savedLanguages = {};  
+    }  
+  }  
+    
+  // الحصول على لغة الجهاز  
+  String getDeviceLanguage() {  
+    return window.locale.languageCode;  
+  }  
+    
+  // الحصول على اللغة الحالية  
+  String get currentLanguage => _currentLanguage;  
+    
+  // تعيين اللغة الحالية  
+  Future<void> setCurrentLanguage(String language) async {  
+    _currentLanguage = language;  
+    await _prefs.setString('current_language', language);  
+    notifyListeners();  
+  }  
+    
+  // حفظ اللغة لشاشة معينة  
+  Future<void> saveLanguageForScreen(String screenName, String language) async {  
+    _savedLanguages[screenName] = language;  
+    await _prefs.setString('saved_languages', jsonEncode(_savedLanguages));  
+    notifyListeners();  
+  }  
+    
+  // الحصول على اللغة المحفوظة لشاشة معينة  
+  String getLanguageForScreen(String screenName) {  
+    return _savedLanguages[screenName] ?? 'auto';  
+  }  
+    
+  // الحصول على اسم اللغة  
+  String getLanguageName(String code) {  
+    return supportedLanguages[code] ?? code.toUpperCase();  
+  }  
+    
+  // الحصول على قائمة اللغات  
+  List<String> getLanguageCodes() {  
+    return supportedLanguages.keys.toList();  
+  }  
+}  
