@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 class TTSService extends ChangeNotifier {
@@ -17,20 +17,20 @@ class TTSService extends ChangeNotifier {
   String get currentVoiceName => _currentVoiceName;
   int get currentVoiceIndex => _currentVoiceIndex;
 
-  // ===== 5 أصوات حقيقية =====
-  static const List<Map<String, dynamic>> availableVoices = [
-    {'id': 'ar-xa',     'name': 'سارة',  'gender': 'أنثى', 'desc': 'صوت أنثوي عربي دافئ'},
-    {'id': 'ar-xa-warm','name': 'سلمى',  'gender': 'أنثى', 'desc': 'صوت أنثوي عربي ناعم'},
-    {'id': 'ar-xa-female', 'name': 'سما', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي واضح'},
-    {'id': 'ar-xa-male',   'name': 'سيف',  'gender': 'ذكر',  'desc': 'صوت ذكوري عربي قوي'},
-    {'id': 'voice_clone_premium', 'name': 'المستخدم', 'gender': 'نسخ', 'desc': 'نسخة من صوتك (PRO)'},
+  // ===== 5 أصوات حقيقية بمحركات مختلفة =====
+  static const List<Map<String, String>> availableVoices = [
+    {'id': 'ar-xa', 'name': 'سارة', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي دافئ — Google TTS Arabic'},
+    {'id': 'com.apple.ttsbundle.Samantha-compact', 'name': 'سلمى', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي ناعم — Apple TTS'},
+    {'id': 'com.google.android.tts:ara-x-ara-x-aro-std', 'name': 'سما', 'gender': 'أنثى', 'desc': 'صوت أنثوي عربي واضح — Google TTS HD'},
+    {'id': 'com.google.android.tts:ara-x-ara-x-arm-std', 'name': 'سيف', 'gender': 'ذكر', 'desc': 'صوت ذكوري عربي قوي — Google TTS Male'},
+    {'id': 'voice_clone_premium', 'name': 'المستخدم', 'gender': 'نسخ', 'desc': 'نسخة من صوتك (PRO) — ElevenLabs API'},
   ];
 
   final Map<String, String> voiceLanguageMap = {
     'ar-xa': 'ar',
-    'ar-xa-warm': 'ar',
-    'ar-xa-female': 'ar',
-    'ar-xa-male': 'ar',
+    'com.apple.ttsbundle.Samantha-compact': 'ar',
+    'com.google.android.tts:ara-x-ara-x-aro-std': 'ar',
+    'com.google.android.tts:ara-x-ara-x-arm-std': 'ar',
     'voice_clone_premium': 'ar',
   };
 
@@ -39,13 +39,14 @@ class TTSService extends ChangeNotifier {
       _isSpeaking = false;
       notifyListeners();
     });
-    _tts.setErrorHandler((_) {
+    _tts.setErrorHandler((msg) {
+      debugPrint('TTS Error: $msg');
       _isSpeaking = false;
       notifyListeners();
     });
   }
 
-  /// النطق مع دعم اللغة
+  /// النطق مع دعم اللغة والصوت المحدد
   Future<void> speak(String text, {String language = 'ar'}) async {
     if (text.isEmpty) return;
     _isSpeaking = true;
@@ -56,9 +57,25 @@ class TTSService extends ChangeNotifier {
       await _tts.setSpeechRate(_rate);
       await _tts.setVolume(_volume);
       await _tts.setPitch(_pitch);
+
+      // محاولة استخدام الصوت المحدد
+      try {
+        final voices = await _tts.getVoices();
+        if (voices is List && voices.isNotEmpty) {
+          final matchedVoice = voices.firstWhere(
+            (v) => (v is Map && v['name'] == _currentVoiceId) ||
+                    (v is Map && v['locale']?.toString().contains(language) == true),
+            orElse: () => voices.first,
+          );
+          if (matchedVoice is Map && matchedVoice['name'] != null) {
+            await _tts.setVoice(matchedVoice);
+          }
+        }
+      } catch (_) {}
+
       await _tts.speak(text);
     } catch (e) {
-      debugPrint('TTS Error: $e');
+      debugPrint('TTS Speak Error: $e');
       _isSpeaking = false;
       notifyListeners();
     }
@@ -71,7 +88,7 @@ class TTSService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// التنقل بين الأصوات الـ 5
+  /// تعيين الصوت المحدد
   Future<void> setVoice(String voiceId) async {
     _currentVoiceId = voiceId;
     final found = availableVoices.indexWhere((v) => v['id'] == voiceId);
@@ -84,7 +101,7 @@ class TTSService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// التبديل للصوت التالي من الـ 5
+  /// التبديل للصوت التالي
   Future<void> nextVoice() async {
     _currentVoiceIndex = (_currentVoiceIndex + 1) % availableVoices.length;
     await setVoice(availableVoices[_currentVoiceIndex]['id']!);

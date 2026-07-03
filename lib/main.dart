@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'features/home_screen.dart';
 import 'features/card1_translation/translation_screen.dart';
@@ -61,11 +62,35 @@ class MirrorScorpionApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final langService = Provider.of<LanguageService>(context);
+    final deviceLang = langService.getDeviceLanguage();
+
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, _) {
         return MaterialApp(
           title: 'Mirror Scorpion',
           debugShowCheckedModeBanner: false,
+          locale: Locale(deviceLang),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('ar'), Locale('en'), Locale('fr'), Locale('de'),
+            Locale('es'), Locale('tr'), Locale('ur'), Locale('fa'),
+            Locale('hi'), Locale('zh'), Locale('ja'), Locale('ko'),
+            Locale('ru'), Locale('pt'), Locale('it'), Locale('id'),
+          ],
+          localeResolutionCallback: (locale, supportedLocales) {
+            if (locale == null) return const Locale('ar');
+            for (final supported in supportedLocales) {
+              if (supported.languageCode == locale.languageCode) {
+                return supported;
+              }
+            }
+            return const Locale('ar');
+          },
           theme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.dark,

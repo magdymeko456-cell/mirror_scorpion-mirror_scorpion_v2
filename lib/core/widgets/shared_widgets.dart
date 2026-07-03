@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class LanguageSelector extends StatelessWidget {
   final String selectedLanguage;
@@ -38,10 +39,7 @@ class LanguageSelector extends StatelessWidget {
         child: DropdownButton<String>(
           value: selectedLanguage,
           icon: Icon(icon ?? Icons.language, size: 20),
-          style: TextStyle(
-            fontSize: 14,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.primary),
           items: languages.map((code) {
             return DropdownMenuItem(
               value: code,
@@ -58,7 +56,6 @@ class LanguageSelector extends StatelessWidget {
 class SpeakerButton extends StatelessWidget {
   final VoidCallback onPressed;
   final double size;
-
   const SpeakerButton({super.key, required this.onPressed, this.size = 40});
 
   @override
@@ -81,7 +78,6 @@ class MicButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isListening;
   final double size;
-
   const MicButton({super.key, required this.onPressed, this.isListening = false, this.size = 56});
 
   @override
@@ -90,8 +86,7 @@ class MicButton extends StatelessWidget {
       onTapDown: (_) => onPressed(),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: size,
-        height: size,
+        width: size, height: size,
         decoration: BoxDecoration(
           color: isListening
               ? Colors.red.withOpacity(0.2)
@@ -112,10 +107,24 @@ class MicButton extends StatelessWidget {
   }
 }
 
+/// زر نسخ مع توقيع Mirror Scorpion
 class CopyButton extends StatelessWidget {
   final VoidCallback onPressed;
+  final String? textToCopy;
 
-  const CopyButton({super.key, required this.onPressed});
+  const CopyButton({super.key, required this.onPressed, this.textToCopy});
+
+  void _copyWithSignature(BuildContext context) {
+    if (textToCopy != null && textToCopy!.isNotEmpty) {
+      final signed = '$textToCopy\n\n— Mirror Scorpion 🦂';
+      Clipboard.setData(ClipboardData(text: signed));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ تم النسخ مع توقيع Mirror Scorpion')),
+      );
+    } else {
+      onPressed();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +132,7 @@ class CopyButton extends StatelessWidget {
       icon: const Icon(Icons.copy),
       iconSize: 20,
       color: Theme.of(context).colorScheme.primary,
-      onPressed: onPressed,
+      onPressed: () => _copyWithSignature(context),
       style: IconButton.styleFrom(
         backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
         minimumSize: const Size(40, 40),
@@ -133,10 +142,12 @@ class CopyButton extends StatelessWidget {
   }
 }
 
+/// زر مشاركة مع توقيع Mirror Scorpion
 class ShareButton extends StatelessWidget {
   final VoidCallback onPressed;
+  final String? textToShare;
 
-  const ShareButton({super.key, required this.onPressed});
+  const ShareButton({super.key, required this.onPressed, this.textToShare});
 
   @override
   Widget build(BuildContext context) {
@@ -154,9 +165,9 @@ class ShareButton extends StatelessWidget {
   }
 }
 
+/// توقيع مائي — بزاوية 130 درجة بخط مائل عريض شفاف
 class WatermarkText extends StatelessWidget {
   final String text;
-
   const WatermarkText({super.key, required this.text});
 
   @override
@@ -164,11 +175,11 @@ class WatermarkText extends StatelessWidget {
     return Transform.rotate(
       angle: 130 * 3.14159 / 180,
       child: Opacity(
-        opacity: 0.3,
+        opacity: 0.25,
         child: Text(
           text,
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.primary,
             fontStyle: FontStyle.italic,

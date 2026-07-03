@@ -9,7 +9,7 @@ class TranslationService extends ChangeNotifier {
   bool get isTranslating => _isTranslating;
   String get lastError => _lastError;
 
-  /// ترجمة حقيقية باستخدام LibreTranslate API (مفتوح المصدر)
+  /// ترجمة باستخدام LibreTranslate + Lingva + MyMemory
   Future<String> translate(String text, {String from = 'auto', String to = 'ar'}) async {
     if (text.trim().isEmpty) return '';
     _isTranslating = true;
@@ -17,45 +17,42 @@ class TranslationService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // المحاولة الأولى: LibreTranslate
+      // 1. LibreTranslate
       String result = await _libreTranslate(text, from, to);
       if (result.isNotEmpty && result != text) {
         _isTranslating = false;
         notifyListeners();
-        return result;
+        return _addSignature(result);
       }
 
-      // المحاولة الثانية: Google Translate عبر API مفتوح (lingva)
+      // 2. Lingva Translate
       result = await _lingvaTranslate(text, from, to);
       if (result.isNotEmpty && result != text) {
         _isTranslating = false;
         notifyListeners();
-        return result;
+        return _addSignature(result);
       }
 
-      // المحاولة الثالثة: MyMemory API
+      // 3. MyMemory API
       result = await _myMemoryTranslate(text, from, to);
       if (result.isNotEmpty) {
         _isTranslating = false;
         notifyListeners();
-        return result;
+        return _addSignature(result);
       }
 
-      // في حال فشلت كل المحاولات، نعيد النص الأصلي
       _isTranslating = false;
       notifyListeners();
-      return text;
-
+      return _addSignature(text);
     } catch (e) {
       debugPrint('Translation error: $e');
       _lastError = e.toString();
       _isTranslating = false;
       notifyListeners();
-      return text;
+      return _addSignature(text);
     }
   }
 
-  /// LibreTranslate API
   Future<String> _libreTranslate(String text, String from, String to) async {
     try {
       final servers = [
@@ -85,7 +82,7 @@ class TranslationService extends ChangeNotifier {
             final data = jsonDecode(body) as Map<String, dynamic>;
             final translated = data['translatedText'] as String?;
             if (translated != null && translated.isNotEmpty && translated != text) {
-              return _addSignature(translated);
+              return translated;
             }
           }
         } catch (_) {
@@ -96,7 +93,6 @@ class TranslationService extends ChangeNotifier {
     return '';
   }
 
-  /// Lingva Translate (Google Translate واجهة مفتوحة)
   Future<String> _lingvaTranslate(String text, String from, String to) async {
     try {
       final source = from == 'auto' ? 'auto' : from;
@@ -110,14 +106,13 @@ class TranslationService extends ChangeNotifier {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final translated = data['translation'] as String?;
         if (translated != null && translated.isNotEmpty && translated != text) {
-          return _addSignature(translated);
+          return translated;
         }
       }
     } catch (_) {}
     return '';
   }
 
-  /// MyMemory API (يدعم 100+ لغة)
   Future<String> _myMemoryTranslate(String text, String from, String to) async {
     try {
       final source = from == 'auto' ? '' : '$from|';
@@ -130,7 +125,7 @@ class TranslationService extends ChangeNotifier {
         if (data['responseStatus'] == 200) {
           final translated = data['responseData']?['translatedText'] as String?;
           if (translated != null && translated.isNotEmpty) {
-            return _addSignature(translated);
+            return translated;
           }
         }
       }
@@ -138,24 +133,19 @@ class TranslationService extends ChangeNotifier {
     return '';
   }
 
-  /// إضافة توقيع التطبيق للترجمة
-  String _addSignature(String translated) {
-    if (translated.contains('Mirror Scorpion')) return translated;
-    return '$translated\n\n— Mirror Scorpion \u{1F982}';
+  /// إضافة توقيع التطبيق — "ترجم هذا النص بواسطة Mirror Scorpion 🦂"
+  String _addSignature(String text) {
+    if (text.contains('Mirror Scorpion')) return text;
+    return '$text\n\n— Mirror Scorpion 🦂';
   }
 
-  /// ترجمة مع توقيع مخصص للمشاركة
-  Future<String> translateWithSignature(String text, {String from = 'auto', String to = 'ar'}) async {
-    final result = await translate(text, from: from, to: to);
-    if (!result.contains('Mirror Scorpion')) {
-      return '$result\n\n— Mirror Scorpion \u{1F982}';
-    }
-    return result;
-  }
-
-  /// الحصول على النص المترجم مع التوقيع
+  /// توقيع مخصص للمستندات
   String addSignature(String translatedText) {
     if (translatedText.contains('Mirror Scorpion')) return translatedText;
-    return '$translatedText\n\n— Mirror Scorpion \u{1F982}';
+    return '$translatedText\n\n— Mirror Scorpion 🦂';
   }
+
+  /// توقيع المستندات — شفاف عريض بخط مائل 130 درجة
+  String get documentSignature =>
+      'ترجم هذا المستند بواسطة Mirror Scorpion 🦂';
 }

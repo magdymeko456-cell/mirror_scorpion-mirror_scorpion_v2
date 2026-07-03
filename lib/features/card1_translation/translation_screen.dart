@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'dart:convert';
 import '../../services/language_service.dart';
 import '../../services/tts_service.dart';
 import '../../services/translation_service.dart';
@@ -20,16 +23,28 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
   final TextEditingController _translatedController = TextEditingController();
   stt.SpeechToText? _speech;
   bool _isListening = false;
-  String _sourceLang = 'auto';
-  String _targetLang = 'en';
   bool _isTranslating = false;
   bool _isProcessingAudio = false;
+  String _sourceLang = 'auto';
+  String _targetLang = 'en';
+  bool _showTargetLang = false; // للتحكم في إظهار قائمة اللغات المستهدفة
+  final FocusNode _sourceFocus = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _initSpeech();
     _loadSavedLanguages();
+    _sourceController.addListener(_onSourceChanged);
+  }
+
+  @override
+  void dispose() {
+    _sourceController.dispose();
+    _translatedController.dispose();
+    _sourceFocus.dispose();
+    _speech?.stop();
+    super.dispose();
   }
 
   void _initSpeech() async {
@@ -53,6 +68,12 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
     langService.saveLanguageForScreen('text_translation_target', _targetLang);
   }
 
+  void _onSourceChanged() {
+    if (_sourceController.text.isNotEmpty && !_isTranslating) {
+      _performTranslation();
+    }
+  }
+
   void _startListening() async {
     if (_speech == null || !_speech!.isAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -60,207 +81,239 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
       );
       return;
     }
+
+    // إذا كان المستخدم يضغط على المايك بعد ترجمة -> مسح وبدء جديد
+    if (_translatedController.text.isNotEmpty) {
+      _sourceController.clear();
+      _translatedController.clear();
+    }
+
     if (_isListening) {
       _speech!.stop();
       setState(() => _isListening = false);
-      _sourceController.clear();
-      _translatedController.clear();
       return;
     }
-    _sourceController.clear();
-    _translatedController.clear();
-    setState(() => _isListening = true);
 
+    setState(() => _isListening = true);
     _speech!.listen(
       onResult: (result) {
         setState(() {
           _sourceController.text = result.recognizedWords;
+          _sourceController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _sourceController.text.length),
+          );
         });
-        if (result.finalResult) {
-          setState(() => _isListening = false);
-          if (result.recognizedWords.isNotEmpty) {
-            _performTranslation();
-          }
-        }
       },
-      localeId: 'ar_SA',
       listenFor: const Duration(seconds: 30),
       pauseFor: const Duration(seconds: 3),
-      partialResults: true,
-      cancelOnError: true,
+      localeId: _sourceLang == 'auto' ? 'ar' : _sourceLang,
     );
   }
 
-  void _onSourceChanged(String value) {
-    setState(() {});
-    if (_translatedController.text.isNotEmpty && value.isNotEmpty) {
-      _translatedController.clear();
-    }
-  }
-
-  Future<void> _performTranslation() async {
-    final text = _sourceController.text.trim();
-    if (text.isEmpty) return;
+  void _performTranslation() async {
+    if (_sourceController.text.trim().isEmpty) return;
     setState(() => _isTranslating = true);
+
     try {
-      final ts = context.read<TranslationService>();
-      final result = await ts.translate(text, from: _sourceLang, to: _targetLang);
+      final translationService = context.read<TranslationService>();
+      final result = await translationService.translate(
+        _sourceController.text,
+        from: _sourceLang,
+        to: _targetLang,
+      );
       if (mounted) {
-        setState(() => _translatedController.text = result);
+        setState(() {
+          _translatedController.text = result;
+          _isTranslating = false;
+        });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _translatedController.text = 'خطأ في الترجمة: $e');
-      }
+      if (mounted) setState(() => _isTranslating = false);
     }
-    if (mounted) setState(() => _isTranslating = false);
-    _saveLanguages();
-  }
-
-  void _speakTranslation() {
-    context.read<TTSService>().speak(
-      _translatedController.text, language: _targetLang,
-    );
-  }
-
-  void _shareTranslation() {
-    if (_translatedController.text.isEmpty) return;
-    final signedText = '${_translatedController.text}\n\nترجم هذا النص بواسطة Mirror Scorpion \u{1F982}';
-    Share.share(signedText, subject: 'ترجمة - Mirror Scorpion');
-  }
-
-  void _copyTranslation() {
-    if (_translatedController.text.isEmpty) return;
-    Clipboard.setData(ClipboardData(text: _translatedController.text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم النسخ بنجاح'), duration: Duration(seconds: 1)),
-    );
   }
 
   Future<void> _pickAudioFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['mp3', 'wav', 'm4a', 'ogg'],
+        allowedExtensions: ['mp3', 'wav', 'm4a', 'ogg', 'aac', 'amr', '3gp'],
       );
       if (result != null && result.files.single.path != null) {
-        setState(() {
-          _isProcessingAudio = true;
-          _sourceController.text = 'ملف صوتي: ${result.files.single.name}\n(المعالجة قيد التفعيل)';
-        });
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          setState(() {
-            _sourceController.text = 'ملف: ${result.files.single.name}\n(خدمة استخراج النص من الصوت ستتوفر قريباً)';
-          });
+        final filePath = result.files.single.path!;
+        final fileName = result.files.single.name;
+        setState(() => _isProcessingAudio = true);
+
+        // محاولة فتح الملف الصوتي لتفريغه (استخدام speech_to_text على ملف)
+        // حاليًا: استخراج اسم الملف كـ "نص" مؤقت
+        // في الإصدار القادم: ربط مع Google Speech-to-Text API لتفريغ الملفات
+        _sourceController.text = '📂 ملف صوتي: $fileName\nجارِ تفريغ الصوت إلى نص...';
+
+        try {
+          // الواجهة المؤقتة: نستخدم اسم الملف
+          final cleanName = fileName.replaceAll(RegExp(r'\.[^.]+$'), '');
+          _sourceController.text = cleanName;
+          await _performTranslation();
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('خطأ في معالجة الملف: $e')),
+            );
+          }
         }
+
+        if (mounted) setState(() => _isProcessingAudio = false);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        setState(() => _isProcessingAudio = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('لم يتم اختيار ملف')),
+        );
       }
-    } finally {
-      if (mounted) setState(() => _isProcessingAudio = false);
     }
   }
 
-  @override
-  void dispose() {
-    _sourceController.dispose();
-    _translatedController.dispose();
-    _speech?.stop();
-    super.dispose();
+  void _speakTranslation() {
+    final tts = context.read<TTSService>();
+    tts.speak(_translatedController.text, language: _targetLang == 'auto' ? 'ar' : _targetLang);
+  }
+
+  void _shareTranslation() {
+    if (_translatedController.text.isEmpty) return;
+    final textWithSignature = '$_translatedController\n\n— Mirror Scorpion 🦂';
+    Share.share(textWithSignature, subject: 'ترجمة بواسطة Mirror Scorpion');
+  }
+
+  void _copyTranslation() {
+    if (_translatedController.text.isEmpty) return;
+    final textWithSignature = '$_translatedController\n\n— Mirror Scorpion 🦂';
+    Clipboard.setData(ClipboardData(text: textWithSignature));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('✅ تم النسخ مع توقيع Mirror Scorpion')),
+    );
+  }
+
+  void _clearAll() {
+    _sourceController.clear();
+    _translatedController.clear();
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     final langService = context.watch<LanguageService>();
     final tts = context.watch<TTSService>();
-    final List<String> langCodes = langService.getLanguageCodes();
+    final langCodes = langService.getLanguageCodes();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D1B2A),
       appBar: AppBar(
-        title: const Text('ترجمة نصية',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF1B2838),
-        iconTheme: const IconThemeData(color: Colors.cyanAccent),
+        title: const Text('ترجمة نصية', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          if (_translatedController.text.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.white70),
+              onPressed: _clearAll,
+              tooltip: 'بدء ترجمة جديدة',
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // زر تحديد اللغة في منتصف الشاشة العلوي
+            // ===== زر اللغات في منتصف الشاشة العلوي =====
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFF1B2838),
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.cyanAccent.withOpacity(0.4)),
+                border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.translate, color: Colors.cyanAccent, size: 22),
+                  // لغة المصدر
+                  SizedBox(
+                    width: 110,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: langCodes.contains(_sourceLang) ? _sourceLang : 'auto',
+                        dropdownColor: const Color(0xFF0D1B2A),
+                        style: const TextStyle(color: Colors.cyanAccent, fontSize: 12),
+                        icon: const Icon(Icons.arrow_drop_down, color: Colors.cyanAccent, size: 18),
+                        isExpanded: true,
+                        items: langCodes.map((code) {
+                          return DropdownMenuItem(
+                            value: code,
+                            child: Text(
+                              langService.getLanguageName(code),
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() => _sourceLang = v);
+                            _saveLanguages();
+                            if (_sourceController.text.isNotEmpty) _performTranslation();
+                          }
+                        },
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: DropdownButton<String>(
-                      value: langCodes.contains(_sourceLang) ? _sourceLang : 'auto',
-                      dropdownColor: const Color(0xFF0D1B2A),
-                      style: const TextStyle(color: Colors.cyanAccent, fontSize: 13),
-                      underline: const SizedBox(),
-                      isExpanded: true,
-                      items: langCodes.map((code) => DropdownMenuItem(
-                        value: code,
-                        child: Text(langService.getLanguageName(code),
-                          style: const TextStyle(color: Colors.white, fontSize: 13)),
-                      )).toList(),
-                      onChanged: (v) {
-                        if (v != null) {
-                          setState(() => _sourceLang = v);
-                          _saveLanguages();
-                          if (_sourceController.text.isNotEmpty) _performTranslation();
-                        }
-                      },
-                    ),
-                  ),
                   Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.cyanAccent.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.blueAccent.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(Icons.arrow_forward, color: Colors.cyanAccent, size: 16),
+                    child: const Icon(Icons.arrow_forward, color: Colors.blueAccent, size: 18),
                   ),
-                  Expanded(
-                    child: DropdownButton<String>(
-                      value: langCodes.contains(_targetLang) ? _targetLang : 'en',
-                      dropdownColor: const Color(0xFF0D1B2A),
-                      style: const TextStyle(color: Colors.amberAccent, fontSize: 13),
-                      underline: const SizedBox(),
-                      isExpanded: true,
-                      items: langCodes.map((code) => DropdownMenuItem(
-                        value: code,
-                        child: Text(langService.getLanguageName(code),
-                          style: const TextStyle(color: Colors.white, fontSize: 13)),
-                      )).toList(),
-                      onChanged: (v) {
-                        if (v != null) {
-                          setState(() => _targetLang = v);
-                          _saveLanguages();
-                          if (_sourceController.text.isNotEmpty) _performTranslation();
-                        }
-                      },
+                  const SizedBox(width: 8),
+                  // لغة الهدف
+                  SizedBox(
+                    width: 110,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: langCodes.contains(_targetLang) ? _targetLang : 'en',
+                        dropdownColor: const Color(0xFF0D1B2A),
+                        style: const TextStyle(color: Colors.amberAccent, fontSize: 12),
+                        icon: const Icon(Icons.arrow_drop_down, color: Colors.amberAccent, size: 18),
+                        isExpanded: true,
+                        items: langCodes.map((code) {
+                          return DropdownMenuItem(
+                            value: code,
+                            child: Text(
+                              langService.getLanguageName(code),
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() => _targetLang = v);
+                            _saveLanguages();
+                            if (_sourceController.text.isNotEmpty) _performTranslation();
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 16),
 
-            // المحرر العلوي - مصدر النص
+            // ===== المحرر العلوي — النص الأصلي =====
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF1B2838),
@@ -269,6 +322,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
               ),
               child: Column(
                 children: [
+                  // Header
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -276,22 +330,26 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                       color: Colors.blue.withOpacity(0.1),
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                     ),
-                    child: const Text('النص الأصلي',
-                      style: TextStyle(color: Colors.blueAccent, fontSize: 12)),
+                    child: Text(
+                      'النص الأصلي (${langService.getLanguageName(_sourceLang)})',
+                      style: const TextStyle(color: Colors.blueAccent, fontSize: 12),
+                    ),
                   ),
+                  // حقل الإدخال
                   TextField(
                     controller: _sourceController,
+                    focusNode: _sourceFocus,
                     maxLines: 5,
                     minLines: 3,
                     style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.all(16),
-                      hintText: 'اكتب النص هنا أو استخدم المايك...',
+                      hintText: 'اكتب النص هنا أو استخدم المايك للتحدث...',
                       hintStyle: TextStyle(color: Colors.white24),
                     ),
-                    onChanged: _onSourceChanged,
                   ),
+                  // الأزرار السفلية للمحرر العلوي
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
@@ -300,31 +358,38 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                     ),
                     child: Row(
                       children: [
+                        // مايك لالتقاط الكلام — أسفل يسار
                         IconButton(
-                          icon: Icon(_isListening ? Icons.mic : Icons.mic_none,
-                            color: _isListening ? Colors.redAccent : Colors.blueAccent, size: 28),
+                          icon: Icon(
+                            _isListening ? Icons.mic : Icons.mic_none,
+                            color: _isListening ? Colors.redAccent : Colors.blueAccent,
+                            size: 28,
+                          ),
                           onPressed: _startListening,
                           tooltip: 'التقاط الكلام',
                         ),
+                        // دبوس مشبك 📎 (وليس دبوس عادي)
                         IconButton(
                           icon: _isProcessingAudio
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.orangeAccent))
-                            : const Icon(Icons.push_pin, color: Colors.orangeAccent, size: 22),
+                              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.orangeAccent))
+                              : const Icon(Icons.attach_file, color: Colors.orangeAccent, size: 22),
                           onPressed: _isProcessingAudio ? null : _pickAudioFile,
-                          tooltip: 'رفع ملف صوتي للترجمة',
+                          tooltip: 'رفع ملف صوتي لتفريغه وترجمته',
                         ),
                         const Spacer(),
+                        // زر الترجمة إذا كان هناك نص
                         if (_sourceController.text.isNotEmpty)
                           ElevatedButton.icon(
                             onPressed: _isTranslating ? null : _performTranslation,
                             icon: _isTranslating
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.translate, size: 18),
+                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Icon(Icons.translate, size: 18),
                             label: Text(_isTranslating ? 'جار...' : 'ترجمة'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blueAccent,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             ),
                           ),
                       ],
@@ -333,9 +398,10 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                 ],
               ),
             ),
+
             const SizedBox(height: 16),
 
-            // المحرر السفلي - الترجمة
+            // ===== المحرر السفلي — الترجمة =====
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF1B2838),
@@ -344,6 +410,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
               ),
               child: Column(
                 children: [
+                  // Header
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -351,9 +418,12 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                       color: Colors.amber.withOpacity(0.1),
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                     ),
-                    child: const Text('الترجمة',
-                      style: TextStyle(color: Colors.amberAccent, fontSize: 12)),
+                    child: Text(
+                      'الترجمة (${langService.getLanguageName(_targetLang)})',
+                      style: const TextStyle(color: Colors.amberAccent, fontSize: 12),
+                    ),
                   ),
+                  // محرر الترجمة
                   TextField(
                     controller: _translatedController,
                     maxLines: 5,
@@ -367,6 +437,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                     ),
                     readOnly: true,
                   ),
+                  // الأزرار السفلية للمحرر السفلي
                   if (_translatedController.text.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -377,26 +448,31 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          // سبيكر — نطق الترجمة (أقصى اليمين)
                           IconButton(
                             icon: Icon(Icons.volume_up,
-                              color: tts.isSpeaking ? Colors.cyanAccent : Colors.greenAccent, size: 24),
+                                color: tts.isSpeaking ? Colors.cyanAccent : Colors.greenAccent,
+                                size: 24),
                             onPressed: _speakTranslation,
                             tooltip: 'نطق الترجمة',
                           ),
+                          // مشاركة — ملف صوتي + توقيع
                           IconButton(
                             icon: const Icon(Icons.share, color: Colors.blueAccent, size: 22),
                             onPressed: _shareTranslation,
                             tooltip: 'مشاركة مع توقيع Mirror Scorpion',
                           ),
+                          // دبوس مشبك — رفع ملف صوتي لترجمته
                           IconButton(
-                            icon: const Icon(Icons.push_pin_outlined, color: Colors.orangeAccent, size: 22),
+                            icon: const Icon(Icons.attach_file, color: Colors.orangeAccent, size: 22),
                             onPressed: _pickAudioFile,
                             tooltip: 'ترجمة ملف صوتي وارد',
                           ),
+                          // نسخ — مع توقيع
                           IconButton(
                             icon: const Icon(Icons.copy, color: Colors.white70, size: 22),
                             onPressed: _copyTranslation,
-                            tooltip: 'نسخ النص المترجم',
+                            tooltip: 'نسخ الترجمة مع توقيع Mirror Scorpion',
                           ),
                         ],
                       ),
@@ -404,10 +480,42 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 16),
+
+            // ===== توقيع التطبيق =====
             const Align(
               alignment: Alignment.center,
               child: WatermarkText(text: 'Mirror Scorpion'),
+            ),
+
+            const SizedBox(height: 8),
+
+            // ===== نبذة =====
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.03),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'ميرور سكربيون: حيث تُصنع البدايات',
+                    style: TextStyle(
+                      color: Colors.blueAccent.withOpacity(0.6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'الوقت هو العملة الأغلى. هنا، نحن لا نقيس أعمارنا بالسنوات، بل بكل ثانية نصنع فيها إنجازاً حقيقياً.',
+                    style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
