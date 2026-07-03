@@ -61,7 +61,7 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
   @override
   Widget build(BuildContext context) {
     final ls = context.watch<LanguageService>();
-    final codes = ls.getAvailableLanguages();
+    final codes = ls.getLanguageCodes();
     return Scaffold(
       backgroundColor: const Color(0xFF0D1B2A),
       appBar: AppBar(title: const Text('ترجمة مستندات', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

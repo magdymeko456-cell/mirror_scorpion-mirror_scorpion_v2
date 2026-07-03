@@ -70,7 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
   Future<String?> _pickLang(BuildContext ctx, LanguageService ls, String cur) async {
-    final codes = ls.getAvailableLanguages();
+    final codes = ls.getLanguageCodes();
     return showModalBottomSheet<String>(context: ctx, backgroundColor: const Color(0xFF0D1B2A),
       builder: (c) => Container(padding: const EdgeInsets.all(16), child: Column(mainAxisSize: MainAxisSize.min, children: [
         const Text('اختر اللغة', style: TextStyle(color: Colors.amber, fontSize: 18)), const SizedBox(height: 16),
@@ -81,7 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: () => Navigator.pop(c, code)); }))])));
   }
   void _showLangDownload(BuildContext ctx, LanguageService ls) {
-    final codes = ls.getAvailableLanguages();
+    final codes = ls.getLanguageCodes();
     showDialog(context: ctx, builder: (c) => AlertDialog(backgroundColor: const Color(0xFF0D1B2A),
       title: const Text('تحميل اللغات', style: TextStyle(color: Colors.amber)),
       content: SizedBox(width: double.maxFinite,
