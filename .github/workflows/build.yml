@@ -20,10 +20,6 @@ jobs:
         run: |
           set -e
           flutter pub get
-
-          # 🦂 تصحيح speech_to_text في pub cache
-          python3 scripts/patch_speech_cache.py
-
           flutter build apk --release --no-tree-shake-icons
           mkdir -p output_apk
           cp build/app/outputs/flutter-apk/app-release.apk output_apk/

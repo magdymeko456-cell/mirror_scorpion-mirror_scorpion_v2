@@ -1,0 +1,18 @@
+name: speech_to_text_local
+description: "Speech To Text Local - نسخة معدلة من speech_to_text"
+version: 7.4.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.csdcorp.speech_to_text
+        pluginClass: SpeechToTextPlugin
