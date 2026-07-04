@@ -1,4 +1,4 @@
-name: speech_to_text_local
+name: speech_to_text
 description: "Speech To Text Local - نسخة معدلة من speech_to_text"
 version: 7.4.0
 publish_to: 'none'
