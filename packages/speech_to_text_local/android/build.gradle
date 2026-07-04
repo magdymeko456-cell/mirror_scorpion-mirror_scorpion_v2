@@ -1,16 +1,6 @@
 group 'com.csdcorp.speech_to_text'
 version '1.0-SNAPSHOT'
 
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.20"
-    }
-}
-
 rootProject.allprojects {
     repositories {
         google()
@@ -42,8 +32,4 @@ android {
     lintOptions {
         disable 'InvalidPackage'
     }
-}
-
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.2.20"
 }

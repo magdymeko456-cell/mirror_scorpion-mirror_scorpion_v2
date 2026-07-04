@@ -1,7 +1,7 @@
 plugins {
     id "com.android.application"
     id "dev.flutter.flutter-gradle-plugin"
-    id "org.jetbrains.kotlin.android"
+    id "org.jetbrains.kotlin.android" version "2.2.20" apply false
 }
 
 def localProperties = new Properties()
@@ -47,23 +47,11 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.debug
+            // تعطيل R8 minification مؤقتاً لحل مشكلة google_mlkit
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
-    }
-}
-
-// Kotlin compilation tasks - خارج android block
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-    kotlinOptions {
-        jvmTarget = "17"
-        freeCompilerArgs += ["-Xjvm-default=all"]
-    }
-}
-
-// تأكد من أن Kotlin يُجمع قبل Java
-tasks.whenTaskAdded { task ->
-    if (task.name.contains('compileJava') && task.name.contains('Release')) {
-        def kotlinTaskName = task.name.replace('compileJava', 'compileKotlin')
-        task.dependsOn kotlinTaskName
     }
 }
 
