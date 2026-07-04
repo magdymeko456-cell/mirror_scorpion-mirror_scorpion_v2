@@ -4,11 +4,9 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- شكل عقرب مبسط -->
     <path
         android:fillColor="#1A73E8"
         android:pathData="M54,20 C54,20 38,30 35,45 C32,60 40,70 45,75 L42,85 L48,80 L50,90 L54,78 C56,80 58,82 58,82 L60,70 C65,65 72,55 70,42 C68,30 54,20 54,20 Z M54,35 C58,35 60,40 58,45 C56,50 52,50 50,45 C48,40 50,35 54,35 Z"/>
-    <!-- عيون العقرب -->
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M49,38 C50,36 52,36 53,38 C52,40 50,40 49,38 Z M55,38 C56,36 58,36 59,38 C58,40 56,40 55,38 Z"/>
