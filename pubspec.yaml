@@ -18,7 +18,8 @@ dependencies:
   http: ^1.2.1
 
   flutter_tts: ^4.0.2
-  speech_to_text: ^7.0.0
+  speech_to_text:
+    path: packages/speech_to_text_local
 
   google_mlkit_text_recognition: ^0.13.0
   image_picker: ^1.0.0
