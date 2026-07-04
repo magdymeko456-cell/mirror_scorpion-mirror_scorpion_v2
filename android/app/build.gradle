@@ -32,6 +32,19 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+// تأكد من تجميع Kotlin قبل Java
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += ["-Xjvm-default=all"]
+    }
+}
+
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
