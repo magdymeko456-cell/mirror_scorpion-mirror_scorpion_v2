@@ -1,151 +1,75 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+import '../core/api_config.dart';
 
-class TranslationService extends ChangeNotifier {
-  bool _isTranslating = false;
-  String _lastError = '';
+/// خدمة الترجمة الحقيقية عبر Google Translate API
+class TranslationService {
+  static final TranslationService _instance = TranslationService._internal();
+  factory TranslationService() => _instance;
+  TranslationService._internal();
 
-  bool get isTranslating => _isTranslating;
-  String get lastError => _lastError;
-
-  /// ترجمة باستخدام LibreTranslate + Lingva + MyMemory
-  Future<String> translate(String text, {String from = 'auto', String to = 'ar'}) async {
-    if (text.trim().isEmpty) return '';
-    _isTranslating = true;
-    _lastError = '';
-    notifyListeners();
+  Future<Map<String, String>> translate({
+    required String text,
+    required String targetLang,
+    String? sourceLang,
+  }) async {
+    if (text.trim().isEmpty) return {'translated': '', 'detected': targetLang};
 
     try {
-      // 1. LibreTranslate
-      String result = await _libreTranslate(text, from, to);
-      if (result.isNotEmpty && result != text) {
-        _isTranslating = false;
-        notifyListeners();
-        return _addSignature(result);
-      }
+      final url = '${ApiConfig.translateUrl}?key=${ApiConfig.googleApiKey}';
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'q': text,
+          'target': targetLang,
+          if (sourceLang != null && sourceLang != 'auto') 'source': sourceLang,
+        }),
+      );
 
-      // 2. Lingva Translate
-      result = await _lingvaTranslate(text, from, to);
-      if (result.isNotEmpty && result != text) {
-        _isTranslating = false;
-        notifyListeners();
-        return _addSignature(result);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final translated = data['data']['translations'][0]['translatedText'] ?? '';
+        final detected = data['data']['translations'][0]['detectedSourceLanguage'] ?? targetLang;
+        return {'translated': translated, 'detected': detected};
+      } else {
+        debugPrint('❌ Google Translate API خطأ: ${response.statusCode}');
+        return {'translated': '[خطأ في الترجمة - ${response.statusCode}]', 'detected': targetLang};
       }
-
-      // 3. MyMemory API
-      result = await _myMemoryTranslate(text, from, to);
-      if (result.isNotEmpty) {
-        _isTranslating = false;
-        notifyListeners();
-        return _addSignature(result);
-      }
-
-      _isTranslating = false;
-      notifyListeners();
-      return _addSignature(text);
     } catch (e) {
-      debugPrint('Translation error: $e');
-      _lastError = e.toString();
-      _isTranslating = false;
-      notifyListeners();
-      return _addSignature(text);
+      debugPrint('❌ Translation error: $e');
+      return {'translated': '[خطأ في الاتصال]', 'detected': targetLang};
     }
   }
 
-  Future<String> _libreTranslate(String text, String from, String to) async {
+  Future<String> detectLanguage(String text) async {
     try {
-      final servers = [
-        'https://libretranslate.com/translate',
-        'https://translate.terraprint.co/translate',
-        'https://libretranslate.de/translate',
-      ];
-
-      for (final server in servers) {
-        try {
-          final response = await http.post(
-            Uri.parse(server),
-            headers: {
-              'Content-Type': 'application/json; charset=utf-8',
-              'Accept': 'application/json; charset=utf-8',
-            },
-            body: jsonEncode({
-              'q': text,
-              'source': from == 'auto' ? 'auto' : from,
-              'target': to,
-              'format': 'text',
-            }),
-          ).timeout(const Duration(seconds: 8));
-
-          if (response.statusCode == 200) {
-            final body = utf8.decode(response.bodyBytes);
-            final data = jsonDecode(body) as Map<String, dynamic>;
-            final translated = data['translatedText'] as String?;
-            if (translated != null && translated.isNotEmpty && translated != text) {
-              return translated;
-            }
-          }
-        } catch (_) {
-          continue;
-        }
-      }
-    } catch (_) {}
-    return '';
-  }
-
-  Future<String> _lingvaTranslate(String text, String from, String to) async {
-    try {
-      final source = from == 'auto' ? 'auto' : from;
-      final url = 'https://lingva.ml/api/v1/$source/$to/${Uri.encodeComponent(text)}';
-      final response = await http.get(
+      final url = '${ApiConfig.translateUrl}?key=${ApiConfig.googleApiKey}';
+      final response = await http.post(
         Uri.parse(url),
-        headers: {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 8));
-
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'q': text, 'target': 'ar'}),
+      );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final translated = data['translation'] as String?;
-        if (translated != null && translated.isNotEmpty && translated != text) {
-          return translated;
-        }
+        final data = jsonDecode(response.body);
+        return data['data']['translations'][0]['detectedSourceLanguage'] ?? 'en';
       }
     } catch (_) {}
-    return '';
+    return 'en';
   }
 
-  Future<String> _myMemoryTranslate(String text, String from, String to) async {
+  /// الحصول على قائمة اللغات المدعومة
+  Future<List<String>> getSupportedLanguages() async {
     try {
-      final source = from == 'auto' ? '' : '$from|';
-      final url = 'https://api.mymemory.translated.net/get?q=${Uri.encodeComponent(text)}&langpair=$source$to&de=dosoky.server@gmail.com';
-      final response = await http.get(Uri.parse(url))
-          .timeout(const Duration(seconds: 8));
-
+      final url = '${ApiConfig.translateUrl}/languages?key=${ApiConfig.googleApiKey}&target=ar';
+      final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        if (data['responseStatus'] == 200) {
-          final translated = data['responseData']?['translatedText'] as String?;
-          if (translated != null && translated.isNotEmpty) {
-            return translated;
-          }
-        }
+        final data = jsonDecode(response.body);
+        final languages = data['data']['languages'] as List;
+        return languages.map((l) => l['language'] as String).toList();
       }
     } catch (_) {}
-    return '';
+    return [];
   }
-
-  /// إضافة توقيع التطبيق — "ترجم هذا النص بواسطة Mirror Scorpion 🦂"
-  String _addSignature(String text) {
-    if (text.contains('Mirror Scorpion')) return text;
-    return '$text\n\n— Mirror Scorpion 🦂';
-  }
-
-  /// توقيع مخصص للمستندات
-  String addSignature(String translatedText) {
-    if (translatedText.contains('Mirror Scorpion')) return translatedText;
-    return '$translatedText\n\n— Mirror Scorpion 🦂';
-  }
-
-  /// توقيع المستندات — شفاف عريض بخط مائل 130 درجة
-  String get documentSignature =>
-      'ترجم هذا المستند بواسطة Mirror Scorpion 🦂';
 }

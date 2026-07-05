@@ -1,4 +1,4 @@
-name: 🦂 Build Mirror Scorpion APK
+name: Mirror Scorpion Build
 on:
   push:
     branches: [ main, master ]
@@ -20,8 +20,7 @@ jobs:
         run: |
           set -e
           flutter pub get
-          flutter build apk --release --no-tree-shake-icons \
-            --dart-define=GOOGLE_API_KEY=${{ secrets.API_KEY }}
+          flutter build apk --release --no-tree-shake-icons
           mkdir -p output_apk
           cp build/app/outputs/flutter-apk/app-release.apk output_apk/
       - name: Upload APK

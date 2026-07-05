@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700"/>
+      <stop offset="50%" style="stop-color:#FFA500"/>
+      <stop offset="100%" style="stop-color:#FF8C00"/>
+    </linearGradient>
+    <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#FFD700;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+  <!-- Background glow -->
+  <circle cx="256" cy="280" r="160" fill="url(#glowGrad)"/>
+  <!-- Tail segments -->
+  <circle cx="256" cy="230" r="28" fill="url(#bodyGrad)" stroke="#B8860B" stroke-width="2.5"/>
+  <circle cx="256" cy="180" r="23" fill="url(#bodyGrad)" stroke="#B8860B" stroke-width="2.5"/>
+  <circle cx="256" cy="135" r="18" fill="url(#bodyGrad)" stroke="#B8860B" stroke-width="2.5"/>
+  <circle cx="256" cy="95" r="14" fill="url(#bodyGrad)" stroke="#B8860B" stroke-width="2.5"/>
+  <!-- Stinger -->
+  <path d="M256 81 L256 65 C256 58, 250 55, 244 60 L242 58 L256 50 L270 58 L268 60 C262 55, 256 58, 256 65 L256 81" fill="#FFD700" stroke="#B8860B" stroke-width="2"/>
+  <line x1="250" y1="60" x2="262" y2="60" stroke="#B8860B" stroke-width="2"/>
+  <!-- Body (cephalothorax) -->
+  <ellipse cx="256" cy="300" rx="85" ry="55" fill="url(#bodyGrad)" stroke="#B8860B" stroke-width="3"/>
+  <ellipse cx="256" cy="290" rx="60" ry="35" fill="rgba(255,215,0,0.3)"/>
+  <!-- Arms/pincers -->
+  <path d="M190 270 L140 230 L115 195" fill="none" stroke="url(#bodyGrad)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M115 195 L105 180 L125 178 L118 170 L135 175" fill="#FFD700" stroke="#B8860B" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M322 270 L372 230 L397 195" fill="none" stroke="url(#bodyGrad)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M397 195 L407 180 L387 178 L394 170 L377 175" fill="#FFD700" stroke="#B8860B" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Legs -->
+  <g stroke="url(#bodyGrad)" stroke-width="5" stroke-linecap="round" fill="none">
+    <path d="M195 310 L145 340"/>
+    <path d="M205 330 L158 368"/>
+    <path d="M220 348 L178 390"/>
+    <path d="M195 320 L155 342"/>
+    <path d="M317 310 L367 340"/>
+    <path d="M307 330 L354 368"/>
+    <path d="M292 348 L334 390"/>
+    <path d="M317 320 L357 342"/>
+  </g>
+  <!-- Eyes -->
+  <circle cx="232" cy="285" r="6" fill="#FFF8DC" stroke="#B8860B" stroke-width="1.5"/>
+  <circle cx="280" cy="285" r="6" fill="#FFF8DC" stroke="#B8860B" stroke-width="1.5"/>
+  <circle cx="232" cy="285" r="3" fill="#000"/>
+  <circle cx="280" cy="285" r="3" fill="#000"/>
+  <!-- Shine on body -->
+  <ellipse cx="240" cy="280" rx="15" ry="8" fill="rgba(255,255,255,0.2)" transform="rotate(-20,240,280)"/>
+</svg>
