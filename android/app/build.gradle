@@ -13,28 +13,25 @@ if (localPropertiesFile.exists()) {
 }
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
+if (flutterVersionCode == null) { flutterVersionCode = '1' }
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
+if (flutterVersionName == null) { flutterVersionName = '1.0' }
 
 android {
     namespace = "com.mirror.scorpion.v2"
-    ndkVersion = "28.2.13676358"
+    ndkVersion = "27.0.12077973"
     compileSdk = 36
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
     defaultConfig {
         applicationId = "com.mirror.scorpion.v2"
-        minSdk = 24
-        targetSdk = 36
+        minSdk = 21
+        targetSdk = 35
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
     }
@@ -42,10 +39,8 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.debug
-            // تعطيل R8 minification مؤقتاً لحل مشكلة google_mlkit
             minifyEnabled false
             shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }

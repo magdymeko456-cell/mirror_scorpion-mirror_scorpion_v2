@@ -20,6 +20,17 @@ jobs:
         run: |
           set -e
           flutter pub get
+
+          # Fix speech_to_text in pub cache
+          STT_FILE=$(find /home/runner/.pub-cache -path "*/speech_to_text*/android/build.gradle" -type f 2>/dev/null | head -1)
+          if [ -n "$STT_FILE" ]; then
+            echo "=== Patching $STT_FILE ==="
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk 36/' "$STT_FILE"
+            sed -i 's/ndkVersion = flutter.ndkVersion/ndkVersion "27.0.12077973"/' "$STT_FILE"
+            sed -i '/^kotlin {/,/^}/d' "$STT_FILE"
+            echo "=== Done patching speech_to_text ==="
+          fi
+
           flutter build apk --release --no-tree-shake-icons \
             --dart-define=GOOGLE_API_KEY=${{ secrets.API_KEY }}
           mkdir -p output_apk
