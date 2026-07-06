@@ -19,8 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() { _patchController.dispose(); super.dispose(); }
 
   String _getDeviceId() {
-    final id = 'MS-${DateTime.now().millisecondsSinceEpoch.toString().substring(0, 10)}-${Platform.isAndroid ? 'ADR' : 'IOS'}';
-    return id;
+    return 'MS-${DateTime.now().millisecondsSinceEpoch.toString().substring(0, 10)}-${Platform.isAndroid ? 'ADR' : 'IOS'}';
   }
 
   @override
@@ -33,231 +32,237 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('⚙️ الإعدادات'),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
+        backgroundColor: const Color(0xFF0D1B2A),
+        foregroundColor: Colors.teal,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // ── الأصوات ──
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0D1B2A), Color(0xFF1B2838)],
+          ),
+        ),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // ── الأصوات ──
+            Card(
+              color: const Color(0xFF1B2838),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('🔊 الأصوات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                    const SizedBox(height: 8),
+                    ...TTSService.availableVoices.map((voice) {
+                      final isPro = voice['id'] == 'voice_user';
+                      return RadioListTile<String>(
+                        title: Text('${voice['name']} — ${voice['desc']}', style: const TextStyle(color: Colors.white)),
+                        subtitle: isPro
+                            ? const Text('🔒 متاح في النسخة المدفوعة', style: TextStyle(color: Colors.amber, fontSize: 12))
+                            : null,
+                        value: voice['id']!,
+                        groupValue: tts.selectedVoice,
+                        activeColor: Colors.teal,
+                        onChanged: (val) {
+                          if (val != null && (!isPro || premium.isPremium)) {
+                            tts.setVoice(val);
+                          } else if (isPro && !premium.isPremium) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('🔒 هذا الصوت متاح فقط في النسخة PRO')));
+                          }
+                        },
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // ── الفقاعة العائمة ──
+            Card(
+              color: const Color(0xFF1B2838),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: SwitchListTile(
+                title: const Text('💬 الفقاعة العائمة', style: TextStyle(color: Colors.white)),
+                subtitle: const Text('ظهور أيقونة عائمة للوصول السريع', style: TextStyle(color: Colors.white54)),
+                value: bubble.isEnabled,
+                activeColor: Colors.teal,
+                onChanged: (v) {
+                  if (v) { bubble.startBubble(); } else { bubble.stopBubble(); }
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            // ── الإعدادات العامة ──
+            Card(
+              color: const Color(0xFF1B2838),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('🔊 الأصوات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  ...TTSService.availableVoices.map((voice) {
-                    final isPro = voice['id'] == 'voice_user';
-                    return RadioListTile<String>(
-                      title: Text('${voice['name']} — ${voice['desc']}'),
-                      subtitle: isPro
-                          ? const Text('🔒 متاح في النسخة المدفوعة', style: TextStyle(color: Colors.amber, fontSize: 12))
-                          : null,
-                      value: voice['id']!,
-                      groupValue: tts.selectedVoice,
-                      activeColor: Colors.teal,
-                      onChanged: (val) {
-                        if (val != null && (!isPro || premium.isPremium)) {
-                          tts.setVoice(val);
-                        } else if (isPro && !premium.isPremium) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('🔒 هذا الصوت متاح فقط في النسخة PRO')));
-                        }
-                      },
-                    );
-                  }),
+                  ListTile(
+                    leading: const Icon(Icons.dark_mode, color: Colors.teal),
+                    title: const Text('الوضع المظلم', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('مفعل دائماً', style: TextStyle(color: Colors.white54)),
+                    trailing: Switch(value: true, onChanged: (_) {}, activeColor: Colors.teal),
+                  ),
+                  const Divider(color: Colors.white12, height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.language, color: Colors.teal),
+                    title: const Text('لغة الجهاز', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('يتم اكتشافها تلقائياً', style: TextStyle(color: Colors.white54)),
+                  ),
                 ],
               ),
             ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // ── الفقاعة العائمة ──
-          Card(
-            child: SwitchListTile(
-              title: const Text('💬 الفقاعة العائمة'),
-              subtitle: const Text('ظهور أيقونة عائمة للوصول السريع'),
-              value: bubble.isEnabled,
-              activeColor: Colors.teal,
-              onChanged: (v) {
-                if (v) {
-                  bubble.startBubble();
-                } else {
-                  bubble.stopBubble();
-                }
-              },
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // ── الإعدادات العامة ──
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.translate, color: Colors.teal),
-                  title: const Text('الترجمة التلقائية'),
-                  subtitle: const Text('ترجمة فورية عند لصق النص'),
-                  trailing: Switch(value: true, onChanged: (_) {}, activeColor: Colors.teal),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.dark_mode, color: Colors.teal),
-                  title: const Text('الوضع المظلم'),
-                  subtitle: const Text('مفعل دائماً'),
-                  trailing: Switch(value: true, onChanged: (_) {}, activeColor: Colors.teal),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // ── PRO ──
-          Card(
-            color: Colors.amber.withOpacity(0.08),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.amber.withOpacity(0.3)),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Icon(premium.isPremium ? Icons.workspace_premium : Icons.lock,
-                          color: Colors.amber, size: 28),
-                      const SizedBox(width: 8),
-                      Text(
-                        premium.isPremium ? '👑 PRO مفعلة' : '👑 النسخة PRO',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 18, color: Colors.amber),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'مزايا PRO:\n'
-                    '• ترجمة مستندات غير محدودة\n'
-                    '• استنساخ صوت المستخدم (AI)\n'
-                    '• تحويل القصص إلى فيديوهات\n'
-                    '• ترجمة أوفلاين بدون إنترنت',
-                    style: TextStyle(fontSize: 13, height: 1.6),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  if (!premium.isPremium) ...[
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.amber.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Text('ID: $deviceId',
-                                  style: const TextStyle(fontSize: 11, fontFamily: 'monospace')),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.copy, color: Colors.amber),
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: deviceId));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('✅ تم نسخ معرف الجهاز')));
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _patchController,
-                      decoration: InputDecoration(
-                        labelText: '🔑 أدخل باتش التفعيل المشفر',
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.paste, color: Colors.grey),
-                          onPressed: () async {
-                            final data = await Clipboard.getData(Clipboard.kTextPlain);
-                            if (data?.text != null) _patchController.text = data!.text!;
-                          },
+            const SizedBox(height: 12),
+            // ── PRO ──
+            Card(
+              color: Colors.amber.withOpacity(0.08),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.amber.withOpacity(0.3)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(premium.isPremium ? Icons.workspace_premium : Icons.lock,
+                            color: Colors.amber, size: 28),
+                        const SizedBox(width: 8),
+                        Text(
+                          premium.isPremium ? '👑 PRO مفعلة' : '👑 النسخة PRO',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.amber),
                         ),
-                      ),
+                      ],
                     ),
                     const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: () async {
-                        if (_patchController.text.isNotEmpty) {
-                          final success = await premium.activateWithPatch(_patchController.text);
-                          if (success && mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('🎉 تم تفعيل النسخة PRO بنجاح!'),
-                                backgroundColor: Colors.green,
+                    const Text(
+                      'مزايا PRO:\n'
+                      '• ترجمة مستندات غير محدودة\n'
+                      '• استنساخ صوت المستخدم (AI)\n'
+                      '• تحويل القصص إلى فيديوهات\n'
+                      '• ترجمة أوفلاين بدون إنترنت',
+                      style: TextStyle(fontSize: 13, height: 1.6, color: Colors.white70),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    if (!premium.isPremium) ...[
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.amber.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Text('ID: $deviceId',
+                                    style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: Colors.white70)),
                               ),
-                            );
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber,
-                        foregroundColor: Colors.black87,
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.copy, color: Colors.amber),
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: deviceId));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('✅ تم نسخ معرف الجهاز')));
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                      child: const Text('🔓 تفعيل الآن',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    ),
-                  ] else ...[
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _patchController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: '🔑 أدخل باتش التفعيل المشفر',
+                          labelStyle: const TextStyle(color: Colors.white54),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.paste, color: Colors.grey),
+                            onPressed: () async {
+                              final data = await Clipboard.getData(Clipboard.kTextPlain);
+                              if (data?.text != null) _patchController.text = data!.text!;
+                            },
+                          ),
+                        ),
                       ),
-                      child: const Column(
-                        children: [
-                          Icon(Icons.check_circle, color: Colors.green, size: 48),
-                          SizedBox(height: 8),
-                          Text('✅ PRO نشطة',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-                        ],
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            if (_patchController.text.isNotEmpty) {
+                              final success = await premium.activateWithPatch(_patchController.text);
+                              if (success && mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('🎉 تم تفعيل النسخة PRO بنجاح!'),
+                                      backgroundColor: Colors.green),
+                                );
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber,
+                            foregroundColor: Colors.black87,
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('🔓 تفعيل الآن', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        ),
                       ),
-                    ),
+                    ] else ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Column(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.green, size: 48),
+                            SizedBox(height: 8),
+                            Text('✅ PRO نشطة', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    const Divider(color: Colors.white12),
+                    const SizedBox(height: 8),
+                    const Text('📞 للدعم:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                    const Text('واتس: 01017341250\n01031680816\n01558203456',
+                        style: TextStyle(color: Colors.white70)),
+                    const Text('📧 dosoky.server@gmail.com', style: TextStyle(color: Colors.white70)),
                   ],
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  const Text('📞 للدعم:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const Text('واتس: 01017341250\n01031680816\n01558203456'),
-                  const Text('📧 dosoky.server@gmail.com'),
-                ],
+                ),
               ),
             ),
-          ),
-
-          const SizedBox(height: 20),
-          Center(
-            child: Opacity(
-              opacity: 0.3,
-              child: Column(
-                children: [
-                  const Text('🦂 Mirror Scorpion', style: TextStyle(fontSize: 14)),
-                  Text('v1.2.0 — ${premium.isPremium ? "PRO" : "Free"}',
-                      style: const TextStyle(fontSize: 11)),
-                  const Text('المطور: Tamer Eldosoky', style: TextStyle(fontSize: 11)),
-                ],
+            const SizedBox(height: 20),
+            Center(
+              child: Opacity(
+                opacity: 0.3,
+                child: Column(
+                  children: [
+                    const Text('🦂 Mirror Scorpion', style: TextStyle(color: Colors.white, fontSize: 14)),
+                    const SizedBox(height: 4),
+                    Text('v1.2.0 — ${premium.isPremium ? "PRO" : "Free"}',
+                        style: const TextStyle(color: Colors.white, fontSize: 11)),
+                    const Text('المطور: Tamer Eldosoky', style: TextStyle(color: Colors.white, fontSize: 11)),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

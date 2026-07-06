@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.2.0
 
 environment:
-  sdk: '>=3.2.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -14,18 +14,18 @@ dependencies:
   provider: ^6.1.1
   http: ^1.2.1
   flutter_tts: ^4.0.2
-  speech_to_text: 7.0.0
+  speech_to_text: ^7.0.0
   google_mlkit_text_recognition: ^0.13.0
   image_picker: ^1.0.0
   shared_preferences: ^2.2.0
   permission_handler: ^11.3.1
   path_provider: ^2.1.0
-  intl: ^0.19.0
+  intl: ^0.20.2
+  cupertino_icons: ^1.0.6
+  camera: ^0.11.0
+  webview_flutter: ^4.7.0
 
 dev_dependencies:
-  dash_bubble_local:
-    path: packages/dash_bubble_local
-
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
@@ -33,9 +33,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/data/hadith_qudsi.json
+    - assets/data/hadiths.json
+    - assets/data/quran_stories.json
+    - assets/data/stories.json
+    - assets/data/prophet_stories_ibn_kathir.json
+    - assets/data/verses.json
     - assets/images/
-    - assets/data/
-    - assets/audio/
-
-dependency_overrides:
-  speech_to_text: 7.0.0
