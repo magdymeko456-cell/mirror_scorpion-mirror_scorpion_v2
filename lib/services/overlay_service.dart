@@ -7,13 +7,14 @@ import 'ai_service.dart';
 class OverlayService extends ChangeNotifier {
   final AIService aiService;
   late SharedPreferences _prefs;
-  
+  static const _channel = MethodChannel('mirror_scorpion/overlay');
+
   bool _isOverlayActive = false;
   String _sourceLanguage = 'en';
   String _targetLanguage = 'ar';
   String? _selectedApp;
   bool _isFloatingBubbleEnabled = true;
-  String _selectedVoice = 'voice_1_female';
+  String _selectedVoice = 'voice_salma';
 
   OverlayService({required this.aiService}) {
     _initializePreferences();
@@ -26,38 +27,113 @@ class OverlayService extends ChangeNotifier {
   bool get isFloatingBubbleEnabled => _isFloatingBubbleEnabled;
   String get selectedVoice => _selectedVoice;
 
-  Future<void> _initializePreferences() async {
+  Future _initializePreferences() async {
     _prefs = await SharedPreferences.getInstance();
     _sourceLanguage = _prefs.getString('overlay_source_lang') ?? 'en';
     _targetLanguage = _prefs.getString('overlay_target_lang') ?? 'ar';
     _isFloatingBubbleEnabled = _prefs.getBool('floating_bubble_enabled') ?? true;
-    _selectedVoice = _prefs.getString('overlay_voice') ?? 'voice_1_female';
+    _selectedVoice = _prefs.getString('overlay_voice') ?? 'voice_salma';
     notifyListeners();
   }
 
-  /// Toggle overlay visibility
   void toggleOverlay() {
     _isOverlayActive = !_isOverlayActive;
+    if (_isOverlayActive && _isFloatingBubbleEnabled) {
+      createFloatingBubble();
+    } else {
+      destroyFloatingBubble();
+    }
     notifyListeners();
   }
 
-  /// Toggle floating bubble
-  Future<void> toggleFloatingBubble() async {
+  Future toggleFloatingBubble() async {
     _isFloatingBubbleEnabled = !_isFloatingBubbleEnabled;
     await _prefs.setBool('floating_bubble_enabled', _isFloatingBubbleEnabled);
+    if (_isFloatingBubbleEnabled && _isOverlayActive) {
+      await createFloatingBubble();
+    } else {
+      await destroyFloatingBubble();
+    }
     notifyListeners();
   }
 
-  /// Get spiritual support for text
-  Future<String> getSpiritualSupport() async {
+  /// إنشاء الفقاعة العائمة عبر القناة الأصلية (تظهر فوق كل التطبيقات)
+  Future<bool> createFloatingBubble() async {
+    try {
+      final result = await _channel.invokeMethod('createFloatingBubble', {
+        'sourceLanguage': _sourceLanguage,
+        'targetLanguage': _targetLanguage,
+        'voice': _selectedVoice,
+      });
+      return result == true;
+    } catch (e) {
+      debugPrint('Floating bubble creation error: $e');
+      return false;
+    }
+  }
+
+  /// إزالة الفقاعة العائمة
+  Future<bool> destroyFloatingBubble() async {
+    try {
+      final result = await _channel.invokeMethod('destroyFloatingBubble');
+      return result == true;
+    } catch (e) {
+      debugPrint('Floating bubble destruction error: $e');
+      return false;
+    }
+  }
+
+  /// التحقق من إذن SYSTEM_ALERT_WINDOW
+  Future<bool> hasOverlayPermission() async {
+    try {
+      final result = await _channel.invokeMethod('hasOverlayPermission');
+      return result == true;
+    } catch (e) {
+      debugPrint('Overlay permission check error: $e');
+      return false;
+    }
+  }
+
+  /// طلب إذن SYSTEM_ALERT_WINDOW
+  Future<bool> requestOverlayPermission() async {
+    try {
+      final result = await _channel.invokeMethod('requestOverlayPermission');
+      return result == true;
+    } catch (e) {
+      debugPrint('Overlay permission request error: $e');
+      return false;
+    }
+  }
+
+  Future getSpiritualSupport() async {
     final text = await translateFromClipboard();
     if (text.isNotEmpty) {
-      return AIService.generateInspiration(userMood: text, context: 'overlay');
+      return AIService.recommendMode(text);
     }
     return "استعن بالله، فأنت في حفظه.";
   }
 
-  /// Get text from clipboard
+  Future<String> translateFromClipboard() async {
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      if (clipboardData?.text != null) return clipboardData!.text!;
+    } catch (e) {
+      debugPrint('Clipboard error: $e');
+# ─── 5. تحديث overlay_service.dart (متابعة) ─────────────────────────
+
+  String addSignatureToTranslation(String translated) {
+    if (translated.contains('Mirror Scorpion')) return translated;
+    return '$translated\n\n— Mirror Scorpion 🦂';
+  }
+
+  Future getSpiritualSupport() async {
+    final text = await translateFromClipboard();
+    if (text.isNotEmpty) {
+      return AIService.recommendMode(text);
+    }
+    return "استعن بالله، فأنت في حفظه.";
+  }
+
   Future<String> translateFromClipboard() async {
     try {
       final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
@@ -68,11 +144,8 @@ class OverlayService extends ChangeNotifier {
     return '';
   }
 
-  /// Translate text with selected languages
   Future<String> translateText(String text) async {
     try {
-      // Simulate translation API call
-      // In real app, this would call Google Translate API
       return 'Translated: $text from $_sourceLanguage to $_targetLanguage';
     } catch (e) {
       debugPrint('Translation error: $e');
@@ -80,55 +153,36 @@ class OverlayService extends ChangeNotifier {
     }
   }
 
-  /// Set source language
-  Future<void> setSourceLanguage(String lang) async {
+  Future setSourceLanguage(String lang) async {
     _sourceLanguage = lang;
     await _prefs.setString('overlay_source_lang', lang);
     notifyListeners();
   }
 
-  /// Set target language
-  Future<void> setTargetLanguage(String lang) async {
+  Future setTargetLanguage(String lang) async {
     _targetLanguage = lang;
     await _prefs.setString('overlay_target_lang', lang);
     notifyListeners();
   }
 
-  /// Set selected voice
-  Future<void> setSelectedVoice(String voice) async {
+  Future setSelectedVoice(String voice) async {
     _selectedVoice = voice;
     await _prefs.setString('overlay_voice', voice);
     notifyListeners();
   }
 
-  /// Set selected app
   void setSelectedApp(String app) {
     _selectedApp = app;
     notifyListeners();
   }
 
-  /// Deactivate overlay
   void deactivateOverlay() {
     _isOverlayActive = false;
+    destroyFloatingBubble();
     _selectedApp = null;
     notifyListeners();
   }
 
-  /// Create floating bubble via native channel
-  Future<void> createFloatingBubble() async {
-    const channel = MethodChannel('mirror_scription/overlay');
-    try {
-      await channel.invokeMethod('createFloatingBubble', {
-        'sourceLanguage': _sourceLanguage,
-        'targetLanguage': _targetLanguage,
-        'voice': _selectedVoice,
-      });
-    } catch (e) {
-      debugPrint('Floating bubble error: $e');
-    }
-  }
-
-  /// Get overlay status
   Map<String, dynamic> getStatus() {
     return {
       'is_active': _isOverlayActive,
@@ -140,7 +194,6 @@ class OverlayService extends ChangeNotifier {
     };
   }
 
-  /// Intercept and translate messages from other apps
   Future<String> interceptAndTranslate(String message) async {
     try {
       final translated = await translateText(message);
@@ -151,7 +204,6 @@ class OverlayService extends ChangeNotifier {
     }
   }
 
-  /// Get supported languages
   List<Map<String, String>> getSupportedLanguages() {
     return [
       {'code': 'ar', 'name': 'العربية'},
@@ -171,19 +223,10 @@ class OverlayService extends ChangeNotifier {
     ];
   }
 
-  /// Get supported apps for overlay
   List<String> getSupportedApps() {
     return [
-      'WhatsApp',
-      'Telegram',
-      'Facebook Messenger',
-      'Instagram',
-      'Twitter',
-      'Gmail',
-      'SMS',
-      'Discord',
-      'Viber',
-      'Signal',
+      'WhatsApp', 'Telegram', 'Facebook Messenger', 'Instagram',
+      'Twitter', 'Gmail', 'SMS', 'Discord', 'Viber', 'Signal',
     ];
   }
 }

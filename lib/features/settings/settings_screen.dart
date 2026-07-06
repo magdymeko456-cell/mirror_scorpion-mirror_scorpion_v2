@@ -1,734 +1,264 @@
-import 'package:flutter/material.dart';  
-import 'package:shared_preferences/shared_preferences.dart';  
-import 'package:provider/provider.dart';  
-import 'package:image_picker/image_picker.dart';  
-import '../../services/tts_service.dart';  
-import '../../services/floating_bubble_service.dart';  
-import '../../services/premium_verification_service.dart';  
-import '../../services/background_service.dart';  
-import '../../services/language_download_service.dart';  
-import '../about/about_app_screen.dart';  
-import '../../core/theme/theme_provider.dart';  
-import 'package:flutter/services.dart';  
-  
-class SettingsScreen extends StatefulWidget {  
-  const SettingsScreen({super.key});  
-  
-  @override  
-  State<SettingsScreen> createState() => _SettingsScreenState();  
-}  
-  
-class _SettingsScreenState extends State<SettingsScreen> {  
-  late SharedPreferences _prefs;  
-  bool _notificationsEnabled = true;  
-  bool _soundEnabled = true;  
-  bool _isPremium = false;  
-  String _selectedVoice = 'voice_1_female';  
-  bool _bubbleEnabled = false;  
-  double _bubbleOpacity = 0.8;  
-  int _bubbleSize = 120;  
-  bool _bubbleAutoTranslate = true;  
-  
-  final List<Map<String, String>> _voices = [  
-    {'id': 'voice_1_female', 'name': 'سلمى'},  
-    {'id': 'voice_2_male', 'name': 'سيف'},  
-    {'id': 'voice_3_female_warm', 'name': 'سما'},  
-    {'id': 'voice_4_male_deep', 'name': 'ساره'},  
-    {'id': 'voice_5_premium_ai', 'name': 'صوت المستخدم (نسخ)'},  
-  ];  
-  
-  @override  
-  void initState() {  
-    super.initState();  
-    _loadSettings();  
-  }  
-  
-  Future<void> _loadSettings() async {  
-    _prefs = await SharedPreferences.getInstance();  
-    setState(() {  
-      _notificationsEnabled = _prefs.getBool('notificationsEnabled') ?? true;  
-      _soundEnabled = _prefs.getBool('soundEnabled') ?? true;  
-      _isPremium = _prefs.getBool('isPremium') ?? false;  
-      _selectedVoice = _prefs.getString('selectedVoice') ?? 'voice_1_female';  
-      _bubbleEnabled = _prefs.getBool('bubble_enabled') ?? false;  
-      _bubbleOpacity = _prefs.getDouble('bubble_opacity') ?? 0.8;  
-      _bubbleSize = _prefs.getInt('bubble_size') ?? 120;  
-      _bubbleAutoTranslate = _prefs.getBool('bubble_auto_translate') ?? true;  
-    });  
-  }  
-  
-  Future<void> _saveSetting(String key, dynamic value) async {  
-    if (value is bool) {  
-      await _prefs.setBool(key, value);  
-    } else if (value is String) {  
-      await _prefs.setString(key, value);  
-    } else if (value is double) {  
-      await _prefs.setDouble(key, value);  
-    } else if (value is int) {  
-      await _prefs.setInt(key, value);  
-    }  
-  }  
-  
-  Future<void> _pickBackgroundImage() async {  
-    final ImagePicker picker = ImagePicker();  
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);  
-    if (image != null) {  
-      final backgroundService = Provider.of<BackgroundService>(context, listen: false);  
-      await backgroundService.pickBackground();  
-      ScaffoldMessenger.of(context).showSnackBar(  
-        const SnackBar(content: Text('تم تغيير الخلفية بنجاح')),  
-      );  
-    }  
-  }  
-  
-  Future<void> _removeBackground() async {  
-    final backgroundService = Provider.of<BackgroundService>(context, listen: false);  
-    await backgroundService.removeBackground();  
-    ScaffoldMessenger.of(context).showSnackBar(  
-      const SnackBar(content: Text('تم إعادة الخلفية إلى الافتراضي')),  
-    );  
-  }  
-  
-  @override  
-  Widget build(BuildContext context) {  
-    return Scaffold(  
-      appBar: AppBar(  
-        title: const Text('الإعدادات', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),  
-        backgroundColor: const Color(0xFF0D1B2A),  
-        elevation: 0,  
-        iconTheme: const IconThemeData(color: Colors.white),  
-      ),  
-      body: Container(  
-        decoration: const BoxDecoration(  
-          gradient: LinearGradient(  
-            begin: Alignment.topCenter,  
-            end: Alignment.bottomCenter,  
-            colors: [Color(0xFF0D1B2A), Color(0xFF1B2838)]  
-          )  
-        ),  
-        child: ListView(  
-          padding: const EdgeInsets.all(16),  
-          children: [  
-            // Display Settings  
-            _buildSectionTitle('عرض التطبيق'),  
-            _buildSettingTile(  
-              'الوضع المظلم',  
-              'استخدم الوضع المظلم لحماية العينين',  
-              Provider.of<ThemeProvider>(context).isDarkMode,  
-              (value) {  
-                Provider.of<ThemeProvider>(context, listen: false).toggleTheme(value);  
-              },  
-            ),  
-            const SizedBox(height: 20),  
-  
-            // Background Settings  
-            _buildSectionTitle('🎨 خلفية الكروت'),  
-            _buildBackgroundTile(),  
-            const SizedBox(height: 20),  
-  
-            // Notification Settings  
-            _buildSectionTitle('الإشعارات'),  
-            _buildSettingTile(  
-              'تفعيل الإشعارات',  
-              'استقبل إشعارات يومية مع الرسائل الملهمة',  
-              _notificationsEnabled,  
-              (value) {  
-                setState(() => _notificationsEnabled = value);  
-                _saveSetting('notificationsEnabled', value);  
-              },  
-            ),  
-            _buildSettingTile(  
-              'الأصوات',  
-              'تشغيل أصوات الإشعارات والتنبيهات',  
-              _soundEnabled,  
-              (value) {  
-                setState(() => _soundEnabled = value);  
-                _saveSetting('soundEnabled', value);  
-              },  
-            ),  
-            const SizedBox(height: 20),  
-  
-            // Voice Selection  
-            _buildSectionTitle('اختيار الصوت (4 أصوات + نسخ الصوت)'),  
-            Container(  
-              padding: const EdgeInsets.symmetric(horizontal: 12),  
-              decoration: BoxDecoration(  
-                color: Colors.white.withOpacity(0.05),  
-                borderRadius: BorderRadius.circular(12),  
-                border: Border.all(color: Colors.white.withOpacity(0.1)),  
-              ),  
-              child: DropdownButtonHideUnderline(  
-                child: DropdownButton<String>(  
-                  value: _selectedVoice,  
-                  isExpanded: true,  
-                  dropdownColor: const Color(0xFF1B2838),  
-                  icon: const Icon(Icons.record_voice_over, color: Colors.blue),  
-                  style: const TextStyle(color: Colors.white, fontSize: 14),  
-                  items: _voices.map((voice) {  
-                    bool isPremiumVoice = voice['id'] == 'voice_5_premium_ai';  
-                    return DropdownMenuItem(  
-                      value: voice['id'],  
-                      child: Row(  
-                        children: [  
-                          Text(voice['name']!),  
-                          if (isPremiumVoice) ...[  
-                            const SizedBox(width: 8),  
-                            const Icon(Icons.star, color: Colors.amber, size: 14),  
-                          ]  
-                        ],  
-                      ),  
-                    );  
-                  }).toList(),  
-                  onChanged: (value) {  
-                    if (value != null) {  
-                      if (value == 'voice_5_premium_ai' && !_isPremium) {  
-                        ScaffoldMessenger.of(context).showSnackBar(  
-                          const SnackBar(content: Text('نسخ الصوت متاح فقط في النسخة البرو')),  
-                        );  
-                        return;  
-                      }  
-                      setState(() => _selectedVoice = value);  
-                      _saveSetting('selectedVoice', value);  
-                      // Update TTS Service  
-                      Provider.of<TTSService>(context, listen: false).setVoice(value);  
-                    }  
-                  },  
-                ),  
-              ),  
-            ),  
-            const SizedBox(height: 20),  
-  
-            // Floating Bubble Settings  
-            _buildSectionTitle('🫧 الفقاعة العائمة (مفتاح فتح وغلق)'),  
-            _buildSettingTile(  
-              'تفعيل الفقاعة العائمة',  
-              'ترجمة فورية مع فقاعة عائمة فوق التطبيقات',  
-              _bubbleEnabled,  
-              (value) async {  
-                setState(() => _bubbleEnabled = value);  
-                _saveSetting('bubble_enabled', value);  
-                // Toggle Bubble Service  
-                await Provider.of<FloatingBubbleService>(context, listen: false).toggleBubble(context, value);  
-              },  
-            ),  
-            if (_bubbleEnabled) ...[  
-              const SizedBox(height: 12),  
-              _buildSliderTile('الشفافية', _bubbleOpacity, 0.3, 1.0, (value) {  
-                setState(() => _bubbleOpacity = value);  
-                _saveSetting('bubble_opacity', value);  
-                Provider.of<FloatingBubbleService>(context, listen: false).setOpacity(value);  
-              }),  
-              const SizedBox(height: 12),  
-              _buildSliderTile('الحجم', _bubbleSize.toDouble(), 60, 200, (value) {  
-                setState(() => _bubbleSize = value.toInt());  
-                _saveSetting('bubble_size', value.toInt());  
-                Provider.of<FloatingBubbleService>(context, listen: false).setSize(value.toInt());  
-              }),  
-              const SizedBox(height: 12),  
-              _buildSettingTile(  
-                'الترجمة التلقائية',  
-                'ترجم النصوص تلقائياً عند النسخ',  
-                _bubbleAutoTranslate,  
-                (value) {  
-                  setState(() => _bubbleAutoTranslate = value);  
-                  _saveSetting('bubble_auto_translate', value);  
-                  Provider.of<FloatingBubbleService>(context, listen: false).toggleAutoTranslate(value);  
-                },  
-              ),  
-            ],  
-            const SizedBox(height: 20),  
-  
-            // Language Download Settings (Premium Only)  
-            if (_isPremium) ...[  
-              _buildSectionTitle('🌍 تنزيل اللغات أوفلاين (نسخة برو)'),  
-              _buildLanguageDownloadTile(),  
-              const SizedBox(height: 20),  
-            ],  
-  
-            // Premium Section  
-            if (!_isPremium)  
-              _buildPremiumCard()  
-            else  
-              _buildPremiumActiveCard(),  
-            const SizedBox(height: 20),  
-  
-            // About Section  
-            _buildSectionTitle('عن التطبيق'),  
-            GestureDetector(  
-              onTap: () {  
-                Navigator.push(  
-                  context,  
-                  MaterialPageRoute(builder: (context) => const AboutAppScreen()),  
-                );  
-              },  
-              child: Container(  
-                padding: const EdgeInsets.all(12),  
-                margin: const EdgeInsets.only(bottom: 8),  
-                decoration: BoxDecoration(  
-                  color: Colors.blue.withOpacity(0.1),  
-                  borderRadius: BorderRadius.circular(12),  
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),  
-                ),  
-                child: Row(  
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,  
-                  children: [  
-                    const Expanded(  
-                      child: Column(  
-                        crossAxisAlignment: CrossAxisAlignment.start,  
-                        children: [  
-                          Text(  
-                            'عن التطبيق والإهداء',  
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),  
-                          ),  
-                          SizedBox(height: 4),  
-                          Text(  
-                            'نبذة عن التطبيق وكلمة إهداء',  
-                            style: TextStyle(color: Colors.white70, fontSize: 12),  
-                          ),  
-                        ],  
-                      ),  
-                    ),  
-                    Icon(Icons.arrow_forward_ios, color: Colors.blue.shade300, size: 16),  
-                  ],  
-                ),  
-              ),  
-            ),  
-            const SizedBox(height: 20),  
-  
-            // Footer  
-            Center(  
-              child: Column(  
-                children: [  
-                  Text(  
-                    'ميرور سكربيون',  
-                    style: TextStyle(  
-                      color: Colors.white.withOpacity(0.5),  
-                      fontSize: 14,  
-                      fontWeight: FontWeight.bold,  
-                    ),  
-                  ),  
-                  const SizedBox(height: 4),  
-                  Text(  
-                    'حيث تُصنع البدايات',  
-                    style: TextStyle(  
-                      color: Colors.white.withOpacity(0.3),  
-                      fontSize: 12,  
-                      fontStyle: FontStyle.italic,  
-                    ),  
-                  ),  
-                ],  
-              ),  
-            ),  
-          ],  
-        ),  
-      ),  
-    );  
-  }  
-  
-  Widget _buildSectionTitle(String title) {  
-    return Padding(  
-      padding: const EdgeInsets.only(bottom: 12),  
-      child: Text(  
-        title,  
-        style: TextStyle(  
-          color: Colors.amber.shade300,  
-          fontSize: 16,  
-          fontWeight: FontWeight.bold,  
-        ),  
-      ),  
-    );  
-  }  
-  
-  Widget _buildSettingTile(String title, String subtitle, bool value, Function(bool) onChanged) {  
-    return Container(  
-      padding: const EdgeInsets.all(12),  
-      margin: const EdgeInsets.only(bottom: 8),  
-      decoration: BoxDecoration(  
-        color: value ? Colors.blue.withOpacity(0.1) : Colors.white.withOpacity(0.05),  
-        borderRadius: BorderRadius.circular(12),  
-        border: Border.all(color: value ? Colors.blue.withOpacity(0.3) : Colors.white.withOpacity(0.1)),  
-      ),  
-      child: Row(  
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,  
-        children: [  
-          Expanded(  
-            child: Column(  
-              crossAxisAlignment: CrossAxisAlignment.start,  
-              children: [  
-                Text(  
-                  title,  
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),  
-                ),  
-                const SizedBox(height: 4),  
-                Text(  
-                  subtitle,  
-                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),  
-                ),  
-              ],  
-            ),  
-          ),  
-          Switch(  
-            value: value,  
-            onChanged: onChanged,  
-            activeColor: Colors.blue,  
-          ),  
-        ],  
-      ),  
-    );  
-  }  
-  
-  Widget _buildSliderTile(String title, double value, double min, double max, Function(double) onChanged) {  
-    return Container(  
-      padding: const EdgeInsets.all(12),  
-      margin: const EdgeInsets.only(bottom: 8),  
-      decoration: BoxDecoration(  
-        color: Colors.white.withOpacity(0.05),  
-        borderRadius: BorderRadius.circular(12),  
-        border: Border.all(color: Colors.white.withOpacity(0.1)),  
-      ),  
-      child: Column(  
-        crossAxisAlignment: CrossAxisAlignment.start,  
-        children: [  
-          Row(  
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,  
-            children: [  
-              Text(  
-                title,  
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),  
-              ),  
-              Text(  
-                value.toStringAsFixed(2),  
-                style: TextStyle(color: Colors.blue.shade300, fontWeight: FontWeight.bold),  
-              ),  
-            ],  
-          ),  
-          const SizedBox(height: 8),  
-          Slider(  
-            value: value,  
-            min: min,  
-            max: max,  
-            activeColor: Colors.blue,  
-            inactiveColor: Colors.white.withOpacity(0.2),  
-            onChanged: onChanged,  
-          ),  
-        ],  
-      ),  
-    );  
-  }  
-  
-  Widget _buildBackgroundTile() {  
-    final backgroundService = Provider.of<BackgroundService>(context);  
-    final hasCustomBackground = backgroundService.hasCustomBackground;  
-  
-    return Container(  
-      padding: const EdgeInsets.all(12),  
-      margin: const EdgeInsets.only(bottom: 8),  
-      decoration: BoxDecoration(  
-        color: Colors.purple.withOpacity(0.1),  
-        borderRadius: BorderRadius.circular(12),  
-        border: Border.all(color: Colors.purple.withOpacity(0.3)),  
-      ),  
-      child: Column(  
-        crossAxisAlignment: CrossAxisAlignment.start,  
-        children: [  
-          Row(  
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,  
-            children: [  
-              const Expanded(  
-                child: Column(  
-                  crossAxisAlignment: CrossAxisAlignment.start,  
-                  children: [  
-                    Text(  
-                      'تغيير خلفية الكروت',  
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),  
-                    ),  
-                    SizedBox(height: 4),  
-                    Text(  
-                      'اختر صورة شخصية كخلفية للكروت',  
-                      style: TextStyle(color: Colors.white70, fontSize: 12),  
-                    ),  
-                  ],  
-                ),  
-              ),  
-              Icon(Icons.image, color: Colors.purple.shade300, size: 24),  
-            ],  
-          ),  
-          const SizedBox(height: 12),  
-          Row(  
-            children: [  
-              Expanded(  
-                child: ElevatedButton.icon(  
-                  onPressed: _pickBackgroundImage,  
-                  icon: const Icon(Icons.photo_library, size: 18),  
-                  label: const Text('اختر صورة'),  
-                  style: ElevatedButton.styleFrom(  
-                    backgroundColor: Colors.purple,  
-                    foregroundColor: Colors.white,  
-                    padding: const EdgeInsets.symmetric(vertical: 10),  
-                  ),  
-                ),  
-              ),  
-              if (hasCustomBackground) ...[  
-                const SizedBox(width: 8),  
-                Expanded(  
-                  child: ElevatedButton.icon(  
-                    onPressed: _removeBackground,  
-                    icon: const Icon(Icons.refresh, size: 18),  
-                    label: const Text('إعادة'),  
-                    style: ElevatedButton.styleFrom(  
-                      backgroundColor: Colors.grey,  
-                      foregroundColor: Colors.white,  
-                      padding: const EdgeInsets.symmetric(vertical: 10),  
-                    ),  
-                  ),  
-                ),  
-              ],  
-            ],  
-          ),  
-        ],  
-      ),  
-    );  
-  }  
-  
-  Widget _buildLanguageDownloadTile() {  
-    final languageService = Provider.of<LanguageDownloadService>(context);  
-    final downloadedLanguages = languageService.downloadedLanguages;  
-  
-    return Container(  
-      padding: const EdgeInsets.all(12),  
-      margin: const EdgeInsets.only(bottom: 8),  
-      decoration: BoxDecoration(  
-        color: Colors.green.withOpacity(0.1),  
-        borderRadius: BorderRadius.circular(12),  
-        border: Border.all(color: Colors.green.withOpacity(0.3)),  
-      ),  
-      child: Column(  
-        crossAxisAlignment: CrossAxisAlignment.start,  
-        children: [  
-          Row(  
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,  
-            children: [  
-              const Expanded(  
-                child: Column(  
-                  crossAxisAlignment: CrossAxisAlignment.start,  
-                  children: [  
-                    Text(  
-                      'تنزيل اللغات أوفلاين',  
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),  
-                    ),  
-                    SizedBox(height: 4),  
-                    Text(  
-                      'تنزيل اللغات للعمل بدون إنترنت',  
-                      style: TextStyle(color: Colors.white70, fontSize: 12),  
-                    ),  
-                  ],  
-                ),  
-              ),  
-              Icon(Icons.download, color: Colors.green.shade300, size: 24),  
-            ],  
-          ),  
-          const SizedBox(height: 12),  
-          if (downloadedLanguages.isNotEmpty) ...[  
-            const Text(  
-              'اللغات المُنزلة:',  
-              style: TextStyle(color: Colors.white70, fontSize: 12),  
-            ),  
-            const SizedBox(height: 8),  
-            Wrap(  
-              spacing: 8,  
-              runSpacing: 8,  
-              children: downloadedLanguages.map((langMap) {  
-                return Chip(  
-                  label: Text(langMap['code'] ?? langMap['name'] ?? '', style: const TextStyle(fontSize: 12)),  
-                  backgroundColor: Colors.green.withOpacity(0.2),  
-                  deleteIcon: const Icon(Icons.close, size: 16),  
-                  onDeleted: () async {  
-                    await languageService.deleteLanguage(langMap['code'] ?? langMap['name'] ?? '');  
-                    setState(() {});  
-                  },  
-                );  
-              }).toList(),  
-            ),  
-            const SizedBox(height: 12),  
-          ],  
-          ElevatedButton.icon(  
-            onPressed: () => _showLanguageDownloadDialog(),  
-            icon: const Icon(Icons.add, size: 18),  
-            label: const Text('تنزيل لغة جديدة'),  
-            style: ElevatedButton.styleFrom(  
-              backgroundColor: Colors.green,  
-              foregroundColor: Colors.white,  
-              padding: const EdgeInsets.symmetric(vertical: 10),  
-            ),  
-          ),  
-        ],  
-      ),  
-    );  
-  }  
-  
-  void _showLanguageDownloadDialog() {  
-    final availableLanguages = [  
-      'العربية', 'English', 'Français', 'Español', 'Deutsch',  
-      'Italiano', 'Português', 'Русский', '中文', '日本語'  
-    ];  
-  
-    showDialog(  
-      context: context,  
-      builder: (context) => AlertDialog(  
-        title: const Text('اختر لغة للتنزيل'),  
-        content: SizedBox(  
-          width: double.maxFinite,  
-          child: ListView.builder(  
-            shrinkWrap: true,  
-            itemCount: availableLanguages.length,  
-            itemBuilder: (context, index) {  
-              final language = availableLanguages[index];  
-              return ListTile(  
-                title: Text(language),  
-                onTap: () async {  
-                  Navigator.pop(context);  
-                  final languageService = Provider.of<LanguageDownloadService>(context, listen: false);  
-                  await languageService.downloadLanguage(language);  
-                  setState(() {});  
-                  ScaffoldMessenger.of(context).showSnackBar(  
-                    SnackBar(content: Text('تم تنزيل $language بنجاح')),  
-                  );  
-                },  
-              );  
-            },  
-          ),  
-        ),  
-      ),  
-    );  
-  }  
-  
-  Widget _buildPremiumCard() {  
-    final premiumService = Provider.of<PremiumVerificationService>(context);  
-    final TextEditingController _codeController = TextEditingController();  
-  
-    return Container(  
-      padding: const EdgeInsets.all(20),  
-      decoration: BoxDecoration(  
-        gradient: LinearGradient(  
-          colors: [Colors.amber.withOpacity(0.15), Colors.orange.withOpacity(0.05)],  
-          begin: Alignment.topLeft,  
-          end: Alignment.bottomRight,  
-        ),  
-        borderRadius: BorderRadius.circular(20),  
-        border: Border.all(color: Colors.amber.withOpacity(0.3)),  
-      ),  
-      child: Column(  
-        crossAxisAlignment: CrossAxisAlignment.start,  
-        children: [  
-          const Row(  
-            children: [  
-              Icon(Icons.workspace_premium, color: Colors.amber, size: 28),  
-              SizedBox(width: 12),  
-              Text('الترقية للنسخة الاحترافية (PRO)', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),  
-            ],  
-          ),  
-          const SizedBox(height: 16),  
-          const Text('استمتع بجميع الميزات: ترجمة غير محدودة، توليد قصص فيديو، نسخ الصوت، وحفظ المستندات.', style: TextStyle(color: Colors.white70, fontSize: 13)),  
-          const SizedBox(height: 20),  
-            
-          // Device ID Section  
-          const Text('معرف الجهاز الخاص بك (مُشفر):', style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold)),  
-          const SizedBox(height: 8),  
-          Container(  
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),  
-            decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)),  
-            child: Row(  
-              children: [  
-                Expanded(  
-                  child: Text(  
-                    premiumService.encryptedDeviceId,  
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace'),  
-                    overflow: TextOverflow.ellipsis,  
-                  ),  
-                ),  
-                IconButton(  
-                  icon: const Icon(Icons.copy, color: Colors.amber, size: 20),  
-                  onPressed: () {  
-                    Clipboard.setData(ClipboardData(text: premiumService.encryptedDeviceId));  
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ معرف الجهاز')));  
-                  },  
-                ),  
-              ],  
-            ),  
-          ),  
-            
-          const SizedBox(height: 20),  
-          const Text('أدخل كود التفعيل:', style: TextStyle(color: Colors.white70, fontSize: 14)),  
-          const SizedBox(height: 8),  
-          TextField(  
-            controller: _codeController,  
-            style: const TextStyle(color: Colors.white),  
-            decoration: InputDecoration(  
-              hintText: 'ألصق كود التفعيل هنا',  
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),  
-              filled: true,  
-              fillColor: Colors.black26,  
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),  
-            ),  
-          ),  
-          const SizedBox(height: 16),  
-          SizedBox(  
-            width: double.infinity,  
-            child: ElevatedButton(  
-              onPressed: () async {  
-                final success = await premiumService.activatePremium(_codeController.text);  
-                if (success) {  
-                  setState(() => _isPremium = true);  
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('مبروك! تم تفعيل النسخة الاحترافية بنجاح')));  
-                } else {  
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كود التفعيل غير صحيح')));  
-                }  
-              },  
-              style: ElevatedButton.styleFrom(  
-                backgroundColor: Colors.amber,  
-                foregroundColor: Colors.black,  
-                padding: const EdgeInsets.symmetric(vertical: 15),  
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),  
-              ),  
-              child: const Text('تفعيل الآن', style: TextStyle(fontWeight: FontWeight.bold)),  
-            ),  
-          ),  
-        ],  
-      ),  
-    );  
-  }  
-  
-  Widget _buildPremiumActiveCard() {  
-    return Container(  
-      padding: const EdgeInsets.all(16),  
-      decoration: BoxDecoration(  
-        gradient: LinearGradient(  
-          colors: [Colors.green.shade700.withOpacity(0.2), Colors.teal.withOpacity(0.1)],  
-        ),  
-        borderRadius: BorderRadius.circular(12),  
-        border: Border.all(color: Colors.green.shade600.withOpacity(0.3)),  
-      ),  
-      child: Row(  
-        children: [  
-          Icon(Icons.verified, color: Colors.green.shade300, size: 24),  
-          const SizedBox(width: 12),  
-          Expanded(  
-            child: Column(  
-              crossAxisAlignment: CrossAxisAlignment.start,  
-              children: [  
-                const Text(  
-                  'النسخة البرو مفعلة',  
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),  
-                ),  
-                Text(  
-                  'شكراً لدعمك للتطبيق!',  
-                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),  
-                ),  
-              ],  
-            ),  
-          ),  
-        ],  
-      ),  
-    );  
-  }  
-}  
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'dart:io';
+import '../../services/tts_service.dart';
+import '../../services/premium_verification_service.dart';
+import '../../services/floating_bubble_service.dart';
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final TextEditingController _patchController = TextEditingController();
+
+  @override
+  void dispose() { _patchController.dispose(); super.dispose(); }
+
+  String _getDeviceId() {
+    final id = 'MS-${DateTime.now().millisecondsSinceEpoch.toString().substring(0, 10)}-${Platform.isAndroid ? 'ADR' : 'IOS'}';
+    return id;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tts = context.watch<TTSService>();
+    final premium = context.watch<PremiumVerificationService>();
+    final bubble = context.watch<FloatingBubbleService>();
+    final deviceId = _getDeviceId();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('⚙️ الإعدادات'),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // ── الأصوات ──
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('🔊 الأصوات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  ...TTSService.availableVoices.map((voice) {
+                    final isPro = voice['id'] == 'voice_user';
+                    return RadioListTile<String>(
+                      title: Text('${voice['name']} — ${voice['desc']}'),
+                      subtitle: isPro
+                          ? const Text('🔒 متاح في النسخة المدفوعة', style: TextStyle(color: Colors.amber, fontSize: 12))
+                          : null,
+                      value: voice['id']!,
+                      groupValue: tts.selectedVoice,
+                      activeColor: Colors.teal,
+                      onChanged: (val) {
+                        if (val != null && (!isPro || premium.isPremium)) {
+                          tts.setVoice(val);
+                        } else if (isPro && !premium.isPremium) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('🔒 هذا الصوت متاح فقط في النسخة PRO')));
+                        }
+                      },
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── الفقاعة العائمة ──
+          Card(
+            child: SwitchListTile(
+              title: const Text('💬 الفقاعة العائمة'),
+              subtitle: const Text('ظهور أيقونة عائمة للوصول السريع'),
+              value: bubble.isEnabled,
+              activeColor: Colors.teal,
+              onChanged: (v) {
+                if (v) {
+                  bubble.startBubble();
+                } else {
+                  bubble.stopBubble();
+                }
+              },
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── الإعدادات العامة ──
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.translate, color: Colors.teal),
+                  title: const Text('الترجمة التلقائية'),
+                  subtitle: const Text('ترجمة فورية عند لصق النص'),
+                  trailing: Switch(value: true, onChanged: (_) {}, activeColor: Colors.teal),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.dark_mode, color: Colors.teal),
+                  title: const Text('الوضع المظلم'),
+                  subtitle: const Text('مفعل دائماً'),
+                  trailing: Switch(value: true, onChanged: (_) {}, activeColor: Colors.teal),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── PRO ──
+          Card(
+            color: Colors.amber.withOpacity(0.08),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.amber.withOpacity(0.3)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(premium.isPremium ? Icons.workspace_premium : Icons.lock,
+                          color: Colors.amber, size: 28),
+                      const SizedBox(width: 8),
+                      Text(
+                        premium.isPremium ? '👑 PRO مفعلة' : '👑 النسخة PRO',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 18, color: Colors.amber),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'مزايا PRO:\n'
+                    '• ترجمة مستندات غير محدودة\n'
+                    '• استنساخ صوت المستخدم (AI)\n'
+                    '• تحويل القصص إلى فيديوهات\n'
+                    '• ترجمة أوفلاين بدون إنترنت',
+                    style: TextStyle(fontSize: 13, height: 1.6),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  if (!premium.isPremium) ...[
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.amber.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Text('ID: $deviceId',
+                                  style: const TextStyle(fontSize: 11, fontFamily: 'monospace')),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.copy, color: Colors.amber),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: deviceId));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('✅ تم نسخ معرف الجهاز')));
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _patchController,
+                      decoration: InputDecoration(
+                        labelText: '🔑 أدخل باتش التفعيل المشفر',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.paste, color: Colors.grey),
+                          onPressed: () async {
+                            final data = await Clipboard.getData(Clipboard.kTextPlain);
+                            if (data?.text != null) _patchController.text = data!.text!;
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (_patchController.text.isNotEmpty) {
+                          final success = await premium.activateWithPatch(_patchController.text);
+                          if (success && mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('🎉 تم تفعيل النسخة PRO بنجاح!'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.black87,
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      ),
+                      child: const Text('🔓 تفعيل الآن',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Column(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.green, size: 48),
+                          SizedBox(height: 8),
+                          Text('✅ PRO نشطة',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  const Text('📞 للدعم:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('واتس: 01017341250\n01031680816\n01558203456'),
+                  const Text('📧 dosoky.server@gmail.com'),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          Center(
+            child: Opacity(
+              opacity: 0.3,
+              child: Column(
+                children: [
+                  const Text('🦂 Mirror Scorpion', style: TextStyle(fontSize: 14)),
+                  Text('v1.2.0 — ${premium.isPremium ? "PRO" : "Free"}',
+                      style: const TextStyle(fontSize: 11)),
+                  const Text('المطور: Tamer Eldosoky', style: TextStyle(fontSize: 11)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

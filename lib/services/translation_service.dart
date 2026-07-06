@@ -1,75 +1,93 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'dart:math';
 import 'package:flutter/foundation.dart';
-import '../core/api_config.dart';
+import 'package:http/http.dart' as http;
 
-/// خدمة الترجمة الحقيقية عبر Google Translate API
-class TranslationService {
+class TranslationService extends ChangeNotifier {
   static final TranslationService _instance = TranslationService._internal();
   factory TranslationService() => _instance;
   TranslationService._internal();
 
-  Future<Map<String, String>> translate({
-    required String text,
-    required String targetLang,
-    String? sourceLang,
-  }) async {
-    if (text.trim().isEmpty) return {'translated': '', 'detected': targetLang};
+  bool _isTranslating = false;
+  String _lastError = '';
+
+  bool get isTranslating => _isTranslating;
+  String get lastError => _lastError;
+
+  /// ترجمة مع دعم UTF-8 الكامل
+  Future<String> translate(String text, {String from = 'auto', String to = 'ar'}) async {
+    if (text.trim().isEmpty) return '';
+    _isTranslating = true;
+    _lastError = '';
+    notifyListeners();
 
     try {
-      final url = '${ApiConfig.translateUrl}?key=${ApiConfig.googleApiKey}';
+      // استخدام LibreTranslate API (مفتوح المصدر)
+      final uri = Uri.parse('https://libretranslate.com/translate');
       final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
+        },
         body: jsonEncode({
           'q': text,
-          'target': targetLang,
-          if (sourceLang != null && sourceLang != 'auto') 'source': sourceLang,
+          'source': from == 'auto' ? 'auto' : from,
+          'target': to,
+          'format': 'text',
         }),
-      );
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final translated = data['data']['translations'][0]['translatedText'] ?? '';
-        final detected = data['data']['translations'][0]['detectedSourceLanguage'] ?? targetLang;
-        return {'translated': translated, 'detected': detected};
+        final body = utf8.decode(response.bodyBytes);
+        final data = jsonDecode(body) as Map<String, dynamic>;
+        final translated = data['translatedText'] as String? ?? text;
+
+        // إضافة التوقيع في النص المترجم
+        final signed = '$translated\n\n— Mirror Scorpion 🦂';
+
+        _isTranslating = false;
+        notifyListeners();
+        return signed;
       } else {
-        debugPrint('❌ Google Translate API خطأ: ${response.statusCode}');
-        return {'translated': '[خطأ في الترجمة - ${response.statusCode}]', 'detected': targetLang};
+        _lastError = 'HTTP ${response.statusCode}';
+        _isTranslating = false;
+        notifyListeners();
+        return text;
       }
     } catch (e) {
-      debugPrint('❌ Translation error: $e');
-      return {'translated': '[خطأ في الاتصال]', 'detected': targetLang};
+      debugPrint('Translation error: $e');
+      _lastError = e.toString();
+      _isTranslating = false;
+      notifyListeners();
+      return text;
     }
   }
 
-  Future<String> detectLanguage(String text) async {
-    try {
-      final url = '${ApiConfig.translateUrl}?key=${ApiConfig.googleApiKey}';
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'q': text, 'target': 'ar'}),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['data']['translations'][0]['detectedSourceLanguage'] ?? 'en';
-      }
-    } catch (_) {}
-    return 'en';
+  /// ترجمة مع توقيع مخصص للمشاركة
+  Future<String> translateWithSignature(String text, {String from = 'auto', String to = 'ar'}) async {
+    final result = await translate(text, from: from, to: to);
+    if (!result.contains('Mirror Scorpion')) {
+      return '$result\n\n— Mirror Scorpion 🦂';
+    }
+    return result;
   }
 
-  /// الحصول على قائمة اللغات المدعومة
-  Future<List<String>> getSupportedLanguages() async {
-    try {
-      final url = '${ApiConfig.translateUrl}/languages?key=${ApiConfig.googleApiKey}&target=ar';
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final languages = data['data']['languages'] as List;
-        return languages.map((l) => l['language'] as String).toList();
-      }
-    } catch (_) {}
-    return [];
+  /// الحصول على النص المترجم مع التوقيع (للمشاركة)
+  String addSignature(String translatedText) {
+    if (translatedText.contains('Mirror Scorpion')) return translatedText;
+    return '$translatedText\n\n— Mirror Scorpion 🦂';
+  }
+
+  /// دعم اللغات ذات الحروف الخاصة (تركية، صينية، يابانية، إلخ)
+  bool supportsLanguage(String langCode) {
+    const supported = [
+      'ar', 'en', 'fr', 'es', 'de', 'zh', 'ja', 'ko', 'ru',
+      'pt', 'it', 'tr', 'hi', 'ur', 'nl', 'pl', 'sv', 'da',
+      'fi', 'el', 'he', 'th', 'vi', 'ms', 'id', 'tl', 'cs',
+      'hu', 'ro', 'sk', 'hr', 'sr', 'bg', 'uk', 'ka', 'hy',
+      'az', 'kk', 'uz', 'mn', 'ne', 'si', 'km', 'lo', 'my',
+    ];
+    return supported.contains(langCode);
   }
 }

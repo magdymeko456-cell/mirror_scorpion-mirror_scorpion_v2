@@ -1,36 +1,44 @@
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class TTSService extends ChangeNotifier {
-  final FlutterTts _tts = FlutterTts();
+  final FlutterTts _flutterTts = FlutterTts();
   bool _isSpeaking = false;
-  bool get isSpeaking => _isSpeaking;
+  String _selectedVoice = 'voice_salma';
+  double _speed = 0.5;
 
-  // الأصوات الخمسة
-  final List<Map<String, String>> voices = const [
-    {'name': 'سيف', 'id': 'ar-x-saf-standard'},
-    {'name': 'سلمى', 'id': 'ar-x-slm-standard'},
-    {'name': 'سما', 'id': 'ar-x-sma-standard'},
-    {'name': 'سارة', 'id': 'ar-x-sar-standard'},
-    {'name': 'صوت المستخدم', 'id': 'user'},
+  static const List<Map<String, String>> availableVoices = [
+    {'id': 'voice_seif',  'name': 'سيف',    'desc': 'خشن/عميق'},
+    {'id': 'voice_salma', 'name': 'سلمى',   'desc': 'متزن'},
+    {'id': 'voice_sama',  'name': 'سما',    'desc': 'دافئ/ناعم'},
+    {'id': 'voice_sara',  'name': 'سارة',   'desc': 'رقيق'},
+    {'id': 'voice_user',  'name': 'صوت المستخدم', 'desc': '(Pro)'},
   ];
 
-  String _currentVoice = 'ar-x-saf-standard';
-  String get currentVoice => _currentVoice;
+  bool get isSpeaking => _isSpeaking;
+  String get selectedVoice => _selectedVoice;
+  double get speed => _speed;
+  List<Map<String, String>> get voices => availableVoices;
 
-  TTSService() {
-    _tts.setCompletionHandler(() { _isSpeaking = false; notifyListeners(); });
+  TTSService() { _initTts(); }
+
+  Future<void> _initTts() async {
+    await _flutterTts.setLanguage('ar');
+    await _flutterTts.setPitch(1.0);
+    await _flutterTts.setSpeechRate(_speed);
+    _flutterTts.setCompletionHandler(() { _isSpeaking = false; notifyListeners(); });
   }
 
-  Future<void> speak(String text, {String language = 'ar'}) async {
-    await _tts.setLanguage(language);
-    await _tts.setPitch(1.0);
-    await _tts.setSpeechRate(0.5);
-    await _tts.speak(text);
-    _isSpeaking = true;
-    notifyListeners();
+  void setVoice(String voiceId) {
+    _selectedVoice = voiceId; notifyListeners();
+    if (voiceId == 'voice_seif') { _flutterTts.setPitch(0.8); _flutterTts.setSpeechRate(_speed + 0.2); }
+    else if (voiceId == 'voice_salma') { _flutterTts.setPitch(1.0); _flutterTts.setSpeechRate(_speed); }
+    else if (voiceId == 'voice_sama') { _flutterTts.setPitch(1.2); _flutterTts.setSpeechRate(_speed - 0.1); }
+    else if (voiceId == 'voice_sara') { _flutterTts.setPitch(1.4); _flutterTts.setSpeechRate(_speed - 0.15); }
+    else if (voiceId == 'voice_user') { _flutterTts.setPitch(1.0); _flutterTts.setSpeechRate(_speed); }
   }
 
-  Future<void> stop() async { await _tts.stop(); _isSpeaking = false; notifyListeners(); }
-  Future<void> setVoice(String voiceId) async { _currentVoice = voiceId; notifyListeners(); }
+  Future<void> speak(String text) async { _isSpeaking = true; notifyListeners(); await _flutterTts.speak(text); }
+  Future<void> stop() async { await _flutterTts.stop(); _isSpeaking = false; notifyListeners(); }
+  void setSpeed(double val) { _speed = val; _flutterTts.setSpeechRate(val); notifyListeners(); }
 }

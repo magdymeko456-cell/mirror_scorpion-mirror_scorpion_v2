@@ -1,30 +1,57 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FloatingBubbleService extends ChangeNotifier {
+  SharedPreferences? _prefs;
   bool _isEnabled = false;
+  double _opacity = 0.85;
+  double _size = 55;
+
   bool get isEnabled => _isEnabled;
-  double _opacity = 0.8;
   double get opacity => _opacity;
-  int _size = 60;
-  int get size => _size;
-  bool _autoTranslate = false;
-  bool get autoTranslate => _autoTranslate;
+  double get size => _size;
 
-  void toggle() { _isEnabled = !_isEnabled; notifyListeners(); }
-  void enable() { _isEnabled = true; notifyListeners(); }
-  void disable() { _isEnabled = false; notifyListeners(); }
+  static const MethodChannel _channel = MethodChannel('mirror_scorpion/overlay');
 
-  Future<void> showBubble() async { debugPrint('FloatingBubble: shown'); }
-  Future<void> hideBubble() async { debugPrint('FloatingBubble: hidden'); }
-
-  Future<void> toggleBubble(BuildContext context, bool value) async {
-    _isEnabled = value;
+  Future<void> initialize() async {
+    _prefs = await SharedPreferences.getInstance();
+    _isEnabled = _prefs?.getBool('floating_bubble_enabled') ?? false;
+    _opacity = _prefs?.getDouble('floating_bubble_opacity') ?? 0.85;
+    _size = (_prefs?.getDouble('floating_bubble_size') ?? 55);
+    if (_isEnabled) {
+      try { await _channel.invokeMethod('createFloatingBubble'); } catch (_) {}
+    }
     notifyListeners();
-    debugPrint('FloatingBubble: toggleBubble $value');
   }
 
-  void setOpacity(double value) { _opacity = value; notifyListeners(); }
-  void setSize(int value) { _size = value; notifyListeners(); }
-  void toggleAutoTranslate(bool value) { _autoTranslate = value; notifyListeners(); }
+  void toggle() {
+    if (_isEnabled) { stopBubble(); } else { startBubble(); }
+  }
+
+  void startBubble() {
+    _isEnabled = true;
+    _prefs?.setBool('floating_bubble_enabled', true);
+    notifyListeners();
+    try { _channel.invokeMethod('createFloatingBubble'); } catch (e) { debugPrint('Bubble: $e'); }
+  }
+
+  void stopBubble() {
+    _isEnabled = false;
+    _prefs?.setBool('floating_bubble_enabled', false);
+    notifyListeners();
+    try { _channel.invokeMethod('destroyFloatingBubble'); } catch (e) { debugPrint('Bubble: $e'); }
+  }
+
+  void setOpacity(double v) {
+    _opacity = v.clamp(0.3, 1.0);
+    _prefs?.setDouble('floating_bubble_opacity', _opacity);
+    notifyListeners();
+  }
+
+  void setSize(double v) {
+    _size = v.clamp(40, 100);
+    _prefs?.setDouble('floating_bubble_size', _size);
+    notifyListeners();
+  }
 }
