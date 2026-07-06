@@ -23,6 +23,9 @@ dependencies:
   intl: ^0.20.2
 
 dev_dependencies:
+  dash_bubble_local:
+    path: packages/dash_bubble_local
+
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
