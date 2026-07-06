@@ -14,7 +14,7 @@ dependencies:
   provider: ^6.1.1
   http: ^1.2.1
   flutter_tts: ^4.0.2
-  speech_to_text: ^7.0.0
+  speech_to_text: 7.0.0
   google_mlkit_text_recognition: ^0.13.0
   image_picker: ^1.0.0
   shared_preferences: ^2.2.0
@@ -38,4 +38,4 @@ flutter:
     - assets/audio/
 
 dependency_overrides:
-  speech_to_text: ^7.0.0
+  speech_to_text: 7.0.0
