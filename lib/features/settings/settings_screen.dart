@@ -539,7 +539,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               runSpacing: 8,  
               children: downloadedLanguages.map((langMap) {  
                 return Chip(  
-                  label: Text(lang, style: const TextStyle(fontSize: 12)),  
+                  label: Text(langMap['code'] ?? langMap['name'] ?? '', style: const TextStyle(fontSize: 12)),  
                   backgroundColor: Colors.green.withOpacity(0.2),  
                   deleteIcon: const Icon(Icons.close, size: 16),  
                   onDeleted: () async {  
