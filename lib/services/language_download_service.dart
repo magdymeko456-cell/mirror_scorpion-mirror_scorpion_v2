@@ -11,7 +11,6 @@ class LanguageDownloadService extends ChangeNotifier {
   Future<bool> downloadLanguage(String langCode) async {
     _isDownloading = true;
     notifyListeners();
-    // TODO: تحميل حقيقي
     await Future.delayed(const Duration(seconds: 2));
     _downloadedLanguages.add({'code': langCode, 'name': langCode});
     _isDownloading = false;
@@ -20,4 +19,10 @@ class LanguageDownloadService extends ChangeNotifier {
   }
 
   bool isLanguageDownloaded(String langCode) => _downloadedLanguages.any((l) => l['code'] == langCode);
+
+  Future<void> deleteLanguage(String langCode) async {
+    _downloadedLanguages.removeWhere((l) => l['code'] == langCode);
+    notifyListeners();
+    debugPrint('LanguageDownloadService: deleted $langCode');
+  }
 }
