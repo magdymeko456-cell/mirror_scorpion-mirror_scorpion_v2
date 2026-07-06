@@ -537,13 +537,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Wrap(  
               spacing: 8,  
               runSpacing: 8,  
-              children: downloadedLanguages.keys.map((lang) {  
+              children: downloadedLanguages.map((langMap) {  
                 return Chip(  
                   label: Text(lang, style: const TextStyle(fontSize: 12)),  
                   backgroundColor: Colors.green.withOpacity(0.2),  
                   deleteIcon: const Icon(Icons.close, size: 16),  
                   onDeleted: () async {  
-                    await languageService.deleteLanguage(lang);  
+                    await languageService.deleteLanguage(langMap['code'] ?? langMap['name'] ?? '');  
                     setState(() {});  
                   },  
                 );  
