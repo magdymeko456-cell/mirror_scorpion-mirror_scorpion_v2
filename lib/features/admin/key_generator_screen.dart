@@ -31,7 +31,12 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
     setState(() {
       _generatedKeys = keys.map((k) {
         final parts = k.split('|');
-        return {'code': parts[0], 'device': parts[1], 'period': parts[2], 'date': parts[3]};
+        return {
+          'code': parts[0],
+          'device': parts[1],
+          'period': parts[2],
+          'date': parts[3],
+        };
       }).toList();
     });
   }
@@ -44,21 +49,19 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
       );
       return;
     }
-
     final months = int.parse(_selectedDuration);
-    // إذا كان deviceId = "GENERAL" نستخدم كود عام
-    final code = PremiumVerificationService.generateActivationCode(deviceId, durationMonths: months);
-
+    final code = PremiumVerificationService.generateActivationCode(
+      deviceId,
+      durationMonths: months,
+    );
     _generatedCodeController.text = code;
 
-    // حفظ في السجل
-    final entry = {
+    final entry = <String, String>{
       'code': code,
       'device': deviceId.length > 15 ? '${deviceId.substring(0, 15)}...' : deviceId,
       'period': '$months شهر',
       'date': DateTime.now().toString().substring(0, 16),
     };
-
     _generatedKeys.insert(0, entry);
     _saveKeys();
     setState(() {});
@@ -66,7 +69,9 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
 
   Future<void> _saveKeys() async {
     final prefs = await SharedPreferences.getInstance();
-    final keys = _generatedKeys.map((k) => '${k['code']}|${k['device']}|${k['period']}|${k['date']}').toList();
+    final keys = _generatedKeys.map((k) =>
+      '${k['code']}|${k['device']}|${k['period']}|${k['date']}'
+    ).toList();
     await prefs.setStringList('generated_keys', keys);
   }
 
@@ -75,6 +80,13 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
     _deviceIdController.dispose();
     _generatedCodeController.dispose();
     super.dispose();
+  }
+
+  void _copyCode(String code) {
+    Clipboard.setData(ClipboardData(text: '$code — Mirror Scorpion 🦂'));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("✅ تم نسخ الكود")),
+    );
   }
 
   @override
@@ -109,8 +121,18 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
-                          Text("لوحة تحكم المطور", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
-                          Text("Tamer Eldosoky", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                          Text(
+                            "لوحة تحكم المطور",
+                            style: TextStyle(
+                              color: Colors.amber,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            "Tamer Eldosoky",
+                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                          ),
                         ],
                       ),
                     ),
@@ -121,7 +143,10 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
             const SizedBox(height: 20),
 
             // إدخال معرف الجهاز
-            const Text("معرف الجهاز (Device ID):", style: TextStyle(color: Colors.white70)),
+            const Text(
+              "معرف الجهاز (Device ID):",
+              style: TextStyle(color: Colors.white70),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _deviceIdController,
@@ -137,7 +162,7 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
                   onPressed: () async {
                     final data = await Clipboard.getData(Clipboard.kTextPlain);
                     if (data?.text != null) {
-                      _deviceIdController.text = data.text!;
+                      _deviceIdController.text = data!.text!;
                     }
                   },
                 ),
@@ -146,11 +171,18 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
             const SizedBox(height: 16),
 
             // اختيار المدة
-            const Text("مدة الاشتراك:", style: TextStyle(color: Colors.white70)),
+            const Text(
+              "مدة الاشتراك:",
+              style: TextStyle(color: Colors.white70),
+            ),
             const SizedBox(height: 8),
             Row(
               children: ['1', '3', '12'].map((months) {
-                final labels = {'1': '🌙 شهر', '3': '📅 3 أشهر', '12': '⭐ سنة'};
+                final labels = <String, String>{
+                  '1': '🌙 شهر',
+                  '3': '📅 3 أشهر',
+                  '12': '⭐ سنة',
+                };
                 final isSelected = _selectedDuration == months;
                 return Expanded(
                   child: Padding(
@@ -160,7 +192,9 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          color: isSelected ? Colors.amber.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                          color: isSelected
+                              ? Colors.amber.withOpacity(0.2)
+                              : Colors.white.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isSelected ? Colors.amber : Colors.white24,
@@ -189,12 +223,17 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
               child: ElevatedButton.icon(
                 onPressed: _generateCode,
                 icon: const Icon(Icons.vpn_key, color: Colors.black87),
-                label: const Text("توليد كود التفعيل", style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text(
+                  "توليد كود التفعيل",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.amber,
                   foregroundColor: Colors.black87,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
@@ -209,7 +248,13 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("✅ كود التفعيل:", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                      const Text(
+                        "✅ كود التفعيل:",
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -219,7 +264,11 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
                         ),
                         child: SelectableText(
                           _generatedCodeController.text,
-                          style: const TextStyle(color: Colors.greenAccent, fontSize: 14, fontFamily: 'monospace'),
+                          style: const TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 14,
+                            fontFamily: 'monospace',
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -227,14 +276,7 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           TextButton.icon(
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: _generatedCodeController.text + "
-
-— Mirror Scorpion 🦂"));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("✅ تم نسخ الكود")),
-                              );
-                            },
+                            onPressed: () => _copyCode(_generatedCodeController.text),
                             icon: const Icon(Icons.copy, color: Colors.amber, size: 18),
                             label: const Text("نسخ", style: TextStyle(color: Colors.amber)),
                           ),
@@ -249,36 +291,38 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
 
             // سجل الأكواد المولدة
             if (_generatedKeys.isNotEmpty) ...[
-              const Text("📋 سجل الأكواد المولدة:", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+              const Text(
+                "📋 سجل الأكواد المولدة:",
+                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
               ..._generatedKeys.map((key) => Card(
-                color: Colors.white.withOpacity(0.05),
-                child: ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.vpn_key, color: Colors.amber, size: 20),
-                  title: Text(key['code']!.substring(0, min(25, key['code']!.length)) + '...',
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace')),
-                  subtitle: Text("${key['device']} • ${key['period']} • ${key['date']}",
-                      style: const TextStyle(color: Colors.white38, fontSize: 10)),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.copy, color: Colors.white38, size: 16),
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: key['code']! + "
-
-— Mirror Scorpion 🦂"));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("✅ تم نسخ الكود")),
-                      );
-                    },
-                  ),
-                ),
-              )),
+                    color: Colors.white.withOpacity(0.05),
+                    child: ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.vpn_key, color: Colors.amber, size: 20),
+                      title: Text(
+                        '${key['code']!.substring(0, 25)}...',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      subtitle: Text(
+                        "${key['device']} • ${key['period']} • ${key['date']}",
+                        style: const TextStyle(color: Colors.white38, fontSize: 10),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.copy, color: Colors.white38, size: 16),
+                        onPressed: () => _copyCode(key['code']!),
+                      ),
+                    ),
+                  )),
             ],
           ],
         ),
       ),
     );
   }
-
-  int min(int a, int b) => a < b ? a : b;
 }
