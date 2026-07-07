@@ -35,7 +35,7 @@ class PremiumVerificationService extends ChangeNotifier {
         ? deviceId.substring(0, 8).toUpperCase()
         : deviceId.toUpperCase().padRight(8, 'X');
     final dur = durationMonths.toString().padLeft(2, '0');
-    final randPart = String.fromCharCodes(
+    final randPart = 
       List.generate(6, (_) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[rand.nextInt(36)]),
     );
     return '$prefix-$devicePart-$dur-$randPart';
