@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import '../../services/tts_service.dart';
 
@@ -18,7 +17,6 @@ class _DialogueScreenState extends State<DialogueScreen> {
   bool _isListening = false;
   bool _isTranslating = false;
 
-  // الزر الأيمن دائماً هو لغة المصدر (المتحدث)
   String _rightLang = 'ar';
   String _leftLang = 'en';
 
@@ -33,19 +31,13 @@ class _DialogueScreenState extends State<DialogueScreen> {
   String _langName(String c) => _langs[c] ?? c;
 
   void _swapLanguages() {
-    setState(() {
-      final t = _rightLang; _rightLang = _leftLang; _leftLang = t;
-    });
+    setState(() { final t = _rightLang; _rightLang = _leftLang; _leftLang = t; });
   }
 
   @override
   void initState() { super.initState(); _speech = stt.SpeechToText(); }
-
   @override
-  void dispose() {
-    _speech.stop(); _sourceCtrl.dispose(); _targetCtrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _speech.stop(); _sourceCtrl.dispose(); _targetCtrl.dispose(); super.dispose(); }
 
   Future<void> _startListening() async {
     final mic = await Permission.microphone.request();
@@ -54,10 +46,8 @@ class _DialogueScreenState extends State<DialogueScreen> {
         const SnackBar(content: Text('❌ يرجى منح إذن الميكروفون')));
       return;
     }
-    // مسح المحررين عند الضغط على المايك مرة أخرى
     if (_sourceCtrl.text.isNotEmpty || _targetCtrl.text.isNotEmpty) {
-      _sourceCtrl.clear();
-      _targetCtrl.clear();
+      _sourceCtrl.clear(); _targetCtrl.clear();
     }
     final available = await _speech.initialize();
     if (!available) return;
@@ -93,19 +83,9 @@ class _DialogueScreenState extends State<DialogueScreen> {
     }
   }
 
-  // دبوس لرفع الملفات الصوتية
-  Future<void> _pickAudioFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.audio, allowMultiple: false,
-    );
-    if (result != null && result.files.isNotEmpty) {
-      _sourceCtrl.clear();
-      _targetCtrl.clear();
-      _sourceCtrl.text = '📁 ${result.files.single.name}\nجاري معالجة...';
-      await Future.delayed(const Duration(seconds: 2));
-      _sourceCtrl.text = 'نص الملف الصوتي: ${result.files.single.name}';
-      _translateDialog();
-    }
+  void _pickAudioFile() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('📁 رفع الملفات الصوتية متاح في النسخة القادمة')));
   }
 
   @override
@@ -128,7 +108,6 @@ class _DialogueScreenState extends State<DialogueScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                // ووترمارك
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -138,7 +117,7 @@ class _DialogueScreenState extends State<DialogueScreen> {
                       textAlign: TextAlign.center),
                 ),
                 const SizedBox(height: 8),
-                // المحرر العلوي (النص الأصلي)
+                // المحرر العلوي
                 Expanded(
                   flex: 4,
                   child: Padding(
@@ -158,20 +137,18 @@ class _DialogueScreenState extends State<DialogueScreen> {
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.all(16),
                         ),
-                        maxLines: null,
-                        expands: true,
-                        textAlign: TextAlign.right,
+                        maxLines: null, expands: true, textAlign: TextAlign.right,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                // أزرار اللغات والميكروفون
+                // أزرار التحكم
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     children: [
-                      // الزر الأيسر - لغة الترجمة إليها
+                      // الزر الأيسر - لغة الترجمة
                       Expanded(
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -209,25 +186,22 @@ class _DialogueScreenState extends State<DialogueScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // الميكروفون - بحجم جيد (60)
+                      // مايك 60
                       GestureDetector(
                         onTapDown: (_) => _startListening(),
                         onTapUp: (_) => _stopListening(),
                         child: Container(
-                          width: 60,
-                          height: 60,
+                          width: 60, height: 60,
                           decoration: BoxDecoration(
                             color: _isListening ? Colors.red.withOpacity(0.2) : Colors.white.withOpacity(0.08),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: _isListening ? Colors.red : Colors.white38,
-                              width: 2,
+                              color: _isListening ? Colors.red : Colors.white38, width: 2,
                             ),
                           ),
                           child: Icon(
                             _isListening ? Icons.mic : Icons.mic_none,
-                            color: _isListening ? Colors.red : Colors.white70,
-                            size: 30,
+                            color: _isListening ? Colors.red : Colors.white70, size: 30,
                           ),
                         ),
                       ),
@@ -260,7 +234,7 @@ class _DialogueScreenState extends State<DialogueScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                // المحرر السفلي (الترجمة)
+                // المحرر السفلي
                 Expanded(
                   flex: 4,
                   child: Padding(
@@ -283,27 +257,21 @@ class _DialogueScreenState extends State<DialogueScreen> {
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.all(16),
                               ),
-                              maxLines: null,
-                              expands: true,
-                              textAlign: TextAlign.right,
-                              readOnly: true,
+                              maxLines: null, expands: true,
+                              textAlign: TextAlign.right, readOnly: true,
                             ),
                           ),
-                          // الأيقونات أسفل الترجمة
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              // دبوس رفع ملفات صوت
                               IconButton(
                                 icon: const Icon(Icons.attach_file, color: Colors.orange, size: 22),
                                 onPressed: _pickAudioFile,
                               ),
-                              // اسبيكر لنطق الترجمة
                               IconButton(
                                 icon: const Icon(Icons.volume_up, color: Colors.green, size: 22),
                                 onPressed: _speakTranslation,
                               ),
-                              // ترجمة يدوية
                               if (_isTranslating)
                                 const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
                               else

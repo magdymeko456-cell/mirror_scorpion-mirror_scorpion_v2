@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:share_plus/share_plus.dart' as share;
-import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-import '../../services/tts_service.dart';
 import 'package:provider/provider.dart';
+import '../../services/tts_service.dart';
 
 class TranslationScreen extends StatefulWidget {
   const TranslationScreen({super.key});
@@ -56,19 +54,12 @@ class _TranslationScreenState extends State<TranslationScreen> {
 
   @override
   void initState() { super.initState(); _speech = stt.SpeechToText(); }
-
   @override
-  void dispose() {
-    _speech.stop(); _sourceCtrl.dispose(); _targetCtrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _speech.stop(); _sourceCtrl.dispose(); _targetCtrl.dispose(); super.dispose(); }
 
-  // مسح المحررين عند الضغط على الكيبورد أو المايك
   void _clearEditors() {
     if (_targetCtrl.text.isNotEmpty) {
-      _sourceCtrl.clear();
-      _targetCtrl.clear();
-      _statusMsg = '';
+      _sourceCtrl.clear(); _targetCtrl.clear(); _statusMsg = '';
     }
   }
 
@@ -79,7 +70,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
         const SnackBar(content: Text('❌ يرجى منح إذن الميكروفون')));
       return;
     }
-    // مسح المحررين قبل البدء
     _clearEditors();
     final available = await _speech.initialize();
     if (!available) return;
@@ -103,7 +93,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
       return;
     }
     setState(() { _isTranslating = true; _statusMsg = 'جاري الترجمة...'; });
-    // محاكاة ترجمة (في الإنتاج يتم استدعاء API حقيقي)
     await Future.delayed(const Duration(milliseconds: 800));
     if (mounted) {
       setState(() {
@@ -120,34 +109,16 @@ class _TranslationScreenState extends State<TranslationScreen> {
     }
   }
 
-  Future<void> _shareAudio() async {
+  void _shareText() {
     if (_targetCtrl.text.isEmpty) return;
-    try {
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/mirror_translation.txt');
-      await file.writeAsString('$_targetCtrl.text\n\n— 🦂 ميرور سكربيون');
-      await share.SharePlus.instance.share(
-        share.ShareParams(files: [share.XFile(file.path)],
-            text: '🦂 ترجمة بواسطة ميرور سكربيون'),
-      );
-    } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ فشل المشاركة')));
-    }
+    Clipboard.setData(ClipboardData(text: '$_targetCtrl.text\n\n— 🦂 ميرور سكربيون'));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('✅ تم نسخ النص للمشاركة مع التوقيع')));
   }
 
-  Future<void> _pickAudioFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.audio, allowMultiple: false,
-    );
-    if (result != null && result.files.isNotEmpty) {
-      _clearEditors();
-      _sourceCtrl.text = '📁 ${result.files.single.name}\nجاري معالجة الملف الصوتي...';
-      setState(() => _statusMsg = 'جاري ترجمة الملف الصوتي...');
-      await Future.delayed(const Duration(seconds: 2));
-      _sourceCtrl.text = 'نص الملف الصوتي المستخرج:\n${result.files.single.name}';
-      _translateText();
-    }
+  void _pickAudioFile() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('📁 رفع الملفات الصوتية متاح في النسخة القادمة')));
   }
 
   @override
@@ -171,7 +142,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                // ووترمارك
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -180,7 +150,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
                       style: TextStyle(fontSize: 10, color: Colors.teal),
                       textAlign: TextAlign.center),
                 ),
-                // رسالة الحالة
                 if (_statusMsg.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.all(4),
@@ -211,14 +180,12 @@ class _TranslationScreenState extends State<TranslationScreen> {
                           value: e.key,
                           child: Text(_langName(e.key), style: const TextStyle(color: Colors.white, fontSize: 13)),
                         )).toList(),
-                        onChanged: (v) {
-                          if (v != null) setState(() => _selectedLang = v);
-                        },
+                        onChanged: (v) { if (v != null) setState(() => _selectedLang = v); },
                       ),
                     ),
                   ),
                 ),
-                // المحرر العلوي (النص الأصلي) مع مايك
+                // المحرر العلوي مع مايك
                 Expanded(
                   flex: 3,
                   child: Padding(
@@ -247,27 +214,21 @@ class _TranslationScreenState extends State<TranslationScreen> {
                               onTap: () => _clearEditors(),
                             ),
                           ),
-                          // المايك في أسفل المحرر العلوي (يسار)
                           Row(
                             children: [
                               GestureDetector(
                                 onTapDown: (_) => _startListening(),
                                 onTapUp: (_) => _stopListening(),
                                 child: Container(
-                                  width: 48,
-                                  height: 48,
+                                  width: 48, height: 48,
                                   decoration: BoxDecoration(
                                     color: _isListening ? Colors.red.withOpacity(0.2) : Colors.white.withOpacity(0.08),
                                     shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: _isListening ? Colors.red : Colors.white38,
-                                      width: 2,
-                                    ),
+                                    border: Border.all(color: _isListening ? Colors.red : Colors.white38, width: 2),
                                   ),
                                   child: Icon(
                                     _isListening ? Icons.mic : Icons.mic_none,
-                                    color: _isListening ? Colors.red : Colors.white70,
-                                    size: 24,
+                                    color: _isListening ? Colors.red : Colors.white70, size: 24,
                                   ),
                                 ),
                               ),
@@ -279,7 +240,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
                     ),
                   ),
                 ),
-                // المحرر السفلي (الترجمة)
+                // المحرر السفلي مع الأدوات
                 Expanded(
                   flex: 3,
                   child: Padding(
@@ -302,17 +263,13 @@ class _TranslationScreenState extends State<TranslationScreen> {
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.all(12),
                               ),
-                              maxLines: null,
-                              expands: true,
-                              textAlign: TextAlign.right,
-                              readOnly: true,
+                              maxLines: null, expands: true,
+                              textAlign: TextAlign.right, readOnly: true,
                             ),
                           ),
-                          // الأيقونات في أسفل المحرر السفلي (من اليمين لليسار)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              // نسخ
                               IconButton(
                                 icon: const Icon(Icons.copy, color: Colors.green, size: 20),
                                 onPressed: () {
@@ -324,17 +281,14 @@ class _TranslationScreenState extends State<TranslationScreen> {
                                   }
                                 },
                               ),
-                              // دبوس رفع ملفات صوت
                               IconButton(
                                 icon: const Icon(Icons.attach_file, color: Colors.orange, size: 20),
                                 onPressed: _pickAudioFile,
                               ),
-                              // مشاركة ملف الصوت
                               IconButton(
                                 icon: const Icon(Icons.share, color: Colors.blue, size: 20),
-                                onPressed: _shareAudio,
+                                onPressed: _shareText,
                               ),
-                              // اسبيكر لنطق الترجمة
                               IconButton(
                                 icon: const Icon(Icons.volume_up, color: Colors.green, size: 22),
                                 onPressed: _speakTranslation,
