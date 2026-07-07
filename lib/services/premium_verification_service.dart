@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:math';
 
 class PremiumVerificationService extends ChangeNotifier {
   late SharedPreferences _prefs;
@@ -26,17 +27,35 @@ class PremiumVerificationService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// توليد كود تفعيل للمطور (Tamer Eldosoky)
+  static String generateActivationCode(String deviceId, {int durationMonths = 1}) {
+    final rand = Random();
+    final prefix = 'MIRROR';
+    final devicePart = deviceId.length > 8
+        ? deviceId.substring(0, 8).toUpperCase()
+        : deviceId.toUpperCase().padRight(8, 'X');
+    final dur = durationMonths.toString().padLeft(2, '0');
+    final randPart = String.fromCharCodes(
+      List.generate(6, (_) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[rand.nextInt(36)]),
+    );
+    return '$prefix-$devicePart-$dur-$randPart';
+  }
+
   Future<DateTime?> _fetchNetworkTime() async {
     try {
       final responses = await Future.wait([
-        http.get(Uri.parse('https://worldtimeapi.org/api/ip')).timeout(const Duration(seconds: 5)),
-        http.get(Uri.parse('https://timeapi.io/api/Time/current/zone?timeZone=UTC')).timeout(const Duration(seconds: 5)),
+        http.get(Uri.parse('https://worldtimeapi.org/api/ip'))
+            .timeout(const Duration(seconds: 5)),
+        http.get(Uri.parse('https://timeapi.io/api/Time/current/zone?timeZone=UTC'))
+            .timeout(const Duration(seconds: 5)),
       ]);
       for (final response in responses) {
         if (response.statusCode == 200) {
           final data = jsonDecode(utf8.decode(response.bodyBytes));
-          if (data['utc_datetime'] != null) return DateTime.tryParse(data['utc_datetime'] as String);
-          else if (data['dateTime'] != null) return DateTime.tryParse(data['dateTime'] as String);
+          if (data['utc_datetime'] != null)
+            return DateTime.tryParse(data['utc_datetime'] as String);
+          else if (data['dateTime'] != null)
+            return DateTime.tryParse(data['dateTime'] as String);
         }
       }
     } catch (_) {}
@@ -50,22 +69,31 @@ class PremiumVerificationService extends ChangeNotifier {
       final durationStr = parts[parts.length - 2];
       final months = int.tryParse(durationStr) ?? 0;
       if (months <= 0 || months > 60) return false;
+
       DateTime now;
       final networkTime = await _fetchNetworkTime();
-      if (networkTime != null) { now = networkTime; }
-      else { now = DateTime.now(); }
+      if (networkTime != null) {
+        now = networkTime;
+      } else {
+        now = DateTime.now();
+      }
+
       final expiry = DateTime(now.year, now.month + months, now.day);
-      _isPremium = true; _expiryDate = expiry;
+      _isPremium = true;
+      _expiryDate = expiry;
       await _prefs.setBool('is_pro_version', true);
       await _prefs.setString('pro_expiry_date', expiry.toIso8601String());
       await _prefs.setString('pro_activation_patch', patch);
       notifyListeners();
       return true;
-    } catch (_) { return false; }
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> deactivate() async {
-    _isPremium = false; _expiryDate = null;
+    _isPremium = false;
+    _expiryDate = null;
     await _prefs.setBool('is_pro_version', false);
     await _prefs.remove('pro_expiry_date');
     await _prefs.remove('pro_activation_patch');
