@@ -7,12 +7,6 @@ environment:
   sdk: '>=3.2.0 <4.0.0'
 
 dependencies:
-  path_provider: ^2.1.5
-  share_plus: ^10.1.4
-  flutter_local_notifications: ^18.0.1
-  url_launcher: ^6.3.1
-  audioplayers: ^6.1.0
-  record: ^5.2.0
   flutter:
     sdk: flutter
   provider: ^6.1.2
@@ -23,18 +17,18 @@ dependencies:
   camera_android_camerax: 0.6.5+1
   image_picker: ^1.1.2
   google_mlkit_text_recognition: ^0.13.0
-  shared_preferences: ^2.5.5
   google_mlkit_translation: ^0.13.0
-  permission_handler: ^11.3.1
-  flutter_local_notifications: ^18.0.1
-  url_launcher: ^6.3.1
-  audioplayers: ^6.1.0
-  record: ^5.2.0
-
   shared_preferences: ^2.5.5
   permission_handler: ^11.3.1
   path_provider: ^2.1.5
+  url_launcher: ^6.3.1
+  audioplayers: ^6.1.0
+  record: ^5.2.0
+  flutter_local_notifications: ^18.0.1
+  share_plus: ^10.1.4
   file_picker: ^8.1.6
+
+dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
@@ -46,9 +40,6 @@ flutter_icons:
 
 flutter:
   uses-material-3: true
-  assets:
-    - assets/data/
-    - assets/images/
   assets:
     - assets/data/
     - assets/images/
