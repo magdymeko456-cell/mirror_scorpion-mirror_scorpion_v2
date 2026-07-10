@@ -35,19 +35,19 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: 🛠️ Patch Gradle & Kotlin Version (Enforce 1.8.20)
+      - name: 🛠️ Patch Gradle & Kotlin Version
         run: |
-          echo "[+] Forcing Kotlin 1.8.20 directly into top-level build.gradle..."
+          echo "[+] Forcing Kotlin 1.9.0 directly into top-level build.gradle..."
           cat << 'GRADLE' > android/build.gradle
           buildscript {
-              ext.kotlin_version = '1.8.20'
+              ext.kotlin_version = '1.9.0'
               repositories {
                   google()
                   mavenCentral()
               }
               dependencies {
-                  classpath 'com.android.tools.build:gradle:7.3.0'
-                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:\$kotlin_version"
+                  classpath 'com.android.tools.build:gradlet:7.3.0'
+                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
               }
           }
           allprojects {
@@ -58,7 +58,7 @@ jobs:
           }
           rootProject.buildDir = '../build'
           subprojects {
-              project.buildDir = "\${rootProject.buildDir}/\${project.name}"
+              project.buildDir = "${rootProject.buildDir}/${project.name}"
           }
           subprojects {
               project.evaluationDependsOn(':app')
