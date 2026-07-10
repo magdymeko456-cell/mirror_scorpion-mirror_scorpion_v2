@@ -39,7 +39,7 @@ flutter_icons:
   image_path: "assets/images/scorpion_icon.jpeg"
 
 flutter:
-  uses-material3: true
+    # useMaterial3 -> داخل ThemeData في main.dart
   assets:
     - assets/data/
     - assets/images/
