@@ -65,7 +65,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                 const SizedBox(height: 8),
                 Text(
                   story['content']!,
-                  style: const TextStyle(color: Colors.white80, fontSize: 14, height: 1.5),
+                  style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
                   textDirection: TextDirection.rtl,
                 ),
               ],

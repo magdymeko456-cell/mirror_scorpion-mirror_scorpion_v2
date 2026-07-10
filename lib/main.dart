@@ -21,7 +21,7 @@ import 'features/admin/key_generator_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await LanguageService().initialize();
+  // await LanguageService().initialize();
   await BackgroundService().initialize();
   await LanguageDownloadService().initialize();
   runApp(
