@@ -1,4 +1,6 @@
-# حماية كود مكتبة التعرف على النصوص وجوجل ML Kit من الحذف أو الفحص الصارم
--keep class com.google.mlkit.vision.text.** { *; }
--dontwarn com.google.mlkit.vision.text.**
--dontwarn com.google.mlkit.feature.shared.**
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends android.app.Activity
+-keep class com.tetocollctionway.mirror.** { *; }
+-keep class io.flutter.** { *; }
+-keep class com.google.mlkit.** { *; }
+-keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
