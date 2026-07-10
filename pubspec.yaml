@@ -7,9 +7,7 @@ environment:
   sdk: '>=3.2.0 <4.0.0'
 
 dependencies:
-  permission_handler: ^11.3.1
   path_provider: ^2.1.5
-  file_picker: ^8.1.6
   share_plus: ^10.1.4
   flutter_local_notifications: ^18.0.1
   url_launcher: ^6.3.1
@@ -28,24 +26,15 @@ dependencies:
   shared_preferences: ^2.5.5
   google_mlkit_translation: ^0.13.0
   permission_handler: ^11.3.1
-  path_provider: ^2.1.5
-  file_picker: ^8.1.6
-  share_plus: ^10.1.4
   flutter_local_notifications: ^18.0.1
   url_launcher: ^6.3.1
   audioplayers: ^6.1.0
   record: ^5.2.0
 
-dev_dependencies:
   shared_preferences: ^2.5.5
   permission_handler: ^11.3.1
   path_provider: ^2.1.5
   file_picker: ^8.1.6
-  share_plus: ^10.1.4
-  flutter_local_notifications: ^18.0.1
-  url_launcher: ^6.3.1
-  audioplayers: ^6.1.0
-  record: ^5.2.0
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
