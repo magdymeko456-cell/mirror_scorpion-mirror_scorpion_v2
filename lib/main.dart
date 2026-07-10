@@ -20,7 +20,7 @@ void main() async {
 
   final languageService = LanguageService();
   await languageService.initialize();
-  
+
   final premiumService = PremiumVerificationService();
   await premiumService.initialize();
 
@@ -42,23 +42,15 @@ class MirrorScorpionApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // فتح بلغة الجهاز تلقائياً
     final langService = context.watch<LanguageService>();
     final deviceLang = langService.getDeviceLanguage();
-    final locale = Locale(deviceLang);
 
     return MaterialApp(
       title: 'Mirror Scorpion',
-      locale: locale,
+      locale: Locale(deviceLang),
       supportedLocales: const [
-        Locale('ar'),
-        Locale('en'),
-        Locale('fr'),
-        Locale('de'),
-        Locale('es'),
-        Locale('tr'),
-        Locale('fa'),
-        Locale('ur'),
+        Locale('ar'), Locale('en'), Locale('fr'), Locale('de'),
+        Locale('es'), Locale('tr'), Locale('fa'), Locale('ur'),
       ],
       localizationsDelegates: const [
         DefaultMaterialLocalizations.delegate,

@@ -26,7 +26,6 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 
 flutter:
-  uses-material-3: true
   assets:
     - assets/images/scorpion_icon.jpeg
     - assets/data/hadith_qudsi.json
