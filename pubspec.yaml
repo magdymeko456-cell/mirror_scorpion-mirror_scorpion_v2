@@ -8,16 +8,6 @@ environment:
 
 dependencies:
   flutter:
-name: mirror_scorpion_v2
-description: "Mirror Scorpion - Where Beginnings Are Made"
-publish_to: 'none'
-version: 1.0.0+1
-
-environment:
-  sdk: '>=3.2.0 <4.0.0'
-
-dependencies:
-  flutter:
     sdk: flutter
   provider: ^6.1.2
   speech_to_text: ^6.6.2
