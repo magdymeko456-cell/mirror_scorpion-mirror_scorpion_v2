@@ -1,0 +1,80 @@
+name: Build Mirror Scorpion
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Flutter (Clean Stable Version)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.3'
+          channel: 'stable'
+          cache: true
+
+      - name: 🔥 Reconstruct Android Project Fresh
+        run: |
+          rm -rf android/
+          flutter create --project-name mirror_scorpion_v2 --org com.tetocollctionway --platforms android .
+
+      - name: 🚀 Prepare Flutter Dependencies
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: 🛠️ Patch Gradle & Kotlin Version (Enforce 1.8.20)
+        run: |
+          echo "[+] Forcing Kotlin 1.8.20 directly into top-level build.gradle..."
+          cat << 'GRADLE' > android/build.gradle
+          buildscript {
+              ext.kotlin_version = '1.8.20'
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:7.3.0'
+                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:\$kotlin_version"
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.buildDir = '../build'
+          subprojects {
+              project.buildDir = "\${rootProject.buildDir}/\${project.name}"
+          }
+          subprojects {
+              project.evaluationDependsOn(':app')
+          }
+          tasks.register("clean", Delete) {
+              delete rootProject.buildDir
+          }
+          GRADLE
+          echo "[+] Patch injected successfully!"
+
+      - name: 🏗️ Build Final APK
+        run: |
+          flutter build apk --release --target-platform android-arm64
+
+      - name: 📦 Upload Finished APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirror-scorpion-final-stable
+          path: build/app/outputs/flutter-apk/app-release.apk
