@@ -39,7 +39,7 @@ flutter_icons:
   image_path: "assets/images/scorpion_icon.jpeg"
 
 flutter:
-  uses-material-3: true
+  uses-material3: true
   assets:
     - assets/data/
     - assets/images/
