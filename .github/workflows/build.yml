@@ -25,20 +25,19 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🔥 Reconstruct Android Project Fresh
+      - name: Reconstruct Android Project Fresh
         run: |
           rm -rf android/
           flutter create --project-name mirror_scorpion_v2 --org com.tetocollctionway --platforms android .
 
-      - name: 🚀 Prepare Flutter Dependencies
+      - name: Prepare Flutter Dependencies
         run: |
           flutter clean
           flutter pub get
 
-      - name: 🛠️ Patch Gradle & Kotlin Version
+      - name: Patch Gradle & Kotlin Version
         run: |
-          echo "[+] Forcing Kotlin 1.9.0 directly into top-level build.gradle..."
-          cat << 'GRADLE' > android/build.gradle
+          cat > android/build.gradle << 'EOF'
           buildscript {
               ext.kotlin_version = '1.9.0'
               repositories {
@@ -46,7 +45,7 @@ jobs:
                   mavenCentral()
               }
               dependencies {
-                  classpath 'classpath 'com.android.tools.build:gradlet:7.3.0'com.android.tools.build:gradlet:7.3.0'
+                  classpath 'com.android.tools.build:gradle:7.3.0'
                   classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
               }
           }
@@ -66,14 +65,13 @@ jobs:
           tasks.register("clean", Delete) {
               delete rootProject.buildDir
           }
-          GRADLE
-          echo "[+] Patch injected successfully!"
+          EOF
 
-      - name: 🏗️ Build Final APK
+      - name: Build Final APK
         run: |
           flutter build apk --release --target-platform android-arm64
 
-      - name: 📦 Upload Finished APK
+      - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
           name: mirror-scorpion-final-stable
