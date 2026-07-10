@@ -1,33 +1,39 @@
 name: 🦂 Build Mirror Scorpion APK
+
 on:
   push:
-    branches: [ main, master ]
+    branches: [main]
   workflow_dispatch:
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up Java 17
+        uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
           java-version: '17'
-      - uses: subosito/flutter-action@v2
+          distribution: 'temurin'
+
+      - name: 🎯 Setup Flutter 3.27.4
+        uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.27.4'
           channel: 'stable'
-      - name: Build APK
-        run: |
-          set -e
-          flutter pub get
-          flutter build apk --release \
-            --no-tree-shake-icons \
-            --android-skip-build-dependency-validation \
-            --dart-define=GOOGLE_API_KEY=${{ secrets.API_KEY }}
-          mkdir -p output_apk
-          cp build/app/outputs/flutter-apk/app-release.apk output_apk/
-      - name: Upload APK
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🔨 Build APK
+        run: flutter build apk --release
+
+      - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: mirror-scorpion-release
-          path: output_apk/app-release.apk
-          if-no-files-found: error
+          name: mirror_scorpion_apk
+          path: build/app/outputs/flutter-apk/app-release.apk
