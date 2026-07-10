@@ -88,12 +88,10 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
       return;
     }
 
-    // امسح المحررين عند بدء استماع جديد
     _sourceController.clear();
     _translatedController.clear();
     setState(() => _isListening = true);
 
-    // المحرر العلوي يفهم اللغة الموجودة في الزر الذي بجانبه (جهة اليمين)
     _speech!.listen(
       onResult: (result) {
         setState(() {
@@ -104,7 +102,6 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
       listenMode: stt.ListenMode.dictation,
     );
 
-    // محاكاة ترجمة تلقائية أثناء الاستماع
     while (_isListening) {
       await Future.delayed(const Duration(milliseconds: 1500));
       if (_sourceController.text.isNotEmpty && mounted) {
@@ -139,7 +136,6 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
       final text = _sourceController.text;
       String translated;
 
-      // محاكاة الترجمة
       if (_langTo == 'ar') {
         if (text.contains('Hello')) translated = 'مرحباً';
         else if (text.contains('How are')) translated = 'كيف حالك؟';
@@ -198,7 +194,6 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
             // --- صف اللغات: اليمين (من) | تبديل | اليسار (إلى) ---
             Row(
               children: [
-                // اللغة المصدر (يمين)
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -228,13 +223,11 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
                     ),
                   ),
                 ),
-                // زر التبديل
                 IconButton(
                   icon: const Icon(Icons.swap_horiz, color: Colors.amberAccent, size: 30),
                   onPressed: _swapLanguages,
                   tooltip: 'تبديل اللغات',
                 ),
-                // اللغة الهدف (يسار)
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -312,7 +305,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
             ),
             const SizedBox(height: 14),
 
-            // --- المحرر العلوي (النص المصدر) ---
+            // --- المحرر العلوي الموسّع (النص المصدر) ---
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF1B2838),
@@ -322,7 +315,8 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
               child: Column(
                 children: [
                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 150),
+                    // 🎯 تم زيادة الحد الأدنى والأقصى للارتفاع ليعطي مساحة رؤية واسعة ومريحة لعينك
+                    constraints: const BoxConstraints(minHeight: 120, maxHeight: 350),
                     child: TextField(
                       controller: _sourceController,
                       maxLines: null,
@@ -389,7 +383,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
             ),
             const SizedBox(height: 12),
 
-            // --- المحرر السفلي (الترجمة) ---
+            // --- المحرر السفلي الموسّع (الترجمة) ---
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF1B2838),
@@ -399,7 +393,8 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
               child: Column(
                 children: [
                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 150),
+                    // 🎯 تم زيادة الارتفاع هنا أيضاً ليتناسق مع النص الأصلي ولا يبتلع الترجمة الطويلة
+                    constraints: const BoxConstraints(minHeight: 120, maxHeight: 350),
                     child: TextField(
                       controller: _translatedController,
                       maxLines: null,
@@ -423,14 +418,12 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          // 🔊 سبيكر
                           IconButton(
                             icon: Icon(Icons.volume_up,
                               color: tts.isSpeaking ? Colors.cyanAccent : Colors.greenAccent,
                               size: 22),
                             onPressed: _speakTranslation,
                           ),
-                          // 📋 نسخ
                           IconButton(
                             icon: const Icon(Icons.copy, color: Colors.white70, size: 20),
                             onPressed: () {

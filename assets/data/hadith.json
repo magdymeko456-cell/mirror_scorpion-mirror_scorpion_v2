@@ -1,1 +1,10 @@
-{}
+[
+  {
+    "id": 1,
+    "title": "حديث يا عبادي إني حرمت الظلم على نفسي",
+    "text": "قال الله تعالى: يا عبادي إني حرمت الظلم على نفسي وجعلته بينكم محرماً فلا تظالموا...",
+    "word_meanings": "حرمت الظلم: نزهت نفسي عنه سبحانه وتفصلاً واستحقاقاً. فلا تظالموا: لا يظلم بعضكم بعضاً.",
+    "font_size_recommended": "Large",
+    "github_raw_path": "https://raw.githubusercontent.com/magdymeko456-cell/mirror_scorpion-mirror_scorpion_v2/main/assets/database/hadiths/qudsi_1.txt"
+  }
+]

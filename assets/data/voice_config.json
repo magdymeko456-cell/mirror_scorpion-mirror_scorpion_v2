@@ -1,0 +1,15 @@
+{
+  "default_voice": "Seif",
+  "premium_voice_enabled": false,
+  "voices": {
+    "free": [
+      "Seif",
+      "Salma",
+      "Sama",
+      "Sara"
+    ],
+    "paid": [
+      "Tamer"
+    ]
+  }
+}
