@@ -1,5 +1,5 @@
 name: mirror_scorpion_v2
-description: "Mirror Scorpion - Where Beginnings Are Made"
+description: "Mirror Scorpion - Translation, Inspiration, AI, Games"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -17,19 +17,29 @@ dependencies:
   camera_android_camerax: 0.6.5+1
   image_picker: ^1.1.2
   google_mlkit_text_recognition: ^0.13.0
-  shared_preferences: ^2.3.3
-  path_provider: ^2.1.4
+  shared_preferences: ^2.5.5
+  google_mlkit_translation: ^0.13.0
+  permission_handler: ^11.3.1
+  path_provider: ^2.1.5
+  file_picker: ^8.1.6
+  share_plus: ^10.1.4
+  flutter_local_notifications: ^18.0.1
+  url_launcher: ^6.3.1
+  audioplayers: ^6.1.0
+  record: ^5.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_icons:
+  android: true
+  image_path: "assets/images/scorpion_icon.jpeg"
 
 flutter:
+  uses-material-3: true
   assets:
-    - assets/images/scorpion_icon.jpeg
-    - assets/data/hadith_qudsi.json
-    - assets/data/quran_stories.json
-    - assets/data/asbab_nuzul.json
-    - assets/data/arbaeen_nawawi.json
-    - assets/data/prophet_stories_ibn_kathir.json
+    - assets/data/
+    - assets/images/
