@@ -1,39 +1,42 @@
 name: mirror_scorpion_v2
-description: Mirror Scorpion v2 - تطبيق الترجمة الذكية والقصص القرآنية
+description: "Mirror Scorpion Premium - حيث تُصنع البدايات"
 publish_to: 'none'
-version: 1.2.0
+version: 1.2.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.4.0 <4.0.0'
 
 dependencies:
+  file_picker: ^8.1.6
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  provider: ^6.1.1
+  provider: ^6.1.2
   http: ^1.2.1
-  flutter_tts: ^4.0.2
-  speech_to_text: ^7.0.0
-  google_mlkit_text_recognition: ^0.13.0
-  image_picker: ^1.0.0
-  shared_preferences: ^2.2.0
+  shared_preferences: ^2.3.3
+  path_provider: ^2.1.4
+  flutter_tts: ^4.1.0
+  sqflite: ^2.3.3+1
+  intl: ^0.19.0
   permission_handler: ^11.3.1
-  path_provider: ^2.1.0
-  intl: ^0.20.2
+  cupertino_icons: ^1.0.8
+  speech_to_text: ^6.6.2
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/data/hadith_qudsi.json
     - assets/data/hadiths.json
+    - assets/data/hadith_qudsi.json
     - assets/data/quran_stories.json
     - assets/data/stories.json
+    - assets/data/asbab_nuzul.json
+    - assets/data/arbaeen_nawawi.json
     - assets/data/prophet_stories_ibn_kathir.json
-    - assets/data/verses.json
     - assets/images/
