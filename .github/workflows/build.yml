@@ -46,7 +46,7 @@ jobs:
                   mavenCentral()
               }
               dependencies {
-                  classpath 'com.android.tools.build:gradlet:7.3.0'
+                  classpath 'classpath 'com.android.tools.build:gradlet:7.3.0'com.android.tools.build:gradlet:7.3.0'
                   classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
               }
           }
