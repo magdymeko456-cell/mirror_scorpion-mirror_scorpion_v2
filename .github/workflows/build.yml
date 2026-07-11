@@ -18,7 +18,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Flutter (Modern Stable Version for Dart 3.9+)
+      - name: Set up Flutter (Modern Stable Version)
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.27.0'
@@ -30,8 +30,11 @@ jobs:
           rm -rf android/
           flutter create --project-name mirror_scorpion_v2 --org com.tetocollctionway --platforms android .
 
-      - name: 🛠️ Fix Pubspec Dependencies Compatibility
+      - name: 🛠️ Force Pubspec SDK & Dependencies Compatibility
         run: |
+          echo "[+] Rewriting Dart SDK constraint to match environment..."
+          sed -i 's/sdk: .*/sdk: ">=3.6.0 <4.0.0"/g' pubspec.yaml || true
+          
           echo "[+] Optimizing path_provider version in pubspec.yaml..."
           sed -i 's/path_provider:.*/path_provider: any/g' pubspec.yaml || true
 
