@@ -1,44 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'features/home_screen.dart';
-import 'features/card1_translate/translation_screen.dart';
-import 'features/card2_chat/dialogue_screen.dart';
-import 'features/card3_document/document_screen.dart';
-import 'features/card3_document/document_lens.dart';
-import 'features/card4_stories/stories_screen.dart';
-import 'features/games/chess/chess_game.dart';
-import 'features/games/rubik_cube/rubik_cube_screen_enhanced.dart';
-import 'features/settings/settings_screen.dart';
-import 'services/language_service.dart';
 import 'services/tts_service.dart';
-import 'services/premium_verification_service.dart';
-import 'services/floating_bubble_service.dart';
 import 'services/ai_service.dart';
+import 'services/database_service.dart';
+import 'services/floating_bubble_service.dart';
+import 'services/premium_verification_service.dart';
+import 'services/language_service.dart';
+import 'services/background_service.dart';
+import 'services/language_download_service.dart';
+import 'core/theme/theme_provider.dart';
+import 'features/home_screen.dart';
+import 'features/settings/settings_screen.dart';
+import 'features/about/about_app_screen.dart';
+import 'features/admin/key_generator_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  final langService = LanguageService();
-  await langService.initialize();
-  final premiumService = PremiumVerificationService();
-  await premiumService.initialize();
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider<LanguageService>.value(value: langService),
-        ChangeNotifierProvider<PremiumVerificationService>.value(value: premiumService),
-        ChangeNotifierProvider<FloatingBubbleService>(create: (_) => FloatingBubbleService()),
-        ChangeNotifierProvider<TTSService>(create: (_) => TTSService()),
-      ],
-      child: const MirrorScorpionApp(),
-    ),
-  );
+  await LanguageService().initialize();
+  await BackgroundService().initialize();
+  await LanguageDownloadService().initialize();
+  runApp(const MirrorScorpionApp());
 }
 
 class MirrorScorpionApp extends StatelessWidget {
@@ -46,46 +28,57 @@ class MirrorScorpionApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lang = context.watch<LanguageService>();
-    final localeCode = lang.currentLanguage == 'auto'
-        ? lang.getDeviceLanguage()
-        : lang.currentLanguage;
-
-    return MaterialApp(
-      title: 'Mirror Scorpion',
-      debugShowCheckedModeBanner: false,
-      locale: Locale(localeCode),
-      supportedLocales: const [
-        Locale('ar'), Locale('en'), Locale('fr'), Locale('de'),
-        Locale('es'), Locale('tr'), Locale('fa'), Locale('ur'),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => TTSService()),
+        ChangeNotifierProvider(create: (_) => DatabaseService()),
+        ChangeNotifierProvider(create: (_) => FloatingBubbleService()),
+        ChangeNotifierProvider(create: (_) => PremiumVerificationService()),
+        ChangeNotifierProvider(create: (_) => LanguageService()),
+        ChangeNotifierProvider(create: (_) => BackgroundService()),
+        ChangeNotifierProvider(create: (_) => LanguageDownloadService()),
       ],
-      localizationsDelegates: const [
-        DefaultMaterialLocalizations.delegate,
-        DefaultWidgetsLocalizations.delegate,
-      ],
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: const Color(0xFF0D1B2A),
-        colorScheme: ColorScheme.dark(
-          primary: Colors.blueAccent,
-          secondary: Colors.cyanAccent,
-          surface: const Color(0xFF1B2838),
-        ),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Mirror Scorpion Translate',
+            debugShowCheckedModeBanner: false,
+            theme: themeProvider.themeData,
+            darkTheme: themeProvider.themeData,
+            locale: const Locale('ar'),
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('ar'),
+              Locale('en'),
+            ],
+            home: const HomeScreen(),
+            routes: {
+              '/settings': (context) => const SettingsScreen(),
+              '/about': (context) => const AboutAppScreen(),
+              '/admin_gen': (context) => const KeyGeneratorScreen(),
+              '/translate': (context) => const TextTranslationScreen(),
+              '/dialogue': (context) => const DialogueTranslationScreen(),
+              '/document': (context) => const DocumentTranslationScreen(),
+              '/stories': (context) => const StoriesScreen(),
+              '/chess': (context) => const ChessGameScreen(),
+              '/rubik': (context) => const RubikCubeScreen(),
+            },
+          );
+        },
       ),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const HomeScreen(),
-        '/translate': (context) => const TextTranslationScreen(),
-        '/dialogue': (context) => const DialogueTranslationScreen(),
-        '/document': (context) => const DocumentTranslationScreen(),
-        '/lens': (context) => const DocumentLensScreen(),
-        '/stories': (context) => const StoriesScreen(),
-        '/chess': (context) => const ChessGame(),
-        '/rubik': (context) => const RubikCubeScreenEnhanced(),
-        '/settings': (context) => const SettingsScreen(),
-      },
     );
   }
 }
+
+// استيراد إضافية للـ routes
+import 'features/card1_translation/translation_screen.dart';
+import 'features/card2_dialogue/dialogue_screen.dart';
+import 'features/card3_document/document_screen.dart';
+import 'features/card4_stories/stories_screen.dart';
+import 'features/games/chess/chess_screen.dart';
+import 'features/games/rubik_cube/rubik_screen.dart';
