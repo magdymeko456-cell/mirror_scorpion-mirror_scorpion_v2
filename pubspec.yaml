@@ -16,12 +16,12 @@ dependencies:
   cupertino_icons: ^1.0.6
   provider: ^6.1.1
   
-  # Translation & Networking
+  # Translation
   http: ^1.2.1
   
   # Text-to-Speech & Speech Recognition
   flutter_tts: ^4.0.2
-  speech_to_text: ^6.6.2
+  speech_to_text: ^7.4.0
   
   # Image & OCR
   google_mlkit_text_recognition: ^0.13.0
@@ -35,7 +35,7 @@ dependencies:
   # Utilities
   path_provider: ^2.1.0
   intl: ^0.20.2
-  share_plus: ^10.1.0
+  share_plus: ^12.0.2
   file_picker: ^6.1.1
   crypto: ^3.0.3
   
@@ -43,10 +43,9 @@ dependencies:
   webview_flutter: ^4.7.0
   
   # Audio
-  record: ^5.0.4
-  audioplayers: ^5.2.1
+  audioplayers: ^6.8.1
   
-  # Bubble - local package
+  # Bubble
   dash_bubble_local:
     path: packages/dash_bubble_local
 
@@ -54,13 +53,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  flutter_launcher_icons: ^0.13.1
-
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/images/scorpion_icon.jpeg"
-  min_sdk_android: 21
 
 flutter:
   uses-material-design: true
