@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🔍 [1/3] تنظيف وتطهير البيئة الحالية..."
+echo "🔍 [1/3] تنظيف وإعداد ملفات البناء النظيفة..."
 
 cat << 'WORKFLOW' > .github/workflows/build.yml
 name: Build Mirror Scorpion
@@ -24,28 +24,26 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Flutter (Stable 3.27.0)
+      - name: 🚀 Set up Advanced Flutter (To match Dart >=3.9.0)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          # رفعنا النسخة هنا لـ 3.29.0 لتوفير Dart SDK متوافق تماماً مع متطلبات مشروعك
+          flutter-version: '3.29.0'
           channel: 'stable'
           cache: true
 
-      - name: 🔥 Fix environment (Keep SDK as is)
+      - name: 🔥 Reconstruct Android Platform Fresh
         run: |
-          # نلغي أي قيد يمنع التحديث للـ Dependencies
-          sed -i 's/path_provider:.*/path_provider: any/g' pubspec.yaml || true
-          
-          echo "[+] Reconstructing Android directory fresh..."
+          echo "[+] Clearing and creating fresh android architecture..."
           rm -rf android/
           flutter create --project-name mirror_scorpion_v2 --org com.tetocollctionway --platforms android .
 
-      - name: 🚀 Prepare Flutter Dependencies
+      - name: 📦 Fetch Flutter Dependencies
         run: |
           flutter clean
           flutter pub get
 
-      - name: 🛠️ Patch Gradle & Kotlin Version
+      - name: 🛠️ Patch Gradle & Kotlin Version (Enforce 1.8.20)
         run: |
           cat << 'GRADLE' > android/build.gradle
           buildscript {
@@ -89,5 +87,5 @@ jobs:
 WORKFLOW
 
 git add .github/workflows/build.yml auto_sync_patch.sh
-git commit -m "🦂 FIX: اعتماد بناء مرن بدون تلاعب في الـ SDK constraint" || true
+git commit -m "🦂 FIX: رفع نسخة فلاتر السيرفر لتتوافق مع Dart SDK للمشروع" || true
 git push origin main --force
