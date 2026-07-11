@@ -9,11 +9,18 @@ import 'services/premium_verification_service.dart';
 import 'services/language_service.dart';
 import 'services/background_service.dart';
 import 'services/language_download_service.dart';
+import 'services/audio_file_service.dart';
 import 'core/theme/theme_provider.dart';
 import 'features/home_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/about/about_app_screen.dart';
 import 'features/admin/key_generator_screen.dart';
+import 'features/card1_translation/translation_screen.dart';
+import 'features/card2_dialogue/dialogue_screen.dart';
+import 'features/card3_document/document_screen.dart';
+import 'features/card4_stories/stories_screen.dart';
+import 'features/games/chess/chess_screen.dart';
+import 'features/games/rubik_cube/rubik_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +45,7 @@ class MirrorScorpionApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LanguageService()),
         ChangeNotifierProvider(create: (_) => BackgroundService()),
         ChangeNotifierProvider(create: (_) => LanguageDownloadService()),
+        ChangeNotifierProvider(create: (_) => AudioFileService()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -74,11 +82,3 @@ class MirrorScorpionApp extends StatelessWidget {
     );
   }
 }
-
-// استيراد إضافية للـ routes
-import 'features/card1_translation/translation_screen.dart';
-import 'features/card2_dialogue/dialogue_screen.dart';
-import 'features/card3_document/document_screen.dart';
-import 'features/card4_stories/stories_screen.dart';
-import 'features/games/chess/chess_screen.dart';
-import 'features/games/rubik_cube/rubik_screen.dart';

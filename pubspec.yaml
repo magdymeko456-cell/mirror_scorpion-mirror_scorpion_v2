@@ -31,6 +31,9 @@ dependencies:
   webview_flutter: ^4.13.1
   crypto: ^3.0.7
 
+  dash_bubble_local:
+    path: packages/dash_bubble_local
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
