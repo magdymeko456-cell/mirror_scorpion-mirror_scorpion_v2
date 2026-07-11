@@ -1,0 +1,50 @@
+{
+  "prophets": [
+    {
+      "id": "adam",
+      "name": "سيدنا آدم عليه السلام",
+      "summary": "أبو البشر، خلقه الله من طين، وأسجد له الملائكة، وعلمه الأسماء كلها.",
+      "source": "ابن كثير",
+      "source_url": "https://raw.githubusercontent.com/magdymeko456-cell/mirror_scorpion_data/main/stories/adam.json"
+    },
+    {
+      "id": "nuh",
+      "name": "سيدنا نوح عليه السلام",
+      "summary": "أول الرسل، دعا قومه 950 عاماً، وأمره الله ببناء السفينة.",
+      "source": "ابن كثير",
+      "source_url": "https://raw.githubusercontent.com/magdymeko456-cell/mirror_scorpion_data/main/stories/nuh.json"
+    },
+    {
+      "id": "ibrahim",
+      "name": "سيدنا إبراهيم عليه السلام",
+      "summary": "خليل الله، حطم الأصنام، أمره الله بذبح ابنه إسماعيل ففداه بذبح عظيم.",
+      "source": "ابن كثير",
+      "source_url": "https://raw.githubusercontent.com/magdymeko456-cell/mirror_scorpion_data/main/stories/ibrahim.json"
+    },
+    {
+      "id": "mousa",
+      "name": "سيدنا موسى عليه السلام",
+      "summary": "كليم الله، أرسل إلى فرعون، ضرب البحر بعصاه فانفلق، وأنزلت عليه التوراة.",
+      "source": "ابن كثير",
+      "source_url": "https://raw.githubusercontent.com/magdymeko456-cell/mirror_scorpion_data/main/stories/mousa.json"
+    },
+    {
+      "id": "issa",
+      "name": "سيدنا عيسى عليه السلام",
+      "summary": "روح الله وكلمته، ولد بدون أب، أحيا الموتى بإذن الله، رفعه الله إليه.",
+      "source": "ابن كثير",
+      "source_url": "https://raw.githubusercontent.com/magdymeko456-cell/mirror_scorpion_data/main/stories/issa.json"
+    },
+    {
+      "id": "muhammad",
+      "name": "سيدنا محمد ﷺ",
+      "summary": "خاتم الأنبياء والمرسلين، صاحب الرسالة الخالدة، الرحمة المهداة للعالمين.",
+      "source": "ابن كثير",
+      "source_url": "https://raw.githubusercontent.com/magdymeko456-cell/mirror_scorpion_data/main/stories/muhammad.json"
+    }
+  ],
+  "women": [],
+  "nations": [],
+  "animals": [],
+  "human": []
+}

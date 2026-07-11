@@ -1,4 +1,6 @@
+#!/bin/bash
+echo "🦂 رفع تحديثات Mirror Scorpion إلى GitHub..."
 git add .
-git commit -m "تحديث الكروت والمسارات - أدهم"
+git commit -m "🦂 PHASE 1: إصلاح الأساس - مسارات + خدمات + pubspec محدث - $(date)"
 git push origin main
-echo "تم رفع المركب إلى جيت هب بنجاح!"
+echo "✅ تم الرفع بنجاح!"
