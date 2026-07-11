@@ -18,66 +18,22 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Flutter (Modern Stable Version)
+      - name: Set up Flutter (Stable 3.27.0)
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.27.0'
           channel: 'stable'
           cache: true
 
-      - name: 🔥 Reconstruct Android Project Fresh
-        run: |
-          rm -rf android/
-          flutter create --project-name mirror_scorpion_v2 --org com.tetocollctionway --platforms android .
-
-      - name: 🛠️ Force Pubspec SDK & Dependencies Compatibility
-        run: |
-          echo "[+] Rewriting Dart SDK constraint to match environment..."
-          sed -i 's/sdk: .*/sdk: ">=3.6.0 <4.0.0"/g' pubspec.yaml || true
-          
-          echo "[+] Optimizing path_provider version in pubspec.yaml..."
-          sed -i 's/path_provider:.*/path_provider: any/g' pubspec.yaml || true
+      - name: Run Cleanup and Architecture Patch Script
+        run: ./cleanup_and_patch.sh
 
       - name: 🚀 Prepare Flutter Dependencies
         run: |
           flutter clean
           flutter pub get
 
-      - name: 🛠️ Patch Gradle & Kotlin Version (Enforce 1.8.20)
-        run: |
-          echo "[+] Forcing Kotlin 1.8.20 directly into top-level build.gradle..."
-          cat << 'GRADLE' > android/build.gradle
-          buildscript {
-              ext.kotlin_version = '1.8.20'
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:7.3.0'
-                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:\$kotlin_version"
-              }
-          }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.buildDir = '../build'
-          subprojects {
-              project.buildDir = "\${rootProject.buildDir}/\${project.name}"
-          }
-          subprojects {
-              project.evaluationDependsOn(':app')
-          }
-          tasks.register("clean", Delete) {
-              delete rootProject.buildDir
-          }
-          GRADLE
-          echo "[+] Patch injected successfully!"
-
-      - name: 🏗️ Build Final APK
+      - name: 🏗️ Build Final Obfuscated APK
         run: |
           flutter build apk --release --target-platform android-arm64 --no-tree-shake-icons --obfuscate --split-debug-info=build/debug_info
 
