@@ -25,14 +25,10 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🔥 Fix Pubspec Architecture Dynamically
+      - name: 🔥 Fix environment and dependencies
         run: |
-          echo "[+] Correcting Dart environment constraint..."
-          # تعديل صيغة البيئة بالشكل الرسمي الصحيح لفلاتر
-          sed -i 's/sdk: .*/sdk: ">=3.0.0 <4.0.0"/g' pubspec.yaml || true
+          sed -i 's/sdk: .*/sdk: ">=3.6.0 <4.0.0"/g' pubspec.yaml || true
           sed -i 's/path_provider:.*/path_provider: any/g' pubspec.yaml || true
-          
-          echo "[+] Reconstructing Android directory fresh..."
           rm -rf android/
           flutter create --project-name mirror_scorpion_v2 --org com.tetocollctionway --platforms android .
 
