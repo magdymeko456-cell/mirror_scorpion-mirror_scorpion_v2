@@ -46,7 +46,7 @@ class _DocumentTranslationScreenState extends State<DocumentTranslationScreen> {
 
   Future<void> _browseFile() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'txt', 'doc', 'docx', 'rtf'],
       );

@@ -234,7 +234,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
 
   Future<void> _pickAudioFile() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.audio,
       );
       if (result != null && result.files.single.path != null) {

@@ -181,11 +181,11 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen> {
     final file = await audioService.pickAudioFile();
     if (file != null) {
       setState(() {
-        _upperController.text = '🎵 ملف صوتي: ${file.path.split('/').last}';
+        _upperController.text = '🎵 ملف صوتي: ${result.files.single.name}';
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ تم رفع الملف: ${file.path.split('/').last}، جاري الترجمة...'),
+          content: Text('✅ تم رفع الملف: ${result.files.single.name}، جاري الترجمة...'),
         ),
       );
       _translateSpeech();

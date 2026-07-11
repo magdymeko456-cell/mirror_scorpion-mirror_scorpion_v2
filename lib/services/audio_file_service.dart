@@ -9,7 +9,7 @@ class AudioFileService extends ChangeNotifier {
   AudioFileService._internal();
 
   Future<String?> pickAudioFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['mp3', 'wav', 'm4a', 'ogg', 'aac'],
     );
