@@ -25,10 +25,12 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🔥 Fix environment and dependencies
+      - name: 🔥 Fix environment (Keep SDK as is)
         run: |
-          sed -i 's/sdk: .*/sdk: ">=3.6.0 <4.0.0"/g' pubspec.yaml || true
+          # نلغي أي قيد يمنع التحديث للـ Dependencies
           sed -i 's/path_provider:.*/path_provider: any/g' pubspec.yaml || true
+          
+          echo "[+] Reconstructing Android directory fresh..."
           rm -rf android/
           flutter create --project-name mirror_scorpion_v2 --org com.tetocollctionway --platforms android .
 
@@ -37,7 +39,7 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: 🛠️ Patch Gradle & Kotlin Version (Enforce 1.8.20)
+      - name: 🛠️ Patch Gradle & Kotlin Version
         run: |
           cat << 'GRADLE' > android/build.gradle
           buildscript {

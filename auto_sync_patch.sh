@@ -1,21 +1,8 @@
 #!/bin/bash
 set -e
 
-echo "🔍 [1/4] جاري فحص قوام وتطابق آخر 3 تعديلات في المستودع..."
+echo "🔍 [1/3] تنظيف وتطهير البيئة الحالية..."
 
-# 1. جلب آخر التحديثات للتأكد من الحالة
-git fetch origin main
-
-# 2. استخراج قوام الملفات الأساسية من آخر 3 كومتس للتحقق من النسخة المستقرة
-# بنشوف القوام المتطابق لـ build.yml و build.gradle
-git show HEAD:.github/workflows/build.yml > build_v1.tmp 2>/dev/null || true
-git show HEAD~1:.github/workflows/build.yml > build_v2.tmp 2>/dev/null || true
-git show HEAD~2:.github/workflows/build.yml > build_v3.tmp 2>/dev/null || true
-
-echo "✨ [2/4] تجميع وتوليد القوام الصحيح والنهائي لملفات البناء..."
-
-# 3. مسح الملفات القديمة واللخبطة وكتابة الملف الصحيح والنظيف 100% لـ build.yml
-mkdir -p .github/workflows
 cat << 'WORKFLOW' > .github/workflows/build.yml
 name: Build Mirror Scorpion
 
@@ -44,10 +31,12 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🔥 Fix environment and dependencies
+      - name: 🔥 Fix environment (Keep SDK as is)
         run: |
-          sed -i 's/sdk: .*/sdk: ">=3.6.0 <4.0.0"/g' pubspec.yaml || true
+          # نلغي أي قيد يمنع التحديث للـ Dependencies
           sed -i 's/path_provider:.*/path_provider: any/g' pubspec.yaml || true
+          
+          echo "[+] Reconstructing Android directory fresh..."
           rm -rf android/
           flutter create --project-name mirror_scorpion_v2 --org com.tetocollctionway --platforms android .
 
@@ -56,7 +45,7 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: 🛠️ Patch Gradle & Kotlin Version (Enforce 1.8.20)
+      - name: 🛠️ Patch Gradle & Kotlin Version
         run: |
           cat << 'GRADLE' > android/build.gradle
           buildscript {
@@ -99,13 +88,6 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
 WORKFLOW
 
-echo "🧹 [3/4] تنظيف الملفات المؤقتة وإعادة الهيكلة..."
-rm -f *.tmp
-
-# 4. الرفع التلقائي المباشر أول ما يخلص
-echo "🚀 [4/4] جاري إجبار السيرفر على اعتماد الملف الصحيح والرفع الآن..."
 git add .github/workflows/build.yml auto_sync_patch.sh
-git commit -m "🦂 FIX: اعتماد قوام ملفات البناء الصحيحة ومسح اللخبطة تلقائياً" || true
+git commit -m "🦂 FIX: اعتماد بناء مرن بدون تلاعب في الـ SDK constraint" || true
 git push origin main --force
-
-echo "🎯 تم الفحص والمطابقة والرفع بنجاح يا تامر! السيرفر شغال دلوقتي حالا."
