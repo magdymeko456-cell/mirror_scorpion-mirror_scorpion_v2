@@ -18,11 +18,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 🚀 Set up Advanced Flutter (To match Dart >=3.9.0)
+      - name: 🚀 Set up Stable Flutter
         uses: subosito/flutter-action@v2
         with:
-          # رفعنا النسخة هنا لـ 3.29.0 لتوفير Dart SDK متوافق تماماً مع متطلبات مشروعك
-          flutter-version: '3.29.0'
+          flutter-version: '3.27.0'
           channel: 'stable'
           cache: true
 
@@ -31,6 +30,10 @@ jobs:
           echo "[+] Clearing and creating fresh android architecture..."
           rm -rf android/
           flutter create --project-name mirror_scorpion_v2 --org com.tetocollctionway --platforms android .
+
+      - name: 🛠️ Fix path_provider Dependency
+        run: |
+          sed -i 's/path_provider:.*/path_provider: any/g' pubspec.yaml || true
 
       - name: 📦 Fetch Flutter Dependencies
         run: |
