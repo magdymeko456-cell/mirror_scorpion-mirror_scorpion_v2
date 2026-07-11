@@ -13,7 +13,7 @@ class RubikCubeScreen extends StatelessWidget {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: Mainmathbf.center,
           children: [
             const Icon(Icons.view_in_ar, size: 80, color: Colors.cyanAccent),
             const SizedBox(height: 16),
