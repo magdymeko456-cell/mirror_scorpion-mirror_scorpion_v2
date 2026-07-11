@@ -12,26 +12,15 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # UI
   cupertino_icons: ^1.0.8
   provider: ^6.1.2
-
-  # Translation
   http: ^1.2.1
-
-  # Audio: Text-to-Speech & Speech-to-Text
   flutter_tts: ^4.1.0
   speech_to_text: ^7.4.0
-
-  # Image & OCR
   google_mlkit_text_recognition: ^0.16.0
   image_picker: ^1.1.2
-
-  # Storage
   shared_preferences: ^2.3.3
   permission_handler: ^11.3.1
-
-  # Utilities
   path_provider: ^2.1.4
   intl: ^0.20.2
   share_plus: ^12.0.2
