@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🔍 [1/2] توليد ملف بناء نظيف ومستقر 100%..."
+echo "🔍 [1/2] توليد ملف الـ Workflow وتحديث بيئة السيرفر..."
 mkdir -p .github/workflows
 
 cat << 'WORKFLOW' > .github/workflows/build.yml
@@ -32,15 +32,36 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🔥 Reconstruct Android Platform Fresh
+      - name: 🔥 Overwrite Pubspec Environment Cleanly (No Quotes)
         run: |
-          echo "[+] Clearing and creating fresh android architecture..."
+          echo "[+] Injecting exact official SDK layout into pubspec.yaml..."
+          # حذف الأسطر القديمة لحقن الصيغة الرسمية النظيفة بدون علامات تنصيص
+          cat << 'PUB' > pubspec.yaml
+          name: mirror_scorpion_v2
+          description: "Mirror Scorpion Application - Heart is Adham"
+          publish_to: 'none'
+          version: 1.0.0+1
+
+          environment:
+            sdk: '>=3.0.0 <4.0.0'
+
+          dependencies:
+            flutter:
+              sdk: flutter
+            path_provider: any
+
+          dev_dependencies:
+            flutter_test:
+              sdk: flutter
+            flutter_lints: ^3.0.0
+
+          flutter:
+            uses-material-design: true
+          PUB
+
+          echo "[+] Reconstructing Android directory fresh..."
           rm -rf android/
           flutter create --project-name mirror_scorpion_v2 --org com.tetocollctionway --platforms android .
-
-      - name: 🛠️ Fix path_provider Dependency
-        run: |
-          sed -i 's/path_provider:.*/path_provider: any/g' pubspec.yaml || true
 
       - name: 📦 Fetch Flutter Dependencies
         run: |
@@ -90,7 +111,7 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
 WORKFLOW
 
-echo "🚀 [2/2] رفع التعديلات الحقيقية وإنهاء الدائرة المفرغة..."
-git add .github/workflows/build.yml auto_sync_patch.sh pubspec.yaml
-git commit -m "🦂 FIX: تعديل الـ SDK الأصلي في pubspec وتثبيت البناء المستقر" || true
+echo "🚀 [2/2] رفع الملف المرجعي وتطهير السيرفر بالـ Force Push..."
+git add .github/workflows/build.yml auto_sync_patch.sh
+git commit -m "🦂 FIX: فرض هيكلية pubspec معيارية بدون علامات تنصيص" || true
 git push origin main --force
