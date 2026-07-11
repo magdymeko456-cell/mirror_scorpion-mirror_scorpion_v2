@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🔍 [1/2] توليد ملف الـ Workflow وتحديث بيئة السيرفر..."
+echo "🔍 [1/2] توليد ملف الـ Workflow وتثبيت البناء المستقر..."
 mkdir -p .github/workflows
 
 cat << 'WORKFLOW' > .github/workflows/build.yml
@@ -32,10 +32,8 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🔥 Overwrite Pubspec Environment Cleanly (No Quotes)
+      - name: 🔥 Overwrite Pubspec Environment Cleanly
         run: |
-          echo "[+] Injecting exact official SDK layout into pubspec.yaml..."
-          # حذف الأسطر القديمة لحقن الصيغة الرسمية النظيفة بدون علامات تنصيص
           cat << 'PUB' > pubspec.yaml
           name: mirror_scorpion_v2
           description: "Mirror Scorpion Application - Heart is Adham"
@@ -68,14 +66,16 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: 🛠️ Patch Gradle & Kotlin Version (Enforce 1.8.20)
+      - name: 🛠️ Patch Gradle & Repositories (Anti-403 Forbidden)
         run: |
+          echo "[+] Injecting advanced resilient repositories to bypass 403 network restrictions..."
           cat << 'GRADLE' > android/build.gradle
           buildscript {
               ext.kotlin_version = '1.8.20'
               repositories {
                   google()
                   mavenCentral()
+                  maven { url "https://plugins.gradle.org/m2/" }
               }
               dependencies {
                   classpath 'com.android.tools.build:gradle:7.3.0'
@@ -86,6 +86,7 @@ jobs:
               repositories {
                   google()
                   mavenCentral()
+                  maven { url "https://plugins.gradle.org/m2/" }
               }
           }
           rootProject.buildDir = '../build'
@@ -99,6 +100,7 @@ jobs:
               delete rootProject.buildDir
           }
           GRADLE
+          echo "[+] Resilient Gradle configurations injected!"
 
       - name: 🏗️ Build Final Obfuscated APK
         run: |
@@ -111,7 +113,7 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
 WORKFLOW
 
-echo "🚀 [2/2] رفع الملف المرجعي وتطهير السيرفر بالـ Force Push..."
+echo "🚀 [2/2] رفع التحديث لحل أزمة الشبكة وتطهير السيرفر..."
 git add .github/workflows/build.yml auto_sync_patch.sh
-git commit -m "🦂 FIX: فرض هيكلية pubspec معيارية بدون علامات تنصيص" || true
+git commit -m "🦂 FIX: تخطي خطأ 403 Forbidden بإضافة مستودعات احتياطية للجرادل" || true
 git push origin main --force

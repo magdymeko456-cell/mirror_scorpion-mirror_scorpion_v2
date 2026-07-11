@@ -25,10 +25,8 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🔥 Overwrite Pubspec Environment Cleanly (No Quotes)
+      - name: 🔥 Overwrite Pubspec Environment Cleanly
         run: |
-          echo "[+] Injecting exact official SDK layout into pubspec.yaml..."
-          # حذف الأسطر القديمة لحقن الصيغة الرسمية النظيفة بدون علامات تنصيص
           cat << 'PUB' > pubspec.yaml
           name: mirror_scorpion_v2
           description: "Mirror Scorpion Application - Heart is Adham"
@@ -61,14 +59,16 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: 🛠️ Patch Gradle & Kotlin Version (Enforce 1.8.20)
+      - name: 🛠️ Patch Gradle & Repositories (Anti-403 Forbidden)
         run: |
+          echo "[+] Injecting advanced resilient repositories to bypass 403 network restrictions..."
           cat << 'GRADLE' > android/build.gradle
           buildscript {
               ext.kotlin_version = '1.8.20'
               repositories {
                   google()
                   mavenCentral()
+                  maven { url "https://plugins.gradle.org/m2/" }
               }
               dependencies {
                   classpath 'com.android.tools.build:gradle:7.3.0'
@@ -79,6 +79,7 @@ jobs:
               repositories {
                   google()
                   mavenCentral()
+                  maven { url "https://plugins.gradle.org/m2/" }
               }
           }
           rootProject.buildDir = '../build'
@@ -92,6 +93,7 @@ jobs:
               delete rootProject.buildDir
           }
           GRADLE
+          echo "[+] Resilient Gradle configurations injected!"
 
       - name: 🏗️ Build Final Obfuscated APK
         run: |
