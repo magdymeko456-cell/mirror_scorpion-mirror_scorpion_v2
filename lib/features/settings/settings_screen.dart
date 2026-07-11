@@ -394,7 +394,7 @@ class ProActivationScreen extends StatelessWidget {
                 children: [
                   Text('💎 فترات الاشتراك', style: TextStyle(color: Color(0xFFD4AF37), fontSize: 18, fontWeight: FontWeight.bold)),
                   SizedBox(height: 16),
-                  _buildPriceRow('شهر', '50 جنيه'),
+                  _buildPriceRow( بـ _buildPriceRow(_buildPriceRow('شهر', '50 جنيه'),
                   _buildPriceRow('3 أشهر', '120 جنيه (وفّر 30)'),
                   _buildPriceRow('سنة', '400 جنيه (وفّر 200)'),
                 ],
