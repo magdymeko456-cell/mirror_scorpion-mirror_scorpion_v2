@@ -66,9 +66,9 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: 🛠️ Patch Gradle & Repositories (Anti-403 Forbidden)
+      - name: 🛠️ Patch Gradle (Hardcoded Safe Kotlin Version)
         run: |
-          echo "[+] Injecting advanced resilient repositories to bypass 403 network restrictions..."
+          echo "[+] Injecting hardcoded production-ready build.gradle..."
           cat << 'GRADLE' > android/build.gradle
           buildscript {
               ext.kotlin_version = '1.8.20'
@@ -79,7 +79,7 @@ jobs:
               }
               dependencies {
                   classpath 'com.android.tools.build:gradle:7.3.0'
-                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:\$kotlin_version"
+                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20"
               }
           }
           allprojects {
@@ -91,7 +91,7 @@ jobs:
           }
           rootProject.buildDir = '../build'
           subprojects {
-              project.buildDir = "\${rootProject.buildDir}/\${project.name}"
+              project.buildDir = "${rootProject.buildDir}/${project.name}"
           }
           subprojects {
               project.evaluationDependsOn(':app')
@@ -100,7 +100,7 @@ jobs:
               delete rootProject.buildDir
           }
           GRADLE
-          echo "[+] Resilient Gradle configurations injected!"
+          echo "[+] Safe build.gradle injected!"
 
       - name: 🏗️ Build Final Obfuscated APK
         run: |
@@ -113,7 +113,7 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
 WORKFLOW
 
-echo "🚀 [2/2] رفع التحديث لحل أزمة الشبكة وتطهير السيرفر..."
+echo "🚀 [2/2] رفع التحديث النهائي لتصحيح إصدار كوتلن..."
 git add .github/workflows/build.yml auto_sync_patch.sh
-git commit -m "🦂 FIX: تخطي خطأ 403 Forbidden بإضافة مستودعات احتياطية للجرادل" || true
+git commit -m "🦂 FIX: تثبيت نصي مباشر لإصدار kotlin-gradle-plugin بدون رموز هروب" || true
 git push origin main --force
