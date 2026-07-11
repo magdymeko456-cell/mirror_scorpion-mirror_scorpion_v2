@@ -792,3 +792,166 @@ class _StoriesScreenState extends State<StoriesScreen> {
     );
   }
 }
+//www.googleapis.com/books/v1/volumes?q=prophets',
+    },
+    {
+      'id': 'yahya',
+      'name': 'سيدنا يحيى عليه السلام',
+      'summary': 'ابن زكريا، آتاه الله الحكم صبياً، وكان باراً بوالديه تقياً نقياً شجاعاً في الحق.',
+      'category': 'prophets',
+      'source': 'ابن كثير',
+    },
+    {
+      'id': 'isa',
+      'name': 'سيدنا عيسى عليه السلام',
+      'summary': 'كلمة الله ألقاها إلى مريم وروح منه، تكلم في المهد صبياً، وأبرأ الأكمه والأبرص وأحيا الموتى بإذن الله، ورفعه الله إليه.',
+      'category': 'prophets',
+      'source': 'ابن كثير',
+    },
+    {
+      'id': 'mohammed',
+      'name': 'سيدنا محمد صلى الله عليه وسلم',
+      'summary': 'خاتم الأنبياء والمرسلين، أرسله الله رحمة للعالمين، أنزل عليه القرآن الكريم، قاد الأمة من الظلمات إلى النور بحلقات من الصبر والجهاد.',
+      'category': 'prophets',
+      'source': 'السيرة النبوية',
+    }
+  ];
+
+  String _currentLanguage = 'ar';
+  String _activeVoice = 'Adham'; // الصوت الافتراضي
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D1B2A),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1B2838),
+        title: const Text('📖 قصص الأنبياء والأحاديث القدسية', style: TextStyle(color: Colors.white)),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          _buildSectionTitle('🌟 الأحاديث القدسية المترجمة'),
+          SizedBox(
+            height: 180,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _hadithQudsi.length,
+              itemBuilder: (context, index) {
+                final hadith = _hadithQudsi[index];
+                return Container(
+                  width: 280,
+                  margin: const EdgeInsets.only(left: 10),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B2838),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amberAccent.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('حديث قدسي #${hadith['id']}', style: const TextStyle(color: Colors.amberAccent, fontSize: 12)),
+                      const SizedBox(height: 6),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Text(
+                            hadith['text']!,
+                            style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.volume_up, color: Colors.cyanAccent, size: 20),
+                            onPressed: () => _speakStory(hadith['text']!),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.share, color: Colors.cyanAccent, size: 20),
+                            onPressed: () => Share.share(hadith['text']!),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildSectionTitle('📚 ركن القصص (25 قصة للأنبياء)'),
+          ..._prophetsStories.map((story) => Card(
+            color: const Color(0xFF1B2838),
+            margin: const EdgeInsets.only(bottom: 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: ExpansionTile(
+              title: Text(story['name'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: Text('المصدر: ${story['source']}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+              leading: const Icon(Icons.book, color: Colors.cyanAccent),
+              iconColor: Colors.white,
+              collapsedIconColor: Colors.white70,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(story['summary'], style: const TextStyle(color: Colors.white90, fontSize: 14, height: 1.4)),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton.icon(
+                            icon: const Icon(Icons.volume_up, color: Colors.cyanAccent),
+                            label: const Text('استماع', style: TextStyle(color: Colors.cyanAccent)),
+                            onPressed: () => _speakStory(story['summary']),
+                          ),
+                          TextButton.icon(
+                            icon: const Icon(Icons.translate, color: Colors.amberAccent),
+                            label: const Text('ترجمة الفصول', style: TextStyle(color: Colors.amberAccent)),
+                            onPressed: () => _showTranslateDialog(story['summary']),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
+                )
+              ],
+            ),
+          )).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+      child: Text(title),
+    );
+  }
+
+  void _speakStory(String text) {
+    context.read<TTSService>().speak(text, languageCode: _currentLanguage);
+  }
+
+  void _showTranslateDialog(String text) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1B2838),
+        title: const Text('ترجمة القصة بصوتك أو بأصوات النظام', style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: const Text('يمكنك الاختيار بين أصوات (أدهم، سيف، سلمى، سما، سارة) أو الصوت الخاص بك بالنسخة الكاملة.', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            child: const Text('ترجمة فورية الآن', style: TextStyle(color: Colors.cyanAccent)),
+            onPressed: () => Navigator.pop(context),
+          )
+        ],
+      ),
+    );
+  }
+}
