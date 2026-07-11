@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../services/tts_service.dart';
 import '../../services/language_service.dart';
 import '../../services/audio_file_service.dart';
@@ -31,33 +32,113 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
   bool _clearOnNextInput = false;
 
   final Map<String, String> _hundredLanguages = {
-    'af': 'Afrikaans', 'sq': 'Shqip', 'am': 'አማርኛ', 'ar': 'العربية',
-    'hy': 'Հայերեն', 'az': 'Azərbaycan', 'eu': 'Euskara', 'be': 'Беларуская',
-    'bn': 'বাংলা', 'bs': 'Bosanski', 'bg': 'Български', 'ca': 'Català',
-    'ceb': 'Cebuano', 'ny': 'Chichewa', 'zh': '中文', 'co': 'Corsu',
-    'hr': 'Hrvatski', 'cs': 'Čeština', 'da': 'Dansk', 'nl': 'Nederlands',
-    'en': 'English', 'eo': 'Esperanto', 'et': 'Eesti', 'tl': 'Filipino',
-    'fi': 'Suomi', 'fr': 'Français', 'fy': 'Frysk', 'gl': 'Galego',
-    'ka': 'ქართული', 'de': 'Deutsch', 'el': 'Ελληνικά', 'gu': 'ગુજરાતી',
-    'ht': 'Kreyòl', 'ha': 'Hausa', 'haw': 'Hawaiʻi', 'iw': 'עברית',
-    'hi': 'हिन्दी', 'hmn': 'Hmong', 'hu': 'Magyar', 'is': 'Íslenska',
-    'ig': 'Igbo', 'id': 'Bahasa Indonesia', 'ga': 'Gaeilge', 'it': 'Italiano',
-    'ja': '日本語', 'jw': 'Basa Jawa', 'kn': 'ಕನ್ನಡ', 'kk': 'Қазақ',
-    'km': 'ខ្មែរ', 'rw': 'Kinyarwanda', 'ko': '한국어', 'ku': 'Kurdî',
-    'ky': 'Кыргызча', 'lo': 'ລາວ', 'la': 'Latina', 'lv': 'Latviešu',
-    'lt': 'Lietuvių', 'lb': 'Lëtzebuergesch', 'mk': 'Македонски',
-    'mg': 'Malagasy', 'ms': 'Bahasa Melayu', 'ml': 'മലയാളം', 'mt': 'Malti',
-    'mi': 'Māori', 'mr': 'मराठी', 'mn': 'Монгол', 'my': 'မြန်မာ',
-    'ne': 'नेपाली', 'no': 'Norsk', 'or': 'ଓଡ଼ିଆ', 'ps': 'پښتو',
-    'fa': 'فارسی', 'pl': 'Polski', 'pt': 'Português', 'pa': 'ਪੰਜਾਬੀ',
-    'ro': 'Română', 'ru': 'Русский', 'sm': 'Samoa', 'gd': 'Gàidhlig',
-    'sr': 'Српски', 'st': 'Sesotho', 'sn': 'Shona', 'sd': 'سنڌي',
-    'si': 'සිංහල', 'sk': 'Slovenčina', 'sl': 'Slovenščina', 'so': 'Soomaali',
-    'es': 'Español', 'su': 'Basa Sunda', 'sw': 'Kiswahili', 'sv': 'Svenska',
-    'tg': 'Тоҷикӣ', 'ta': 'தமிழ்', 'tt': 'Татар', 'te': 'తెలుగు',
-    'th': 'ไทย', 'tr': 'Türkçe', 'tk': 'Türkmen', 'ug': 'ئۇيغۇرچە',
-    'uk': 'Українська', 'ur': 'اردو', 'uz': "O'zbek", 'vi': 'Tiếng Việt',
-    'cy': 'Cymraeg', 'xh': 'isiXhosa', 'yi': 'יידיש', 'yo': 'Yorùbá',
+    'af': 'Afrikaans',
+    'sq': 'Shqip',
+    'am': 'አማርኛ',
+    'ar': 'العربية',
+    'hy': 'Հայերեն',
+    'az': 'Azərbaycan',
+    'eu': 'Euskara',
+    'be': 'Беларуская',
+    'bn': 'বাংলা',
+    'bs': 'Bosanski',
+    'bg': 'Български',
+    'ca': 'Català',
+    'ceb': 'Cebuano',
+    'ny': 'Chichewa',
+    'zh': '中文',
+    'co': 'Corsu',
+    'hr': 'Hrvatski',
+    'cs': 'Čeština',
+    'da': 'Dansk',
+    'nl': 'Nederlands',
+    'en': 'English',
+    'eo': 'Esperanto',
+    'et': 'Eesti',
+    'tl': 'Filipino',
+    'fi': 'Suomi',
+    'fr': 'Français',
+    'fy': 'Frysk',
+    'gl': 'Galego',
+    'ka': 'ქართული',
+    'de': 'Deutsch',
+    'el': 'Ελληνικά',
+    'gu': 'Gujarati',
+    'ht': 'Kreyòl',
+    'ha': 'Hausa',
+    'haw': 'Hawaiian',
+    'he': 'עברית',
+    'hi': 'हिन्दी',
+    'hmn': 'Hmong',
+    'hu': 'Magyar',
+    'is': 'Íslenska',
+    'ig': 'Igbo',
+    'id': 'Bahasa Indonesia',
+    'ga': 'Gaeilge',
+    'it': 'Italiano',
+    'ja': '日本語',
+    'jv': 'Basa Jawa',
+    'kn': 'ಕನ್ನಡ',
+    'kk': 'Қазақ',
+    'km': 'ខ្មែរ',
+    'rw': 'Kinyarwanda',
+    'ko': '한국어',
+    'ku': 'Kurdî',
+    'ky': 'Кыргызча',
+    'lo': 'ລາວ',
+    'la': 'Latina',
+    'lv': 'Latviešu',
+    'lt': 'Lietuvių',
+    'lb': 'Lëtzebuergesch',
+    'mk': 'Македонски',
+    'mg': 'Malagasy',
+    'ms': 'Bahasa Melayu',
+    'ml': 'മലയാളം',
+    'mt': 'Malti',
+    'mi': 'Te Reo Māori',
+    'mr': 'मराठी',
+    'mn': 'Монгол',
+    'my': 'မြန်မာ',
+    'ne': 'नेपाली',
+    'no': 'Norsk',
+    'or': 'ଓଡ଼ିଆ',
+    'ps': 'پښتو',
+    'fa': 'فارسی',
+    'pl': 'Polski',
+    'pt': 'Português',
+    'pa': 'ਪੰਜਾਬੀ',
+    'ro': 'Română',
+    'ru': 'Русский',
+    'sm': 'Gagana Samoa',
+    'gd': 'Gàidhlig',
+    'sr': 'Српски',
+    'st': 'Sesotho',
+    'sn': 'Shona',
+    'sd': 'سنڌي',
+    'si': 'සිංහල',
+    'sk': 'Slovenčina',
+    'sl': 'Slovenščina',
+    'so': 'Soomaali',
+    'es': 'Español',
+    'su': 'Basa Sunda',
+    'sw': 'Kiswahili',
+    'sv': 'Svenska',
+    'tg': 'Тоҷикӣ',
+    'ta': 'தமிழ்',
+    'tt': 'Татар',
+    'te': 'తెలుగు',
+    'th': 'ไทย',
+    'tr': 'Türkçe',
+    'tk': 'Türkmen',
+    'ug': 'ئۇيغۇر',
+    'uk': 'Українська',
+    'ur': 'اردو',
+    'uz': 'Oʻzbek',
+    'vi': 'Tiếng Việt',
+    'cy': 'Cymraeg',
+    'xh': 'isiXhosa',
+    'yi': 'ייִדיש',
+    'yo': 'Yorùbá',
     'zu': 'isiZulu',
   };
 
@@ -69,114 +150,78 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat(reverse: true);
-    _loadLastLanguage();
+    _loadSavedLanguage();
   }
 
-  Future _loadLastLanguage() async {
+  Future<void> _loadSavedLanguage() async {
     final langService = Provider.of<LanguageService>(context, listen: false);
-    final lastLang = await langService.getLanguageForScreen('translation');
-    if (lastLang.isNotEmpty && _hundredLanguages.containsKey(lastLang)) {
-      setState(() => _selectedLanguage = lastLang);
-    }
-  }
-
-  @override
-  void dispose() {
-    _sourceController.dispose();
-    _translatedController.dispose();
-    _scorpionController.dispose();
-    super.dispose();
+    final saved = await langService.getLanguageForScreen('translation');
+    if (mounted) setState(() => _selectedLanguage = saved);
   }
 
   void _handleInputClearCheck() {
     if (_clearOnNextInput) {
+      _sourceController.clear();
+      _translatedController.clear();
       _clearOnNextInput = false;
     }
   }
 
-  Future<void> _handleMic() async {
+  void _handleMic() {
     if (_isListening) {
-      _isListening = false;
-      await _speechToText.stop();
-      setState(() {});
-      if (_sourceController.text.isNotEmpty) {
-        _translate();
-      }
+      _stopListening();
+    } else {
+      _startListening();
+    }
+  }
+
+  void _startListening() async {
+    bool available = await _speechToText.initialize();
+    if (!available) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('التعرف على الصوت غير متاح')),
+      );
       return;
     }
-
-    bool available = await _speechToText.initialize(
-      onError: (e) => debugPrint('Speech error: $e'),
-      onStatus: (s) {
-        if (s == 'done') {
-          setState(() => _isListening = false);
-          if (_sourceController.text.isNotEmpty) _translate();
-        }
+    _handleInputClearCheck();
+    setState(() => _isListening = true);
+    _speechToText.listen(
+      onResult: (result) {
+        setState(() {
+          _sourceController.text = result.recognizedWords;
+        });
       },
     );
+  }
 
-    if (available) {
-      setState(() {
-        if (_clearOnNextInput) {
-          _sourceController.clear();
-          _translatedController.clear();
-          _clearOnNextInput = false;
-        }
-        _isListening = true;
-      });
-      await _speechToText.listen(
-        onResult: (r) {
-          if (r.finalResult) {
-            setState(() {
-              _sourceController.text = r.recognizedWords;
-              _isListening = false;
-            });
-            if (_sourceController.text.isNotEmpty) _translate();
-          } else {
-            setState(() {
-              _sourceController.text = r.recognizedWords;
-            });
-          }
-        },
-        localeId: 'ar_SA',
-        listenMode: stt.ListenMode.confirmation,
-      );
+  void _stopListening() {
+    setState(() => _isListening = false);
+    _speechToText.stop();
+    if (_sourceController.text.isNotEmpty) {
+      _translate();
     }
   }
 
   Future<void> _translate() async {
-    if (_sourceController.text.trim().isEmpty) return;
+    final text = _sourceController.text.trim();
+    if (text.isEmpty) return;
     setState(() => _isTranslating = true);
-
     try {
-      final response = await http.get(
-        Uri.parse(
-            'https://api.mymemory.translated.net/get?q=${Uri.encodeComponent(_sourceController.text)}&langpair=ar|$_selectedLanguage'),
+      final response = await http.post(
+        Uri.parse('https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=$_selectedLanguage&dt=t&q=${Uri.encodeComponent(text)}'),
       );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final translated = data['responseData']['translatedText'] ?? '';
-        setState(() {
-          _translatedController.text = translated;
-          _isTranslating = false;
-        });
-        // حفظ في تاريخ الترجمة
-        Provider.of<DatabaseService>(context, listen: false).saveTranslation(
-          _sourceController.text,
-          translated,
-          sourceLang: 'ar',
-          targetLang: _selectedLanguage,
-        );
-      } else {
-        setState(() => _isTranslating = false);
+        final data = json.decode(response.body) as List;
+        final translated = (data[0] as List).map((e) => e[0]).join();
+        setState(() => _translatedController.text = translated);
       }
     } catch (e) {
-      // fallback محلي
+      // Fallback: تجربة ترجمة محلية
       setState(() {
-        _translatedController.text = 'ترجمة: ${_sourceController.text}';
-        _isTranslating = false;
+        _translatedController.text = '[${_hundredLanguages[_selectedLanguage] ?? _selectedLanguage}] $text';
       });
     }
+    setState(() => _isTranslating = false);
   }
 
   void _copyText() {
@@ -187,35 +232,48 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
     );
   }
 
-  Future<void> _shareAudioWithSignature() async {
-    if (_translatedController.text.isEmpty) return;
+  Future<void> _pickAudioFile() async {
     try {
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/mirror_translation.txt');
-      await file.writeAsString(
-        '$_translatedController.text\n\n- ترجم بواسطة ميرور سكربيون',
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.audio,
       );
-      await SharePlus.instance.share(
-        ShareParams(
-          text: _translatedController.text,
-          subject: 'ترجمة ميرور سكربيون',
-        ),
-      );
+      if (result != null && result.files.single.path != null) {
+        String filePath = result.files.single.path!;
+        String fileName = result.files.single.name;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('✅ تم رفع الملف الصوتي: $fileName')),
+          );
+        }
+        _sourceController.text = '🎵 ملف صوتي: $fileName\nجارٍ معالجة المحتوى الصوتي...';
+        // هنا يمكن إضافة معالجة الصوت
+      }
     } catch (e) {
-      debugPrint('Share error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('خطأ: $e')),
+      );
     }
   }
 
-  Future<void> _pickAudioFile() async {
-    final audioService = Provider.of<AudioFileService>(context, listen: false);
-    final file = await audioService.pickAudioFile();
-    if (file != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('✅ تم رفع الملف الصوتي: ${file.path.split('/').last}')),
-      );
-      _sourceController.text = '🎵 ملف صوتي: ${file.path.split('/').last}\nجارٍ معالجة المحتوى الصوتي...';
-      _translate();
-    }
+  Future<void> _shareAudioWithSignature() async {
+    if (_translatedController.text.isEmpty) return;
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/mirror_scorpion_translation.txt');
+    await file.writeAsString(
+      '${_translatedController.text}\n\n— ترجم بواسطة ميرور سكربيون —',
+    );
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: 'ترجمة بواسطة ميرور سكربيون',
+    );
+  }
+
+  @override
+  void dispose() {
+    _sourceController.dispose();
+    _translatedController.dispose();
+    _scorpionController.dispose();
+    super.dispose();
   }
 
   @override
@@ -223,7 +281,8 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
     return Scaffold(
       backgroundColor: const Color(0xFF0D1B2A),
       appBar: AppBar(
-        title: const Text('ترجمة نصية', style: TextStyle(color: Colors.white, fontSize: 16)),
+        title: const Text('ترجمة نصية',
+            style: TextStyle(color: Colors.white, fontSize: 16)),
         backgroundColor: const Color(0xFF0D1B2A),
         elevation: 0,
         centerTitle: true,
@@ -257,22 +316,31 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
                       Opacity(
                         opacity: 0.85,
                         child: Container(
-                          width: 70, height: 70,
+                          width: 70,
+                          height: 70,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.blueAccent.withOpacity(0.5), width: 1.5),
+                            border: Border.all(
+                                color: Colors.blueAccent.withOpacity(0.5),
+                                width: 1.5),
                             image: const DecorationImage(
-                              image: AssetImage('assets/images/scorpion_icon.jpeg'),
+                              image: AssetImage(
+                                  'assets/images/scorpion_icon.jpeg'),
                               fit: BoxFit.cover,
                             ),
                           ),
                         ),
                       ),
                       Container(
-                        width: 120, height: 1,
+                        width: 120,
+                        height: 1,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Colors.transparent, Colors.cyanAccent.withOpacity(0.4), Colors.transparent],
+                            colors: [
+                              Colors.transparent,
+                              Colors.cyanAccent.withOpacity(0.4),
+                              Colors.transparent,
+                            ],
                           ),
                         ),
                       ),
@@ -286,18 +354,21 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
               Center(
                 child: Container(
                   width: 260,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1B2838),
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.blueAccent.withOpacity(0.4), width: 1.5),
+                    border: Border.all(
+                        color: Colors.blueAccent.withOpacity(0.4), width: 1.5),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: _selectedLanguage,
                       isExpanded: true,
                       dropdownColor: const Color(0xFF1B2838),
-                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.cyanAccent),
+                      icon: const Icon(Icons.keyboard_arrow_down,
+                          color: Colors.cyanAccent),
                       items: _hundredLanguages.entries
                           .map((e) => DropdownMenuItem(
                                 value: e.key,
@@ -313,7 +384,8 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
                         setState(() => _selectedLanguage = v);
                         final langService =
                             Provider.of<LanguageService>(context, listen: false);
-                        await langService.saveLanguageForScreen('translation', v);
+                        await langService.saveLanguageForScreen(
+                            'translation', v);
                         if (_sourceController.text.isNotEmpty) _translate();
                       },
                     ),
@@ -330,7 +402,9 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
                   color: Colors.white.withOpacity(0.03),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: _isListening ? Colors.redAccent.withOpacity(0.5) : Colors.white12,
+                    color: _isListening
+                        ? Colors.redAccent.withOpacity(0.5)
+                        : Colors.white12,
                   ),
                 ),
                 child: Stack(
@@ -341,7 +415,8 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
                       style: const TextStyle(color: Colors.white, fontSize: 17),
                       decoration: const InputDecoration(
                         hintText: 'ابدأ بالكتابة أو اضغط المايك للتحدث...',
-                        hintStyle: TextStyle(color: Colors.white30, fontSize: 15),
+                        hintStyle:
+                            TextStyle(color: Colors.white30, fontSize: 15),
                         border: InputBorder.none,
                       ),
                       onChanged: (val) => _handleInputClearCheck(),
@@ -352,7 +427,8 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
                       },
                     ),
                     Positioned(
-                      bottom: 0, left: 0,
+                      bottom: 0,
+                      left: 0,
                       child: GestureDetector(
                         onTap: _handleMic,
                         child: CircleAvatar(
@@ -370,12 +446,16 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
                     ),
                     if (_sourceController.text.isNotEmpty && !_isTranslating)
                       Positioned(
-                        bottom: 0, right: 0,
+                        bottom: 0,
+                        right: 0,
                         child: TextButton.icon(
                           onPressed: _translate,
-                          icon: const Icon(Icons.auto_awesome, color: Colors.amber, size: 18),
+                          icon: const Icon(Icons.auto_awesome,
+                              color: Colors.amber, size: 18),
                           label: const Text('ترجم الآن',
-                              style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+                              style: TextStyle(
+                                  color: Colors.amber,
+                                  fontWeight: FontWeight.bold)),
                         ),
                       ),
                   ],
@@ -388,7 +468,8 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: LinearProgressIndicator(
-                      color: Colors.cyanAccent, backgroundColor: Colors.white12),
+                      color: Colors.cyanAccent,
+                      backgroundColor: Colors.white12),
                 ),
 
               // المحرر السفلي (الترجمة)
@@ -398,7 +479,8 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
                 decoration: BoxDecoration(
                   color: Colors.blueAccent.withOpacity(0.02),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.blueAccent.withOpacity(0.2)),
+                  border:
+                      Border.all(color: Colors.blueAccent.withOpacity(0.2)),
                 ),
                 child: Column(
                   children: [
@@ -414,7 +496,8 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
                         ),
                         decoration: const InputDecoration(
                           hintText: 'الترجمة تظهر هنا...',
-                          hintStyle: TextStyle(color: Colors.white24, fontSize: 14),
+                          hintStyle:
+                              TextStyle(color: Colors.white24, fontSize: 14),
                           border: InputBorder.none,
                         ),
                       ),
@@ -423,30 +506,35 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
                       children: [
                         // نسخ
                         IconButton(
-                          icon: const Icon(Icons.copy, color: Colors.white60, size: 20),
+                          icon: const Icon(Icons.copy,
+                              color: Colors.white60, size: 20),
                           onPressed: _copyText,
                           tooltip: 'نسخ النص المترجم',
                         ),
                         // دبوس رفع ملفات صوتية
                         IconButton(
-                          icon: const Icon(Icons.push_pin, color: Colors.orangeAccent, size: 20),
+                          icon: const Icon(Icons.push_pin,
+                              color: Colors.orangeAccent, size: 20),
                           onPressed: _pickAudioFile,
                           tooltip: 'رفع ملف صوتي للترجمة',
                         ),
                         const Spacer(),
                         // مشاركة
                         IconButton(
-                          icon: const Icon(Icons.share, color: Colors.greenAccent, size: 20),
+                          icon: const Icon(Icons.share,
+                              color: Colors.greenAccent, size: 20),
                           onPressed: _shareAudioWithSignature,
                           tooltip: 'مشاركة مع توقيع ميرور سكربيون',
                         ),
                         // نطق الترجمة
                         IconButton(
-                          icon: const Icon(Icons.volume_up, color: Colors.cyanAccent, size: 24),
+                          icon: const Icon(Icons.volume_up,
+                              color: Colors.cyanAccent, size: 24),
                           onPressed: () {
                             if (_translatedController.text.isNotEmpty) {
                               Provider.of<TTSService>(context, listen: false)
-                                  .speak(_translatedController.text, language: _selectedLanguage);
+                                  .speak(_translatedController.text,
+                                      language: _selectedLanguage);
                             }
                           },
                           tooltip: 'نطق الترجمة',
@@ -461,7 +549,8 @@ class _TextTranslationScreenState extends State<TextTranslationScreen>
                 opacity: 0.2,
                 child: Text(
                   "Mirror Scorpion • 100 لغة",
-                  style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 1),
+                  style: TextStyle(
+                      color: Colors.white, fontSize: 11, letterSpacing: 1),
                 ),
               ),
             ],
