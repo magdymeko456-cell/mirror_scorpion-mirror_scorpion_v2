@@ -14,6 +14,7 @@ import 'services/language_service.dart';
 import 'services/tts_service.dart';
 import 'services/premium_verification_service.dart';
 import 'services/floating_bubble_service.dart';
+import 'services/ai_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

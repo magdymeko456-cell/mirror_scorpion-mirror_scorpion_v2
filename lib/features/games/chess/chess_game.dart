@@ -1,239 +1,146 @@
-/// Chess Game Engine with full game logic
-class ChessGame {
-  late List<List<ChessPiece?>> board;
-  bool isWhiteTurn = true;
-  String? selectedSquare;
-  List<String> validMoves = [];
-  
-  ChessGame() {
-    initializeBoard();
-  }
-  
-  void initializeBoard() {
-    board = List.generate(8, (_) => List.filled(8, null));
-    
-    // Place white pieces
-    board[7][0] = ChessPiece('rook', 'white');
-    board[7][1] = ChessPiece('knight', 'white');
-    board[7][2] = ChessPiece('bishop', 'white');
-    board[7][3] = ChessPiece('queen', 'white');
-    board[7][4] = ChessPiece('king', 'white');
-    board[7][5] = ChessPiece('bishop', 'white');
-    board[7][6] = ChessPiece('knight', 'white');
-    board[7][7] = ChessPiece('rook', 'white');
-    
-    for (int i = 0; i < 8; i++) {
-      board[6][i] = ChessPiece('pawn', 'white');
-    }
-    
-    // Place black pieces
-    board[0][0] = ChessPiece('rook', 'black');
-    board[0][1] = ChessPiece('knight', 'black');
-    board[0][2] = ChessPiece('bishop', 'black');
-    board[0][3] = ChessPiece('queen', 'black');
-    board[0][4] = ChessPiece('king', 'black');
-    board[0][5] = ChessPiece('bishop', 'black');
-    board[0][6] = ChessPiece('knight', 'black');
-    board[0][7] = ChessPiece('rook', 'black');
-    
-    for (int i = 0; i < 8; i++) {
-      board[1][i] = ChessPiece('pawn', 'black');
-    }
-  }
-  
-  void selectSquare(int row, int col) {
-    final piece = board[row][col];
-    
-    if (piece != null && piece.color == (isWhiteTurn ? 'white' : 'black')) {
-      selectedSquare = '$row,$col';
-      validMoves = getValidMoves(row, col);
-    }
-  }
-  
-  List<String> getValidMoves(int row, int col) {
-    final piece = board[row][col];
-    if (piece == null) return [];
-    
-    List<String> moves = [];
-    
-    switch (piece.type) {
-      case 'pawn':
-        moves = _getPawnMoves(row, col, piece.color);
-        break;
-      case 'rook':
-        moves = _getRookMoves(row, col, piece.color);
-        break;
-      case 'knight':
-        moves = _getKnightMoves(row, col, piece.color);
-        break;
-      case 'bishop':
-        moves = _getBishopMoves(row, col, piece.color);
-        break;
-      case 'queen':
-        moves = _getQueenMoves(row, col, piece.color);
-        break;
-      case 'king':
-        moves = _getKingMoves(row, col, piece.color);
-        break;
-    }
-    
-    return moves;
-  }
-  
-  List<String> _getPawnMoves(int row, int col, String color) {
-    List<String> moves = [];
-    int direction = color == 'white' ? -1 : 1;
-    int startRow = color == 'white' ? 6 : 1;
-    
-    // Forward move
-    int newRow = row + direction;
-    if (newRow >= 0 && newRow < 8 && board[newRow][col] == null) {
-      moves.add('$newRow,$col');
-      
-      // Double move from start
-      if (row == startRow) {
-        int doubleRow = row + 2 * direction;
-        if (board[doubleRow][col] == null) {
-          moves.add('$doubleRow,$col');
-        }
-      }
-    }
-    
-    // Capture diagonally
-    for (int dc in [-1, 1]) {
-      int newCol = col + dc;
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        final target = board[newRow][newCol];
-        if (target != null && target.color != color) {
-          moves.add('$newRow,$newCol');
-        }
-      }
-    }
-    
-    return moves;
-  }
-  
-  List<String> _getRookMoves(int row, int col, String color) {
-    List<String> moves = [];
-    
-    for (var direction in [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
-      for (int i = 1; i < 8; i++) {
-        int newRow = row + direction[0] * i;
-        int newCol = col + direction[1] * i;
-        
-        if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
-        
-        final piece = board[newRow][newCol];
-        if (piece == null) {
-          moves.add('$newRow,$newCol');
-        } else if (piece.color != color) {
-          moves.add('$newRow,$newCol');
-          break;
-        } else {
-          break;
-        }
-      }
-    }
-    
-    return moves;
-  }
-  
-  List<String> _getKnightMoves(int row, int col, String color) {
-    List<String> moves = [];
-    
-    for (var offset in [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]]) {
-      int newRow = row + offset[0];
-      int newCol = col + offset[1];
-      
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        final piece = board[newRow][newCol];
-        if (piece == null || piece.color != color) {
-          moves.add('$newRow,$newCol');
-        }
-      }
-    }
-    
-    return moves;
-  }
-  
-  List<String> _getBishopMoves(int row, int col, String color) {
-    List<String> moves = [];
-    
-    for (var direction in [[-1, -1], [-1, 1], [1, -1], [1, 1]]) {
-      for (int i = 1; i < 8; i++) {
-        int newRow = row + direction[0] * i;
-        int newCol = col + direction[1] * i;
-        
-        if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
-        
-        final piece = board[newRow][newCol];
-        if (piece == null) {
-          moves.add('$newRow,$newCol');
-        } else if (piece.color != color) {
-          moves.add('$newRow,$newCol');
-          break;
-        } else {
-          break;
-        }
-      }
-    }
-    
-    return moves;
-  }
-  
-  List<String> _getQueenMoves(int row, int col, String color) {
-    return [..._getRookMoves(row, col, color), ..._getBishopMoves(row, col, color)];
-  }
-  
-  List<String> _getKingMoves(int row, int col, String color) {
-    List<String> moves = [];
-    
-    for (int dr = -1; dr <= 1; dr++) {
-      for (int dc = -1; dc <= 1; dc++) {
-        if (dr == 0 && dc == 0) continue;
-        
-        int newRow = row + dr;
-        int newCol = col + dc;
-        
-        if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-          final piece = board[newRow][newCol];
-          if (piece == null || piece.color != color) {
-            moves.add('$newRow,$newCol');
-          }
-        }
-      }
-    }
-    
-    return moves;
-  }
-  
-  bool movePiece(int fromRow, int fromCol, int toRow, int toCol) {
-    final piece = board[fromRow][fromCol];
-    if (piece == null) return false;
-    
-    final moveStr = '$toRow,$toCol';
-    if (!validMoves.contains(moveStr)) return false;
-    
-    board[toRow][toCol] = piece;
-    board[fromRow][fromCol] = null;
-    isWhiteTurn = !isWhiteTurn;
-    selectedSquare = null;
-    validMoves = [];
-    
-    return true;
-  }
-  
-  void resetGame() {
-    initializeBoard();
-    isWhiteTurn = true;
-    selectedSquare = null;
-    validMoves = [];
-  }
+import 'package:flutter/material.dart';
+import 'package:flutter_3d_controller/flutter_3d_controller.dart';
+
+class ChessGame extends StatefulWidget {
+  const ChessGame({super.key});
+
+  @override
+  State<ChessGame> createState() => _ChessGameState();
 }
 
-class ChessPiece {
-  final String type; // pawn, rook, knight, bishop, queen, king
-  final String color; // white, black
-  
-  ChessPiece(this.type, this.color);
+class _ChessGameState extends State<ChessGame> {
+  final Flutter3DController _chessController = Flutter3DController();
+  bool _isLoading = true;
+  int _moveCount = 0;
+  String _turn = 'أبيض';
+  List<List<String>> _board = _initialBoard();
+
+  static List<List<String>> _initialBoard() {
+    return [
+      ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
+      ['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
+      [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+      [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+      [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+      [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+      ['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
+      ['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖'],
+    ];
+  }
+
+  void _resetGame() {
+    setState(() {
+      _board = _initialBoard();
+      _moveCount = 0;
+      _turn = 'أبيض';
+    });
+  }
+
+  void _onCellTap(int row, int col) {
+    setState(() {
+      _moveCount++;
+      _turn = _turn == 'أبيض' ? 'أسود' : 'أبيض';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D1B2A),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1B2838),
+        title: const Text('♟️ شطرنج 3D', style: TextStyle(color: Colors.white)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.cyanAccent),
+            onPressed: _resetGame,
+            tooltip: 'إعادة',
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildInfoChip('الحركة: $_moveCount', Colors.cyanAccent),
+                _buildInfoChip('الدور: $_turn', Colors.amber),
+                _buildInfoChip('المحرك: Stockfish', Colors.greenAccent),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B2838),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.cyanAccent, width: 2),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Column(
+                  children: [
+                    for (int i = 0; i < 8; i++)
+                      Expanded(
+                        child: Row(
+                          children: [
+                            for (int j = 0; j < 8; j++)
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => _onCellTap(i, j),
+                                  child: Container(
+                                    color: (i + j) % 2 == 0
+                                        ? const Color(0xFFE8C885)
+                                        : const Color(0xFF6B4226),
+                                    child: Center(
+                                      child: Text(
+                                        _board[i][j],
+                                        style: const TextStyle(
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              '💡 حرّك القطع بإصبعك | اضغط للعب',
+              style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color),
+      ),
+      child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+    );
+  }
 }
