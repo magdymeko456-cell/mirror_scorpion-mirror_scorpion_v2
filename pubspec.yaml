@@ -1,58 +1,51 @@
-name: mirror_scorpion_translate
-description: "Mirror Scorpion - Complete Translation & Inspiration App"
+name: mirror_scorpion_v2
+description: "Mirror Scorpion Premium - الترجمة الفورية والإلهام"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.2.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.4.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  
+
   # UI
-  cupertino_icons: ^1.0.6
-  provider: ^6.1.1
-  
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+
   # Translation
   http: ^1.2.1
-  
-  # Text-to-Speech & Speech Recognition
-  flutter_tts: ^4.0.2
+
+  # Audio: Text-to-Speech & Speech-to-Text
+  flutter_tts: ^4.1.0
   speech_to_text: ^7.4.0
-  
+
   # Image & OCR
-  google_mlkit_text_recognition: ^0.13.0
-  image_picker: ^1.0.0
-  camera: ^0.11.0
-  
+  google_mlkit_text_recognition: ^0.16.0
+  image_picker: ^1.1.2
+
   # Storage
-  shared_preferences: ^2.2.0
+  shared_preferences: ^2.3.3
   permission_handler: ^11.3.1
-  
+
   # Utilities
-  path_provider: ^2.1.0
+  path_provider: ^2.1.4
   intl: ^0.20.2
-  share_plus: ^12.0.2
-  file_picker: ^6.1.1
-  crypto: ^3.0.3
-  
-  # WebView
-  webview_flutter: ^4.7.0
-  
-  # Audio
+  share_plus: ^13.2.0
+  file_picker: ^11.0.2
+  sqflite: ^2.4.1
+  camera: ^0.12.0+1
   audioplayers: ^6.8.1
-  
-  # Bubble
-  dash_bubble_local:
-    path: packages/dash_bubble_local
+  webview_flutter: ^4.13.1
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true
@@ -61,4 +54,7 @@ flutter:
     - assets/data/hadith_qudsi.json
     - assets/data/quran_stories.json
     - assets/data/stories.json
-    - assets/images/scorpion_icon.jpeg
+    - assets/data/asbab_nuzul.json
+    - assets/data/arbaeen_nawawi.json
+    - assets/data/prophet_stories_ibn_kathir.json
+    - assets/images/
