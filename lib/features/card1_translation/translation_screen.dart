@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import '../../services/language_service.dart';
+import '../../services/translation_api.dart';
 import '../../services/tts_service.dart';
 
 class TranslationScreen extends StatefulWidget {
@@ -16,6 +20,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
   final TextEditingController _resultController = TextEditingController();
   String _langFrom = 'ar';
   String _langTo = 'en';
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -25,38 +30,58 @@ class _TranslationScreenState extends State<TranslationScreen> {
     _langTo = langService.getLanguageForScreen('text_to');
   }
 
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _textController.dispose();
+    _resultController.dispose();
+    super.dispose();
+  }
+
   void _swapLanguages() {
     setState(() {
-      String temp = _langFrom;
+      final temp = _langFrom;
       _langFrom = _langTo;
       _langTo = temp;
-      String tempText = _textController.text;
+      final tempText = _textController.text;
       _textController.text = _resultController.text;
       _resultController.text = tempText;
     });
+    if (_textController.text.isNotEmpty) _processTranslation();
   }
 
+  /// ترجمة فورية مع تأخير قصير (Debounce) — لا نرسل كل حرف للشبكة
   void _processTranslation() {
-    if (_textController.text.isEmpty) return;
+    if (_textController.text.trim().isEmpty) return;
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 450), _runTranslation);
+  }
+
+  Future<void> _runTranslation() async {
+    final text = _textController.text.trim();
+    if (text.isEmpty) return;
     final langService = Provider.of<LanguageService>(context, listen: false);
-    
-    // استخدام المحرك الأوفلاين الذكي المستقر لمنع الكراش
-    String res = langService.translateOffline(_textController.text, _langFrom, _langTo);
-    setState(() {
-      _resultController.text = res;
-    });
+
+    // المحرك السحابي أولاً (100+ لغة)
+    var res = await TranslationApi.translate(text, to: _langTo, from: _langFrom);
+    if (res.isEmpty) {
+      // فشل الاتصال: الاحتياط الأوفلاين المحفوظ — لا إلغاء لأي خدمة
+      res = langService.translateOffline(text, _langFrom, _langTo);
+    }
+    if (!mounted) return;
+    setState(() => _resultController.text = res);
   }
 
   @override
   Widget build(BuildContext context) {
     final langService = Provider.of<LanguageService>(context);
     final tts = Provider.of<TTSService>(context);
-    final List<String> langCodes = langService.getLanguageCodes();
-
+    final List langCodes = langService.getLanguageCodes();
     return Scaffold(
       backgroundColor: const Color(0xFF0D1B2A),
       appBar: AppBar(
-        title: const Text('المترجم النصي الذكي', style: TextStyle(color: Colors.white)),
+        title: const Text('المترجم النصي الذكي',
+            style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF1B2838),
         iconTheme: const IconThemeData(color: Colors.blueAccent),
       ),
@@ -69,30 +94,59 @@ class _TranslationScreenState extends State<TranslationScreen> {
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(color: const Color(0xFF1B2838), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFF1B2838),
+                        borderRadius: BorderRadius.circular(12)),
                     child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
+                      child: DropdownButton(
                         value: _langFrom,
                         dropdownColor: const Color(0xFF0D1B2A),
                         style: const TextStyle(color: Colors.blueAccent),
-                        items: langCodes.map((c) => DropdownMenuItem(value: c, child: Text(langService.getLanguageName(c), style: const TextStyle(color: Colors.white)))).toList(),
-                        onChanged: (v) => setState(() => _langFrom = v!),
+                        items: langCodes
+                            .map((c) => DropdownMenuItem(
+                                value: c,
+                                child: Text(langService.getLanguageName(c),
+                                    style:
+                                        const TextStyle(color: Colors.white))))
+                            .toList(),
+                        onChanged: (v) {
+                          setState(() => _langFrom = v!);
+                          if (_textController.text.isNotEmpty) {
+                            _processTranslation();
+                          }
+                        },
                       ),
                     ),
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.swap_horiz, color: Colors.amberAccent), onPressed: _swapLanguages),
+                IconButton(
+                    icon: const Icon(Icons.swap_horiz,
+                        color: Colors.amberAccent),
+                    onPressed: _swapLanguages),
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(color: const Color(0xFF1B2838), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFF1B2838),
+                        borderRadius: BorderRadius.circular(12)),
                     child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
+                      child: DropdownButton(
                         value: _langTo,
                         dropdownColor: const Color(0xFF0D1B2A),
                         style: const TextStyle(color: Colors.amberAccent),
-                        items: langCodes.map((c) => DropdownMenuItem(value: c, child: Text(langService.getLanguageName(c), style: const TextStyle(color: Colors.white)))).toList(),
-                        onChanged: (v) => setState(() => _langTo = v!),
+                        items: langCodes
+                            .map((c) => DropdownMenuItem(
+                                value: c,
+                                child: Text(langService.getLanguageName(c),
+                                    style:
+                                        const TextStyle(color: Colors.white))))
+                            .toList(),
+                        onChanged: (v) {
+                          setState(() => _langTo = v!);
+                          if (_textController.text.isNotEmpty) {
+                            _processTranslation();
+                          }
+                        },
                       ),
                     ),
                   ),
@@ -109,7 +163,8 @@ class _TranslationScreenState extends State<TranslationScreen> {
                 hintStyle: TextStyle(color: Colors.white30),
                 filled: true,
                 fillColor: Color(0xFF1B2838),
-                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12))),
               ),
               onChanged: (_) => _processTranslation(),
             ),
@@ -124,7 +179,8 @@ class _TranslationScreenState extends State<TranslationScreen> {
                 hintStyle: TextStyle(color: Colors.white30),
                 filled: true,
                 fillColor: Color(0xFF1B2838),
-                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12))),
               ),
             ),
             const SizedBox(height: 12),
@@ -134,18 +190,22 @@ class _TranslationScreenState extends State<TranslationScreen> {
                 IconButton(
                   icon: const Icon(Icons.volume_up, color: Colors.greenAccent),
                   onPressed: () {
-                    if (_resultController.text.isNotEmpty) tts.speak(_resultController.text);
+                    if (_resultController.text.isNotEmpty) {
+                      tts.speak(_resultController.text);
+                    }
                   },
                 ),
                 IconButton(
                   icon: const Icon(Icons.copy, color: Colors.white70),
                   onPressed: () {
-                    Clipboard.setData(ClipboardData(text: _resultController.text));
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم نسخ النص')));
+                    Clipboard.setData(
+                        ClipboardData(text: _resultController.text));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('✅ تم نسخ النص')));
                   },
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),
