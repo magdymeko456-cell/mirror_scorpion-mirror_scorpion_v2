@@ -104,13 +104,13 @@ class _TranslationScreenState extends State<TranslationScreen> {
                         style: const TextStyle(color: Colors.blueAccent),
                         items: langCodes
                             .map((c) => DropdownMenuItem(
-                                value: c,
+                                value: c as String,
                                 child: Text(langService.getLanguageName(c),
                                     style:
                                         const TextStyle(color: Colors.white))))
                             .toList(),
                         onChanged: (v) {
-                          setState(() => _langFrom = v!);
+                          setState(() => _langFrom = v as String);
                           if (_textController.text.isNotEmpty) {
                             _processTranslation();
                           }
@@ -136,13 +136,13 @@ class _TranslationScreenState extends State<TranslationScreen> {
                         style: const TextStyle(color: Colors.amberAccent),
                         items: langCodes
                             .map((c) => DropdownMenuItem(
-                                value: c,
+                                value: c as String,
                                 child: Text(langService.getLanguageName(c),
                                     style:
                                         const TextStyle(color: Colors.white))))
                             .toList(),
                         onChanged: (v) {
-                          setState(() => _langTo = v!);
+                          setState(() => _langTo = v as String);
                           if (_textController.text.isNotEmpty) {
                             _processTranslation();
                           }
