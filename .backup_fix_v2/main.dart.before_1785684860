@@ -1,0 +1,94 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'services/language_service.dart';
+import 'services/tts_service.dart';
+import 'services/audio_file_service.dart';
+import 'services/database_service.dart';
+
+import 'screens/text_translation_screen.dart';
+import 'features/card2_dialogue/dialogue_screen.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const MirrorScorpionApp());
+}
+
+class MirrorScorpionApp extends StatelessWidget {
+  const MirrorScorpionApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LanguageService()),
+        ChangeNotifierProvider(create: (_) => TTSService()),
+        ChangeNotifierProvider(create: (_) => AudioFileService()),
+        ChangeNotifierProvider(create: (_) => DatabaseService()),
+      ],
+      child: MaterialApp(
+        title: 'Mirror Scorpion',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor: const Color(0xFF0D1B2A),
+          primaryColor: Colors.cyanAccent,
+          colorScheme: const ColorScheme.dark(
+            primary: Colors.cyanAccent,
+            secondary: Colors.amberAccent,
+            surface: Color(0xFF1B2838),
+          ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF0D1B2A),
+            elevation: 0,
+            centerTitle: true,
+          ),
+        ),
+        home: const MainNavigationHomeScreen(),
+      ),
+    );
+  }
+}
+
+class MainNavigationHomeScreen extends StatefulWidget {
+  const MainNavigationHomeScreen({super.key});
+
+  @override
+  State<MainNavigationHomeScreen> createState() => _MainNavigationHomeScreenState();
+}
+
+class _MainNavigationHomeScreenState extends State<MainNavigationHomeScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _screens = const [
+    TextTranslationScreen(),
+    DialogueTranslationScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        backgroundColor: const Color(0xFF1B2838),
+        selectedItemColor: Colors.cyanAccent,
+        unselectedItemColor: Colors.white54,
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.translate),
+            label: 'ترجمة نصية',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.record_voice_over),
+            label: 'حوار مترجم',
+          ),
+        ],
+      ),
+    );
+  }
+}
