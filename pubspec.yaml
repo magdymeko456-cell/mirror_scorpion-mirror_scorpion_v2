@@ -23,10 +23,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   speech_to_text: ^7.4.0
   image_picker: ^1.1.2
-
-dev_dependencies:
   dash_bubble_local:
     path: packages/dash_bubble_local
+
 
   flutter_test:
     sdk: flutter
