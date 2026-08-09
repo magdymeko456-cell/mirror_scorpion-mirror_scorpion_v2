@@ -20,7 +20,7 @@ dependencies:
   path_provider: ^2.1.6
   flutter_tts: ^4.2.5
   sqflite: ^2.4.3
-  intl: ^0.20.3
+  intl: ^0.20.2
   permission_handler: ^13.0.0
   speech_to_text: ^7.5.0-beta.1
   image_picker: ^1.2.3
