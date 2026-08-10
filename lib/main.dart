@@ -19,9 +19,27 @@ import 'features/settings/settings_screen.dart';
 import 'features/about/about_app_screen.dart';
 import 'features/admin/key_generator_screen.dart';
 
+/// لغة الجهاز — يفتح التطبيق بلغة المستخدم، مع عودة للعربية عند عدم الدعم
+Locale _deviceLocale() {
+  final loc = WidgetsBinding.instance.platformDispatcher.locale;
+  const supported = [
+    Locale('ar'), Locale('en'), Locale('fr'), Locale('es'), Locale('de'),
+    Locale('it'), Locale('pt'), Locale('ru'), Locale('zh'), Locale('ja'),
+    Locale('ko'), Locale('tr'), Locale('ur'), Locale('fa'), Locale('hi'),
+    Locale('bn'), Locale('id'), Locale('ms'), Locale('nl'), Locale('pl'),
+    Locale('sv'), Locale('da'), Locale('fi'), Locale('no'), Locale('cs'),
+    Locale('hu'), Locale('ro'), Locale('el'), Locale('he'), Locale('th'),
+    Locale('vi'), Locale('tl'), Locale('sw'),
+  ];
+  if (supported.contains(loc)) return loc;
+  final lang = Locale(loc.languageCode);
+  if (supported.contains(lang)) return lang;
+  return const Locale('ar');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await LanguageService().initialize();
+  await LanguageService().init();
   await BackgroundService().initialize();
   await LanguageDownloadService().initialize();
   runApp(
@@ -53,31 +71,28 @@ class MirrorScorpionApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale('ar'), Locale('en'), Locale('fr'), Locale('es'),
-        Locale('de'), Locale('tr'), Locale('ur'), Locale('fa'),
-        Locale('hi'), Locale('bn'), Locale('id'), Locale('ms'),
-        Locale('nl'), Locale('pl'), Locale('sv'), Locale('da'),
-        Locale('fi'), Locale('no'), Locale('cs'), Locale('hu'),
-        Locale('ro'), Locale('el'), Locale('he'), Locale('th'),
-        Locale('vi'), Locale('tl'), Locale('sw'), Locale('ta'),
-        Locale('te'), Locale('kn'), Locale('ml'), Locale('gu'),
-        Locale('mr'), Locale('pa'), Locale('ne'), Locale('si'),
-        Locale('km'), Locale('my'), Locale('lo'), Locale('ka'),
-        Locale('hy'), Locale('az'), Locale('uz'), Locale('kk'),
-        Locale('ky'), Locale('tg'), Locale('mn'), Locale('ps'),
-        Locale('sd'), Locale('am'), Locale('om'), Locale('ha'),
-        Locale('ig'), Locale('yo'), Locale('zu'), Locale('xh'),
-        Locale('af'), Locale('st'), Locale('sn'), Locale('rw'),
-        Locale('mg'), Locale('ny'), Locale('eo'), Locale('cy'),
-        Locale('ga'), Locale('gd'), Locale('mt'), Locale('is'),
-        Locale('lv'), Locale('lt'), Locale('et'), Locale('bs'),
-        Locale('hr'), Locale('sq'), Locale('mk'), Locale('sr'),
-        Locale('sl'), Locale('sk'), Locale('eu'), Locale('gl'),
-        Locale('ca'), Locale('oc'), Locale('lb'), Locale('fy'),
-        Locale('jv'), Locale('su'), Locale('ceb'), Locale('hmn'),
-        Locale('ht'), Locale('co'), Locale('la'),
+        Locale('ar'), Locale('en'), Locale('fr'), Locale('es'), Locale('de'),
+        Locale('it'), Locale('pt'), Locale('ru'), Locale('zh'), Locale('ja'),
+        Locale('ko'), Locale('tr'), Locale('ur'), Locale('fa'), Locale('hi'),
+        Locale('bn'), Locale('id'), Locale('ms'), Locale('nl'), Locale('pl'),
+        Locale('sv'), Locale('da'), Locale('fi'), Locale('no'), Locale('cs'),
+        Locale('hu'), Locale('ro'), Locale('el'), Locale('he'), Locale('th'),
+        Locale('vi'), Locale('tl'), Locale('sw'), Locale('ta'), Locale('te'),
+        Locale('kn'), Locale('ml'), Locale('gu'), Locale('mr'), Locale('pa'),
+        Locale('ne'), Locale('si'), Locale('km'), Locale('my'), Locale('lo'),
+        Locale('ka'), Locale('hy'), Locale('az'), Locale('uz'), Locale('kk'),
+        Locale('ky'), Locale('tg'), Locale('mn'), Locale('ps'), Locale('sd'),
+        Locale('am'), Locale('om'), Locale('ha'), Locale('ig'), Locale('yo'),
+        Locale('zu'), Locale('xh'), Locale('af'), Locale('st'), Locale('sn'),
+        Locale('rw'), Locale('mg'), Locale('ny'), Locale('eo'), Locale('cy'),
+        Locale('ga'), Locale('gd'), Locale('mt'), Locale('is'), Locale('lv'),
+        Locale('lt'), Locale('et'), Locale('bs'), Locale('hr'), Locale('sq'),
+        Locale('mk'), Locale('sr'), Locale('sl'), Locale('sk'), Locale('eu'),
+        Locale('gl'), Locale('ca'), Locale('oc'), Locale('lb'), Locale('fy'),
+        Locale('jv'), Locale('su'), Locale('ceb'), Locale('hmn'), Locale('ht'),
+        Locale('co'), Locale('la'),
       ],
-      locale: const Locale('ar'),
+      locale: _deviceLocale(),
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(

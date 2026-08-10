@@ -5,7 +5,6 @@ class LanguageService extends ChangeNotifier {
   late SharedPreferences _prefs;
   bool _isInitialized = false;
 
-  // الحالات الافتراضية للغات الشاشات
   final Map<String, String> _screenLanguages = {
     'dialogue_from': 'ar',
     'dialogue_to': 'en',
@@ -15,101 +14,62 @@ class LanguageService extends ChangeNotifier {
 
   bool get isInitialized => _isInitialized;
 
+  /// لغة جهاز المستخدم (تُستخدم عند فتح التطبيق وفي الشاشات)
+  String get deviceLanguageCode {
+    final loc = WidgetsBinding.instance.platformDispatcher.locale;
+    return loc.languageCode;
+  }
+
+  String get deviceLanguageName => getLanguageName(deviceLanguageCode);
+
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
-    
-    // تحميل اللغات المحفوظة لكل شاشة
     _screenLanguages['dialogue_from'] = _prefs.getString('dialogue_from') ?? 'ar';
     _screenLanguages['dialogue_to'] = _prefs.getString('dialogue_to') ?? 'en';
     _screenLanguages['text_from'] = _prefs.getString('text_from') ?? 'ar';
     _screenLanguages['text_to'] = _prefs.getString('text_to') ?? 'en';
-
     _isInitialized = true;
     notifyListeners();
   }
 
-  // جلب قائمة الأكواد المتاحة للتطبيق
-  List<String> getLanguageCodes() {
-    return ['ar', 'en', 'fr', 'de', 'es', 'it', 'tr', 'ru', 'zh'];
-  }
+  /// 100+ لغة مدعومة (تطابق supportedLocales في main.dart)
+  List<String> getLanguageCodes() => _langNames.keys.toList();
 
-  // جلب اسم اللغة بناءً على الكود
-  String getLanguageName(String code) {
-    switch (code) {
-      case 'ar': return 'العربية';
-      case 'en': return 'English';
-      case 'fr': return 'Français';
-      case 'de': return 'Deutsch';
-      case 'es': return 'Español';
-      case 'it': return 'Italiano';
-      case 'tr': return 'Türkçe';
-      case 'ru': return 'Русский';
-      case 'zh': return '中文';
-      default: return code;
-    }
-  }
+  String getLanguageName(String code) => _langNames[code] ?? code;
 
-  // جلب لغة شاشة معينة
-  String getLanguageForScreen(String screenKey) {
-    return _screenLanguages[screenKey] ?? 'ar';
-  }
+  String getLanguageForScreen(String screenKey) => _screenLanguages[screenKey] ?? 'ar';
 
-  // حفظ لغة شاشة معينة
   Future<void> saveLanguageForScreen(String screenKey, String langCode) async {
     _screenLanguages[screenKey] = langCode;
     await _prefs.setString(screenKey, langCode);
     notifyListeners();
   }
 
-  // ==========================================
-  //  🧠 محرك الذكاء الاصطناعي الداخلي والأوفلاين
-  // ==========================================
-  
-  // دالة محاكاة الترجمة الذكية الأوفلاين (توسيع القاموس الداخلي الاستقراطي)
   String translateOffline(String text, String from, String to) {
     if (text.isEmpty) return '';
-    String cleanText = text.trim().toLowerCase();
-
-    // قاموس ذكي داخلي للطوارئ والأوفلاين
-    final Map<String, Map<String, String>> dictionary = {
+    final clean = text.trim().toLowerCase();
+    const dictionary = {
       'ar': {
-        'hello': 'مرحباً',
-        'how are you?': 'كيف حالك؟',
-        'thank you': 'شكراً لك',
-        'good morning': 'صباح الخير',
-        'good night': 'تصبح على خير',
-        'yes': 'نعم',
-        'no': 'لا',
-        'peace be upon you': 'السلام عليكم',
+        'hello': 'مرحباً', 'how are you?': 'كيف حالك؟', 'thank you': 'شكراً لك',
+        'good morning': 'صباح الخير', 'good night': 'تصبح على خير',
+        'yes': 'نعم', 'no': 'لا', 'peace be upon you': 'السلام عليكم',
         'welcome': 'أهلاً وسهلاً',
       },
       'en': {
-        'مرحبا': 'Hello',
-        'مرحباً': 'Hello',
-        'كيف حالك': 'How are you?',
-        'كيف حالك؟': 'How are you?',
-        'شكرا': 'Thank you',
-        'شكراً': 'Thank you',
-        'صباح الخير': 'Good morning',
-        'السلام عليكم': 'Peace be upon you',
+        'مرحبا': 'Hello', 'مرحباً': 'Hello', 'كيف حالك': 'How are you?',
+        'كيف حالك؟': 'How are you?', 'شكرا': 'Thank you', 'شكراً': 'Thank you',
+        'صباح الخير': 'Good morning', 'السلام عليكم': 'Peace be upon you',
         'أهلاً وسهلاً': 'Welcome',
       }
     };
-
-    // محاولة البحث في القاموس
     if (dictionary.containsKey(to)) {
-      for (var entry in dictionary[to]!.entries) {
-        if (cleanText.contains(entry.key)) {
-          return entry.value;
-        }
+      for (final e in dictionary[to]!.entries) {
+        if (clean.contains(e.key)) return e.value;
       }
     }
-
-    // إذا لم يجد النص، يعود بترجمة الذكاء الاصطناعي الافتراضية المستقرة دون كراش
     return '[$to] $text';
   }
 
-  // دالة الذكاء الاصطناعي لكارت الألعاب (توليد أسئلة/تحديات ذكية بناءً على اللغة)
   Map<String, dynamic> generateSmartGameChallenge(String lang) {
     if (lang == 'ar') {
       return {
@@ -127,4 +87,32 @@ class LanguageService extends ChangeNotifier {
       };
     }
   }
+
+  static const Map<String, String> _langNames = {
+    'ar': 'العربية', 'en': 'English', 'fr': 'Français', 'es': 'Español',
+    'de': 'Deutsch', 'it': 'Italiano', 'pt': 'Português', 'ru': 'Русский',
+    'zh': '中文(简体)', 'zh-TW': '中文(繁體)', 'ja': '日本語', 'ko': '한국어',
+    'tr': 'Türkçe', 'ur': 'اردو', 'fa': 'فارسی', 'hi': 'हिन्दी',
+    'bn': 'বাংলা', 'id': 'Bahasa Indonesia', 'ms': 'Bahasa Melayu',
+    'nl': 'Nederlands', 'pl': 'Polski', 'sv': 'Svenska', 'da': 'Dansk',
+    'fi': 'Suomi', 'no': 'Norsk', 'cs': 'Čeština', 'hu': 'Magyar',
+    'ro': 'Română', 'el': 'Ελληνικά', 'he': 'עברית', 'th': 'ไทย',
+    'vi': 'Tiếng Việt', 'tl': 'Filipino', 'sw': 'Kiswahili',
+    'ta': 'தமிழ்', 'te': 'తెలుగు', 'kn': 'ಕನ್ನಡ', 'ml': 'മലയാളം',
+    'gu': 'ગુજરાતી', 'mr': 'मराठी', 'pa': 'ਪੰਜਾਬੀ', 'ne': 'नेपाली',
+    'si': 'සිංහල', 'km': 'ខ្មែរ', 'my': 'မြန်မာ', 'lo': 'ລາວ',
+    'ka': 'ქართული', 'hy': 'հայերեն', 'az': 'Azərbaycan', 'uz': "O'zbek",
+    'kk': 'Қазақ', 'ky': 'Кыргызча', 'tg': 'Тоҷикӣ', 'mn': 'Монгол',
+    'ps': 'پښتو', 'sd': 'سنڌي', 'am': 'አማርኛ', 'om': 'Afaan Oromoo',
+    'ha': 'Hausa', 'ig': 'Igbo', 'yo': 'Yorùbá', 'zu': 'isiZulu',
+    'xh': 'isiXhosa', 'af': 'Afrikaans', 'st': 'Sesotho', 'sn': 'Shona',
+    'rw': 'Kinyarwanda', 'mg': 'Malagasy', 'ny': 'Chichewa', 'eo': 'Esperanto',
+    'cy': 'Cymraeg', 'ga': 'Gaeilge', 'gd': 'Gàidhlig', 'mt': 'Malti',
+    'is': 'Íslenska', 'lv': 'Latviešu', 'lt': 'Lietuvių', 'et': 'Eesti',
+    'bs': 'Bosanski', 'hr': 'Hrvatski', 'sq': 'Shqip', 'mk': 'Македонски',
+    'sr': 'Српски', 'sl': 'Slovenščina', 'sk': 'Slovenčina',
+    'eu': 'Euskara', 'gl': 'Galego', 'ca': 'Català', 'oc': 'Occitan',
+    'lb': 'Lëtzebuergesch', 'fy': 'Frysk', 'jv': 'Jawa', 'su': 'Sunda',
+    'ceb': 'Cebuano', 'hmn': 'Hmong', 'ht': 'Kreyòl', 'co': 'Corsu', 'la': 'Latina',
+  };
 }

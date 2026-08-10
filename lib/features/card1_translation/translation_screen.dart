@@ -111,6 +111,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
                             .toList(),
                         onChanged: (v) {
                           setState(() => _langFrom = v as String);
+                          Provider.of<LanguageService>(context, listen: false).saveLanguageForScreen('text_from', v as String);
                           if (_textController.text.isNotEmpty) {
                             _processTranslation();
                           }
@@ -143,6 +144,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
                             .toList(),
                         onChanged: (v) {
                           setState(() => _langTo = v as String);
+                          Provider.of<LanguageService>(context, listen: false).saveLanguageForScreen('text_to', v as String);
                           if (_textController.text.isNotEmpty) {
                             _processTranslation();
                           }

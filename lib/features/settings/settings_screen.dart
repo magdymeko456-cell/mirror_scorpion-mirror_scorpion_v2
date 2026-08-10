@@ -22,6 +22,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return 'MS-${DateTime.now().millisecondsSinceEpoch.toString().substring(0, 10)}-${Platform.isAndroid ? 'ADR' : 'IOS'}';
   }
 
+
+  /// اسم لغة الجهاز الحالية
+  String _deviceLangName() {
+    final loc = WidgetsBinding.instance.platformDispatcher.locale;
+    const names = {
+      'ar': 'العربية', 'en': 'English', 'fr': 'Français', 'es': 'Español',
+      'de': 'Deutsch', 'tr': 'Türkçe', 'ur': 'اردو', 'fa': 'فارسی',
+      'hi': 'हिन्दी', 'bn': 'বাংলা', 'id': 'Bahasa Indonesia', 'ru': 'Русский',
+      'zh': '中文', 'ja': '日本語', 'ko': '한국어', 'pt': 'Português',
+    };
+    return names[loc.languageCode] ?? loc.languageCode.toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     final tts = context.watch<TTSService>();
@@ -113,7 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ListTile(
                     leading: const Icon(Icons.language, color: Colors.teal),
                     title: const Text('لغة الجهاز', style: TextStyle(color: Colors.white)),
-                    subtitle: const Text('يتم اكتشافها تلقائياً', style: TextStyle(color: Colors.white54)),
+                    subtitle: Text('اللغة الحالية: ${_deviceLangName()}', style: TextStyle(color: Colors.white54)),
                   ),
                 ],
               ),

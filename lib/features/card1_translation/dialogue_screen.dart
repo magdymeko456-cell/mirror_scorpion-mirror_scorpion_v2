@@ -3,6 +3,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../../services/tts_service.dart';
+import '../../services/language_service.dart';
 
 class DialogueScreen extends StatefulWidget {
   const DialogueScreen({super.key});
@@ -167,7 +168,7 @@ class _DialogueScreenState extends State<DialogueScreen> {
                                 value: e.key,
                                 child: Text(e.value, style: const TextStyle(color: Colors.green, fontSize: 12)),
                               )).toList(),
-                              onChanged: (v) { if (v != null) setState(() => _leftLang = v); },
+                              onChanged: (v) { if (v != null) { setState(() => _leftLang = v); Provider.of<LanguageService>(context, listen: false).saveLanguageForScreen('dialogue_to', v); } },
                             ),
                           ),
                         ),
@@ -225,7 +226,7 @@ class _DialogueScreenState extends State<DialogueScreen> {
                                 value: e.key,
                                 child: Text(e.value, style: const TextStyle(color: Colors.blue, fontSize: 12)),
                               )).toList(),
-                              onChanged: (v) { if (v != null) setState(() => _rightLang = v); },
+                              onChanged: (v) { if (v != null) { setState(() => _rightLang = v); Provider.of<LanguageService>(context, listen: false).saveLanguageForScreen('dialogue_from', v); } },
                             ),
                           ),
                         ),
