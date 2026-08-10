@@ -12,6 +12,9 @@ concurrency:
   group: build-apk
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -39,16 +42,34 @@ jobs:
       - name: Pub get
         run: flutter pub get
 
+      - name: Dart diagnostics
+        run: |
+          set -o pipefail
+          flutter analyze --no-fatal-infos 2>&1 | tee dart-analyze.log
+
       - name: Build release APK
         env:
           GOOGLE_API_KEY: ${{ secrets.API_KEY }}
-        run: >
-          flutter build apk --release
-          --no-tree-shake-icons
-          --android-skip-build-dependency-validation
-          --dart-define=GOOGLE_API_KEY=${{ secrets.API_KEY }}
+        run: |
+          set -o pipefail
+          flutter build apk --release \
+            --no-tree-shake-icons \
+            --android-skip-build-dependency-validation \
+            --dart-define=GOOGLE_API_KEY=${{ secrets.API_KEY }} \
+            -v 2>&1 | tee flutter-build.log
+
+      - name: Upload compiler diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dart-compiler-diagnostics
+          path: |
+            dart-analyze.log
+            flutter-build.log
+          if-no-files-found: warn
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: mirror-scorpion-apk
