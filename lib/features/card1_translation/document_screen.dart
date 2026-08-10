@@ -24,7 +24,6 @@ class _DocumentScreenState extends State<DocumentScreen> {
   bool _isProcessing = false;
   bool _isTranslating = false;
   bool _showOriginal = true;
-  bool _showTranslatedDoc = false;
   String _fileName = '';
 
   final ImagePicker _picker = ImagePicker();
@@ -56,7 +55,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
       _fileName = img.name;
       _extractedText = '';
       _translatedText = '';
-      _showTranslatedDoc = false;
+      
       _isProcessing = true;
     });
     try {
@@ -87,7 +86,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
       _fileName = f.name;
       _extractedText = '';
       _translatedText = '';
-      _showTranslatedDoc = false;
+      
       _isProcessing = true;
     });
     try {
@@ -140,7 +139,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
       _fileName = 'رابط: $url';
       _extractedText = '';
       _translatedText = '';
-      _showTranslatedDoc = false;
+      
     });
     Navigator.push(context, MaterialPageRoute(
       builder: (_) => Scaffold(
@@ -292,7 +291,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(children: [
-                      const Text('الترجمة (${'$_langs'[0]}):', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                      const Text('الترجمة:', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
                       const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.volume_up, color: Colors.greenAccent, size: 20),
