@@ -23,7 +23,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
   String _targetLang = 'ar';
   bool _isProcessing = false;
   bool _isTranslating = false;
-  bool _showOriginal = true;
+
   String _fileName = '';
 
   final ImagePicker _picker = ImagePicker();
@@ -307,7 +307,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
                     ]),
                     const SizedBox(height: 4),
                     SelectableText(_translatedText,
-                        style: const TextStyle(color: Colors.green.shade300, fontSize: 14, height: 1.6)),
+                        style: TextStyle(color: Colors.green.shade300, fontSize: 14, height: 1.6)),
                   ],
                 ),
               ),
