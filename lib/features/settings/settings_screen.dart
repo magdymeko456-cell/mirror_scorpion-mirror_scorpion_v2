@@ -73,7 +73,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ...TTSService.availableVoices.map((voice) {
                       final isPro = voice['id'] == 'voice_user';
                       return RadioListTile<String>(
-                        title: Text('${voice['name']} — ${voice['desc']}', style: const TextStyle(color: Colors.white)),
+                        title: Text('${voice['name']} — ${voice['desc']}', style: TextStyle(color: Colors.white)),
                         subtitle: isPro
                             ? const Text('🔒 متاح في النسخة المدفوعة', style: TextStyle(color: Colors.amber, fontSize: 12))
                             : null,
@@ -150,7 +150,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SizedBox(width: 8),
                         Text(
                           premium.isPremium ? '👑 PRO مفعلة' : '👑 النسخة PRO',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.amber),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.amber),
                         ),
                       ],
                     ),
@@ -177,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: Padding(
                                 padding: const EdgeInsets.all(12),
                                 child: Text('ID: $deviceId',
-                                    style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: Colors.white70)),
+                                    style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: Colors.white70)),
                               ),
                             ),
                             IconButton(
@@ -194,10 +194,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 8),
                       TextField(
                         controller: _patchController,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           labelText: '🔑 أدخل باتش التفعيل المشفر',
-                          labelStyle: const TextStyle(color: Colors.white54),
+                          labelStyle: TextStyle(color: Colors.white54),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.paste, color: Colors.grey),
@@ -268,7 +268,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const Text('🦂 Mirror Scorpion', style: TextStyle(color: Colors.white, fontSize: 14)),
                     const SizedBox(height: 4),
                     Text('v1.2.0 — ${premium.isPremium ? "PRO" : "Free"}',
-                        style: const TextStyle(color: Colors.white, fontSize: 11)),
+                        style: TextStyle(color: Colors.white, fontSize: 11)),
                     const Text('المطور: Tamer Eldosoky', style: TextStyle(color: Colors.white, fontSize: 11)),
                   ],
                 ),

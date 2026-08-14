@@ -121,7 +121,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.url,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white),
           decoration: const InputDecoration(
             hintText: 'https://example.com/document.txt',
             hintStyle: TextStyle(color: Colors.white30),
@@ -205,7 +205,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
             ]),
             if (_fileName.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text('📎 $_fileName', style: const TextStyle(color: Colors.white54, fontSize: 12), textAlign: TextAlign.center),
+              Text('📎 $_fileName', style: TextStyle(color: Colors.white54, fontSize: 12), textAlign: TextAlign.center),
             ],
             const SizedBox(height: 16),
 
@@ -221,12 +221,12 @@ class _DocumentScreenState extends State<DocumentScreen> {
                   value: _targetLang,
                   dropdownColor: const Color(0xFF0D1B2A),
                   isExpanded: true,
-                  style: const TextStyle(color: Colors.teal),
+                  style: TextStyle(color: Colors.teal),
                   items: _langs.entries
                       .map((e) => DropdownMenuItem(
                             value: e.key,
                             child: Text(e.value,
-                                style: const TextStyle(color: Colors.white)),
+                                style: TextStyle(color: Colors.white)),
                           ))
                       .toList(),
                   onChanged: (v) => setState(() => _targetLang = v!),
@@ -256,7 +256,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
                         style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     SelectableText(_extractedText,
-                        style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.6)),
+                        style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.6)),
                   ],
                 ),
               ),

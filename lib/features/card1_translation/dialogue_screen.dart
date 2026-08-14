@@ -54,8 +54,7 @@ class _DialogueScreenState extends State<DialogueScreen> {
     if (!available) return;
     setState(() => _isListening = true);
     await _speech.listen(
-      onResult: (r) => _sourceCtrl.text = r.recognizedWords,
-      listenFor: const Duration(seconds: 30),
+      onResult: (r) => _sourceCtrl.text = r.recognizedWords),
       partialResults: true,
     );
   }
@@ -131,7 +130,7 @@ class _DialogueScreenState extends State<DialogueScreen> {
                       ),
                       child: TextField(
                         controller: _sourceCtrl,
-                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                        style: TextStyle(color: Colors.white, fontSize: 16),
                         decoration: const InputDecoration(
                           hintText: 'النص الأصلي...',
                           hintStyle: TextStyle(color: Colors.white30),
@@ -162,11 +161,11 @@ class _DialogueScreenState extends State<DialogueScreen> {
                             child: DropdownButton<String>(
                               value: _leftLang,
                               dropdownColor: const Color(0xFF1B2838),
-                              style: const TextStyle(color: Colors.green, fontSize: 14),
+                              style: TextStyle(color: Colors.green, fontSize: 14),
                               isExpanded: true,
                               items: _langs.entries.map((e) => DropdownMenuItem(
                                 value: e.key,
-                                child: Text(e.value, style: const TextStyle(color: Colors.green, fontSize: 12)),
+                                child: Text(e.value, style: TextStyle(color: Colors.green, fontSize: 12)),
                               )).toList(),
                               onChanged: (v) { if (v != null) { setState(() => _leftLang = v); Provider.of<LanguageService>(context, listen: false).saveLanguageForScreen('dialogue_to', v); } },
                             ),
@@ -220,11 +219,11 @@ class _DialogueScreenState extends State<DialogueScreen> {
                             child: DropdownButton<String>(
                               value: _rightLang,
                               dropdownColor: const Color(0xFF1B2838),
-                              style: const TextStyle(color: Colors.blue, fontSize: 14),
+                              style: TextStyle(color: Colors.blue, fontSize: 14),
                               isExpanded: true,
                               items: _langs.entries.map((e) => DropdownMenuItem(
                                 value: e.key,
-                                child: Text(e.value, style: const TextStyle(color: Colors.blue, fontSize: 12)),
+                                child: Text(e.value, style: TextStyle(color: Colors.blue, fontSize: 12)),
                               )).toList(),
                               onChanged: (v) { if (v != null) { setState(() => _rightLang = v); Provider.of<LanguageService>(context, listen: false).saveLanguageForScreen('dialogue_from', v); } },
                             ),
