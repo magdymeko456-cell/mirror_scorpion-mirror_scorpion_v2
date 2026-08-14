@@ -101,13 +101,13 @@ class _TranslationScreenState extends State<TranslationScreen> {
                       child: DropdownButton(
                         value: _langFrom,
                         dropdownColor: const Color(0xFF0D1B2A),
-                        style: const TextStyle(color: Colors.blueAccent),
+                        style: TextStyle(color: Colors.blueAccent),
                         items: langCodes
                             .map((c) => DropdownMenuItem(
                                 value: c as String,
                                 child: Text(langService.getLanguageName(c),
                                     style:
-                                        const TextStyle(color: Colors.white))))
+                                        TextStyle(color: Colors.white))))
                             .toList(),
                         onChanged: (v) {
                           setState(() => _langFrom = v as String);
@@ -134,13 +134,13 @@ class _TranslationScreenState extends State<TranslationScreen> {
                       child: DropdownButton(
                         value: _langTo,
                         dropdownColor: const Color(0xFF0D1B2A),
-                        style: const TextStyle(color: Colors.amberAccent),
+                        style: TextStyle(color: Colors.amberAccent),
                         items: langCodes
                             .map((c) => DropdownMenuItem(
                                 value: c as String,
                                 child: Text(langService.getLanguageName(c),
                                     style:
-                                        const TextStyle(color: Colors.white))))
+                                        TextStyle(color: Colors.white))))
                             .toList(),
                         onChanged: (v) {
                           setState(() => _langTo = v as String);
@@ -159,7 +159,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
             TextField(
               controller: _textController,
               maxLines: 5,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 hintText: 'اكتب النص هنا للترجمة الفورية...',
                 hintStyle: TextStyle(color: Colors.white30),
@@ -175,7 +175,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
               controller: _resultController,
               maxLines: 5,
               readOnly: true,
-              style: const TextStyle(color: Colors.amberAccent),
+              style: TextStyle(color: Colors.amberAccent),
               decoration: const InputDecoration(
                 hintText: 'الترجمة تظهر هنا تلقائياً...',
                 hintStyle: TextStyle(color: Colors.white30),
