@@ -1,6 +1,6 @@
-# تقرير الإصلاح — 2026-08-14 17:33
+# تقرير الإصلاح — 2026-08-14 17:34
 - آخر نجاح: `ce10b41aad091f58bf5bd9c42ead8bde9d2e2315` (run #855)
-- HEAD: `2d4f6ee`
+- HEAD: `ee85b5a`
 ## الإصدارات
   flutter:
   flutter_localizations:
