@@ -79,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             : null,
                         value: voice['id']!,
                         groupValue: tts.selectedVoice,
-                        activeColor: Colors.teal,
+                        activeThumbColor: Colors.teal,
                         onChanged: (val) {
                           if (val != null && (!isPro || premium.isPremium)) {
                             tts.setVoice(val);
@@ -103,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: const Text('💬 الفقاعة العائمة', style: TextStyle(color: Colors.white)),
                 subtitle: const Text('ظهور أيقونة عائمة للوصول السريع', style: TextStyle(color: Colors.white54)),
                 value: bubble.isEnabled,
-                activeColor: Colors.teal,
+                activeThumbColor: Colors.teal,
                 onChanged: (v) {
                   if (v) { bubble.startBubble(); } else { bubble.stopBubble(); }
                 },
@@ -120,7 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     leading: const Icon(Icons.dark_mode, color: Colors.teal),
                     title: const Text('الوضع المظلم', style: TextStyle(color: Colors.white)),
                     subtitle: const Text('مفعل دائماً', style: TextStyle(color: Colors.white54)),
-                    trailing: Switch(value: true, onChanged: (_) {}, activeColor: Colors.teal),
+                    trailing: Switch(value: true, onChanged: (_) {}, activeThumbColor: Colors.teal),
                   ),
                   const Divider(color: Colors.white12, height: 1),
                   ListTile(

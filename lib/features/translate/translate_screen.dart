@@ -111,7 +111,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
   void _speakTarget() {
     if (_targetController.text.isNotEmpty) {
-      _ttsService.speak(_targetController.text, targetLanguage: _targetLang);
+      _ttsService.speak(_targetController.text, toLanguage: _targetLang);
     }
   }
 

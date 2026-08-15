@@ -74,7 +74,7 @@ class _GamesScreenState extends State<GamesScreen> {
                         title: Text(option, style: const TextStyle(color: Colors.white70, fontSize: 13)),
                         value: option,
                         groupValue: _selectedOption,
-                        activeColor: Colors.cyanAccent,
+                        activeThumbColor: Colors.cyanAccent,
                         onChanged: (val) {
                           setState(() {
                             _selectedOption = val;

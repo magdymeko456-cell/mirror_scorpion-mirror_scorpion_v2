@@ -82,7 +82,7 @@ class _SettingsAndProScreenState extends State<SettingsAndProScreen> {
             child: SwitchListTile(
               title: const Text("الوضع المظلم (Dark Mode)"),
               value: isDarkMode,
-              activeColor: Colors.amber,
+              activeThumbColor: Colors.amber,
               onChanged: (val) {
                 setState(() => isDarkMode = val);
                 widget.prefs.setBool('is_dark_mode', val);
@@ -200,7 +200,7 @@ class _SettingsAndProScreenState extends State<SettingsAndProScreen> {
       title: Text(voiceName, style: const TextStyle(fontSize: 14)),
       value: shortName,
       groupValue: currentVoice,
-      activeColor: Colors.amber,
+      activeThumbColor: Colors.amber,
       onChanged: (value) {
         if (value != null) {
           setState(() => currentVoice = value);

@@ -276,7 +276,7 @@ class AILanguageMerger extends ChangeNotifier {
 
       // 2. افحص استخدام الحروف/المحارف
       bool hasScript = false;
-      switch (cluster.name) {
+      switch (cluster.key) {
         case 'العربية ولهجاتها':
           hasScript = RegExp(r'[\u0600-\u06FF]').hasMatch(text);
           break;
@@ -317,17 +317,17 @@ class AILanguageMerger extends ChangeNotifier {
     }
 
     if (scores.isEmpty) return null;
-    final best = scores.entries.reduce((a, b) => a.name > b.name ? a : b).key;
-    _dialectConfidence = {for (final e in scores.entries) e.key.name: e.name};
+    final best = scores.entries.reduce((a, b) => a.key > b.key ? a : b).key;
+    _dialectConfidence = {for (final e in scores.entries) e.key.key: e.key};
 
-    return best.name > 0 ? best : null;
+    return best.key > 0 ? best : null;
   }
 
   /// 🔗 تحويل اللهجة إلى اللغة الأم
   String normalizeDialect(String text, LanguageCluster cluster) {
     String normalized = text;
     for (final entry in cluster.dialectWords.entries) {
-      normalized = normalized.replaceAll(entry.key, entry.name);
+      normalized = normalized.replaceAll(entry.key, entry.key);
     }
     return normalized;
   }
@@ -354,7 +354,7 @@ class AILanguageMerger extends ChangeNotifier {
     if (cluster != null) {
       normalizedText = normalizeDialect(text, cluster);
       actualTarget = resolveTargetLanguage('auto', targetLang);
-      debugPrint('🦂 AI Merger: Detected ${cluster.name} → $actualTarget');
+      debugPrint('🦂 AI Merger: Detected ${cluster.key} → $actualTarget');
     }
 
     try {
@@ -410,7 +410,7 @@ class AILanguageMerger extends ChangeNotifier {
   Map<String, Map<String, String>> getClusteredLanguages() {
     final result = <String, Map<String, String>>{};
     for (final cluster in languageClusters) {
-      result[cluster.name] = Map.from(cluster.languages);
+      result[cluster.key] = Map.from(cluster.languages);
     }
     final usedCodes = <String>{};
     for (final cluster in languageClusters) {
@@ -418,7 +418,7 @@ class AILanguageMerger extends ChangeNotifier {
     }
     final others = <String, String>{};
     for (final entry in _hundredLanguages.entries) {
-      if (!usedCodes.contains(entry.key)) others[entry.key] = entry.name;
+      if (!usedCodes.contains(entry.key)) others[entry.key] = entry.key;
     }
     if (others.isNotEmpty) result['🌐 أخرى'] = others;
     return result;
@@ -427,7 +427,7 @@ class AILanguageMerger extends ChangeNotifier {
   /// 🏷️ اسم الكتلة
   String getClusterName(String langCode) {
     for (final cluster in languageClusters) {
-      if (cluster.languages.containsKey(langCode)) return '${cluster.icon} ${cluster.name}';
+      if (cluster.languages.containsKey(langCode)) return '${cluster.icon} ${cluster.key}';
     }
     return '🌐 أخرى';
   }
@@ -442,7 +442,7 @@ class LanguageCluster {
   final Map<String, String> dialectWords;
 
   const LanguageCluster({
-    required this.name,
+    required this.key,
     required this.icon,
     required this.languages,
     required this.normalizeMap,
