@@ -59,7 +59,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
       _isProcessing = true;
     });
     try {
-      _recognizer ??= TextRecognizer(script: TextRecognitionScript.arabic);
+      _recognizer ??= TextRecognizer(script: TextRecognitionScript.latin);
       final input = InputImage.fromFilePath(img.path);
       final result = await _recognizer!.processImage(input);
       if (!mounted) return;
