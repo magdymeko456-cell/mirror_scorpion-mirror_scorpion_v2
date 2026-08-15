@@ -152,8 +152,8 @@ class FeatureAccessControl {
       return true;
     }
     
-    final canAccess = await hasAccess(featureId);
-    if (!canAccess) {
+    final isAllowed = await hasAccess(featureId);
+    if (!isAllowed) {
       showPremiumRequiredDialog(context, featureId);
       return false;
     }
