@@ -104,7 +104,7 @@ class _SettingsAndProScreenState extends State<SettingsAndProScreen> {
                   ),
                   const SizedBox(height: 12),
                   const ListTile(
-                    leading: Icon(Icons.whatsapp, color: Colors.green, size: 28),
+                    leading: Icon(Icons.chat, color: Colors.green, size: 28),
                     title: Text("واتساب (خط المساعدة الدائم)", style: TextStyle(fontWeight: FontWeight.w500)),
                     subtitle: Padding(
                       padding: EdgeInsets.only(top: 4.0),

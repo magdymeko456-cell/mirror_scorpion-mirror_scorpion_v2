@@ -6,7 +6,7 @@ echo "=========================================="
 echo "🔍 جاري البحث عن محاولات البناء الفاشلة (Failure)..."
 
 # جلب معرفات المحاولات الفاشلة
-FAILED_RUNS=$(gh run list --status failure --limit 100 --json databaseId --jq '.[].databaseId')
+FAILED_RUNS=$(gh run list --status failure --limit 1000 --json databaseId --jq '.[].databaseId')
 
 if [ -z "$FAILED_RUNS" ]; then
     echo "✨ ممتاز يا صديقي! لا توجد محاولات بناء فاشلة حالياً."

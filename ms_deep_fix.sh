@@ -1,13 +1,14 @@
 #!/bin/bash
 # ==============================================================================
-# Mirror Scorpion v2 - Ultimate Fix & Stabilization Script (v3)
-# Targets: Syntax, Theme, ML Kit, FilePicker, and Deprecations
+# Mirror Scorpion v2 - Master Repair & GitHub Sync Script (v5)
+# Combines: Dynamic Code Fixing + Nano Editor Mode + Auto GitHub Deployment
 # Environment: Termux & GitHub Actions
 # ==============================================================================
 
 set -Eeuo pipefail
 IFS=$'\n\t'
 
+# الألوان للتنسيق والتنبيهات
 C_GREEN='\033[0;32m'; C_RED='\033[0;31m'; C_YEL='\033[0;33m'; C_CYN='\033[0;36m'; C_END='\033[0m'
 log() { echo -e "${C_CYN}[FIX]${C_END} $*"; }
 ok() { echo -e "${C_GREEN}  [✔] $*${C_END}"; }
@@ -17,16 +18,21 @@ SCRIPT_PATH="$(realpath "$0")"
 WORKDIR="$HOME/mirror_scorpion_translate_version_2"
 TOKEN_FILE="$HOME/.ms_gh_token"
 
+# منع تعليق Git في شاشة Termux
 export GIT_PAGER=cat
 
-# 1. إعطاء صلاحيات التشغيل تلقائياً
+# ------------------------------------------------------------------------------
+# 1. إعطاء صلاحيات التشغيل تلقائياً للسكربت نفسه
+# ------------------------------------------------------------------------------
 chmod +x "$SCRIPT_PATH" || true
 
-# 2. خيار فتح السكربت في محرر nano عند إمضاء المعامل --edit أو -e
+# ------------------------------------------------------------------------------
+# 2. وضع التعديل (Nano Editor Mode) عند إمضاء المعامل --edit أو -e
+# ------------------------------------------------------------------------------
 if [[ "${1:-}" == "--edit" || "${1:-}" == "-e" ]]; then
     log "فتح السكربت في محرر nano..."
     nano "$SCRIPT_PATH"
-    log "تم حفظ الملف وإغلاق nano."
+    log "تم حفظ الملف وإغلاق nano بنجاح."
     exit 0
 fi
 
@@ -34,86 +40,73 @@ if [ -d "$WORKDIR" ]; then
     cd "$WORKDIR"
 fi
 
-log "بدء الإصلاح النهائي الشامل (v3)..."
+log "بدء عملية الإصلاح الشاملة والمزامنة مع GitHub في: $(pwd)"
 
-# 1. إصلاح الخطأ النحوي في dialogue_screen.dart
-for f in $(find lib -name "dialogue_screen.dart" 2>/dev/null); do
-    if [ -f "$f" ]; then
-        sed -i 's/recognizedWords),/recognizedWords,/g' "$f"
-        sed -i 's/recognizedWords)/recognizedWords/g' "$f"
-        python3 - <<PYEOF
-import re
-path = "$f"
-try:
-    with open(path, 'r', encoding='utf-8') as file:
-        content = file.read()
-    content = re.sub(r'_speech\.listen\(\s*onResult:\s*\(r\)\s*=>\s*_sourceCtrl\.text\s*=\s*r\.recognizedWords\s*\)\s*,', 
-                     '_speech.listen(onResult: (r) => _sourceCtrl.text = r.recognizedWords,', content)
-    with open(path, 'w', encoding='utf-8') as file:
-        file.write(content)
-except Exception as e:
-    print(f"Skipped Python regex fix: {e}")
-PYEOF
-        ok "تم إصلاح Syntax في $f"
-    fi
-done
+# ------------------------------------------------------------------------------
+# 3. معالجة أخطاء الواجهة والرموز (UI & Icons Fixes)
+# ------------------------------------------------------------------------------
+log "1. تصحيح عناصر الواجهة والرموز..."
 
-# 2. إصلاح CardTheme -> CardThemeData
+SETTING_FILE="lib/settings_pro.dart"
+if [ -f "$SETTING_FILE" ]; then
+    sed -i 's/Icons.whatsapp/Icons.chat/g' "$SETTING_FILE"
+    sed -i 's/const Icon(Icons.chat)/Icon(Icons.chat)/g' "$SETTING_FILE"
+    ok "تم تصحيح أيقونة WhatsApp والأنواع الثابتة في $SETTING_FILE"
+fi
+
 THEME_FILE="lib/core/theme/app_theme.dart"
 if [ -f "$THEME_FILE" ]; then
     sed -i 's/CardTheme(/CardThemeData(/g' "$THEME_FILE"
-    ok "تم تصحيح CardThemeData في $THEME_FILE"
+    ok "تم تصحيح CardTheme إلى CardThemeData في $THEME_FILE"
 fi
 
-# 3. إصلاح ML Kit TextRecognitionScript
+# ------------------------------------------------------------------------------
+# 4. معالجة معلمات الترجمة والشبكات (Translation & ML Kit Fixes)
+# ------------------------------------------------------------------------------
+log "2. تصحيح معلمات الترجمة والخدمات..."
+
+TRANS_FILE="lib/features/translate/translate_screen.dart"
+if [ -f "$TRANS_FILE" ]; then
+    sed -i 's/language:/targetLanguage:/g' "$TRANS_FILE"
+    ok "تم تصحيح اسم المعلمة language في $TRANS_FILE"
+fi
+
 for f in $(find lib -name "*.dart" 2>/dev/null); do
     if grep -q "TextRecognitionScript.arabic" "$f"; then
         sed -i 's/TextRecognitionScript.arabic/TextRecognitionScript.latin/g' "$f"
-        ok "تم تصحيح ML Kit في $f"
+        ok "تم تصحيح TextRecognitionScript في $f"
     fi
 done
 
-# 4. إصلاح FilePicker.platform
-for f in $(find lib -name "*.dart" 2>/dev/null); do
-    if grep -q "FilePicker.platform" "$f"; then
-        sed -i "s/import 'package:file_picker\/file_picker.dart';/import 'package:file_picker\/file_picker.dart';/g" "$f"
-        ok "تم التحقق من استيراد FilePicker في $f"
-    fi
-done
+# ------------------------------------------------------------------------------
+# 5. تنظيف واستقرار الخدمات المحلية (Services Optimization)
+# ------------------------------------------------------------------------------
+log "3. تنظيف الخدمات والكود المكرر..."
 
-# 5. تنظيف overlay_service.dart
-OVERLAY_FILE="lib/services/overlay_service.dart"
-if [ -f "$OVERLAY_FILE" ]; then
-    python3 - <<'PYEOF'
-path = "lib/services/overlay_service.dart"
-try:
-    with open(path, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    new_lines = []
-    seen_methods = set()
-    for line in lines:
-        if line.strip().startswith('#'): continue
-        if 'Future getSpiritualSupport()' in line or 'Future<String> translateFromClipboard()' in line:
-            method_name = line.split('Future')[1].split('(')[0].strip()
-            if method_name in seen_methods: continue
-            seen_methods.add(method_name)
-        new_lines.append(line)
-    with open(path, 'w', encoding='utf-8') as f:
-        f.writelines(new_lines)
-except Exception as e:
-    print(f"Overlay cleaning skipped: {e}")
-PYEOF
-    ok "تم تنظيف $OVERLAY_FILE"
+AI_FILE="lib/services/ai_language_merger.dart"
+if [ -f "$AI_FILE" ]; then
+    sed -i 's/\.value/.name/g' "$AI_FILE"
+    ok "تم تصحيح خصائص LanguageCluster في $AI_FILE"
 fi
 
-# 6. معالجة التحذيرات (Deprecations)
-log "تنظيف التحذيرات (Deprecations)..."
-find lib -name "*.dart" -exec sed -i 's/withOpacity(/withValues(alpha: /g' {} + 2>/dev/null || true
-find lib -name "*.dart" -exec sed -i 's/window.platformDispatcher/PlatformDispatcher.instance/g' {} + 2>/dev/null || true
-find lib -name "*.dart" -exec sed -i 's/WidgetsBinding.instance.window/WidgetsBinding.instance.platformDispatcher/g' {} + 2>/dev/null || true
+FEAT_FILE="lib/services/feature_access_control.dart"
+if [ -f "$FEAT_FILE" ]; then
+    sed -i 's/canAccessFeature/isFeatureAllowed/g' "$FEAT_FILE"
+    ok "تم تصحيح دالة الوصول في $FEAT_FILE"
+fi
 
-# 7. الرفع التلقائي إلى GitHub
-log "جاري الحفظ والتجهيز للرفع إلى GitHub..."
+STT_WEB="packages/speech_to_text_local/web/speech_to_text_web.dart"
+if [ -f "$STT_WEB" ]; then
+    if ! grep -q "package:flutter/services.dart" "$STT_WEB"; then
+        sed -i '1i import '\''package:flutter/services.dart'\'';' "$STT_WEB"
+        ok "تم إضافة استيراد services.dart في $STT_WEB"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# 6. الرفع الآلي والمباشر إلى GitHub
+# ------------------------------------------------------------------------------
+log "4. إعداد الحفظ والرفع التلقائي إلى GitHub..."
 
 git config --global user.name "Tamer Eldosoky"
 git config --global user.email "dosoky.server@gmail.com"
@@ -127,12 +120,12 @@ fi
 git add .
 
 if git diff --cached --quiet; then
-    ok "لا توجد تغييرات جديدة للالتزام بها (Up-to-date)."
+    ok "لا توجد تغييرات جديدة، المستودع محدث بالفعل."
 else
-    git commit -m "fix(script): ultimate fixes v3 applied - $(date +'%Y-%m-%d %H:%M:%S')"
+    git commit -m "fix(script): master repairs & auto-sync - $(date +'%Y-%m-%d %H:%M:%S')"
     log "جاري الرفع إلى GitHub..."
-    git push origin main || git push origin master || err "تعذر الرفع المباشر، تحقق من التوكن أو الاتصال."
+    git push origin main || git push origin master || err "تعذر الرفع المباشر، تحقق من الاتصال أو التوكن."
     ok "تم الرفع بنجاح إلى GitHub."
 fi
 
-ok "تم تنفيذ كافة الإصلاحات ورفع السكربت بنجاح!"
+ok "تمت كافة العمليات بنجاح يا تامر!"

@@ -32,12 +32,12 @@ class FeatureAccessControl {
   }
   
   /// Check if user can access feature
-  Future<bool> canAccessFeature(String featureId) async {
+  Future<bool> isFeatureAllowed(String featureId) async {
     if (!isPremiumFeature(featureId)) {
       return true; // Free feature
     }
     
-    return await _premiumService.canAccessFeature(featureId);
+    return await _premiumService.isFeatureAllowed(featureId);
   }
   
   /// Check if feature can be shared
@@ -152,7 +152,7 @@ class FeatureAccessControl {
       return true;
     }
     
-    final canAccess = await canAccessFeature(featureId);
+    final canAccess = await isFeatureAllowed(featureId);
     if (!canAccess) {
       showPremiumRequiredDialog(context, featureId);
       return false;

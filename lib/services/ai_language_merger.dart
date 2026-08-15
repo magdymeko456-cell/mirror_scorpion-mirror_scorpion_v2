@@ -317,17 +317,17 @@ class AILanguageMerger extends ChangeNotifier {
     }
 
     if (scores.isEmpty) return null;
-    final best = scores.entries.reduce((a, b) => a.value > b.value ? a : b).key;
-    _dialectConfidence = {for (final e in scores.entries) e.key.name: e.value};
+    final best = scores.entries.reduce((a, b) => a.name > b.name ? a : b).key;
+    _dialectConfidence = {for (final e in scores.entries) e.key.name: e.name};
 
-    return best.value > 0 ? best : null;
+    return best.name > 0 ? best : null;
   }
 
   /// 🔗 تحويل اللهجة إلى اللغة الأم
   String normalizeDialect(String text, LanguageCluster cluster) {
     String normalized = text;
     for (final entry in cluster.dialectWords.entries) {
-      normalized = normalized.replaceAll(entry.key, entry.value);
+      normalized = normalized.replaceAll(entry.key, entry.name);
     }
     return normalized;
   }
@@ -418,7 +418,7 @@ class AILanguageMerger extends ChangeNotifier {
     }
     final others = <String, String>{};
     for (final entry in _hundredLanguages.entries) {
-      if (!usedCodes.contains(entry.key)) others[entry.key] = entry.value;
+      if (!usedCodes.contains(entry.key)) others[entry.key] = entry.name;
     }
     if (others.isNotEmpty) result['🌐 أخرى'] = others;
     return result;
