@@ -249,7 +249,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFF1B2838),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.orangeAccent.withOpacity(0.3)),
+              border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.3)),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -324,7 +324,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFF1B2838),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.orangeAccent.withOpacity(0.3)),
+          border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,7 +418,7 @@ class _StoryDetailScreen extends StatelessWidget {
               Text(
                 item.subtitle,
                 style: TextStyle(
-                  color: Colors.orangeAccent.withOpacity(0.8),
+                  color: Colors.orangeAccent.withValues(alpha: 0.8),
                   fontSize: 14,
                 ),
                 textDirection: TextDirection.rtl,

@@ -74,7 +74,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                   shadows: [
-                    Shadow(blurRadius: 10, color: Colors.black.withOpacity(0.3)),
+                    Shadow(blurRadius: 10, color: Colors.black.withValues(alpha: 0.3)),
                   ],
                 ),
               ),

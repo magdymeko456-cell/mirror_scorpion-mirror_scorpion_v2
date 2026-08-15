@@ -25,11 +25,11 @@ class _PremiumCardState extends State<PremiumCard> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.amber.withOpacity(0.15), Colors.orange.withOpacity(0.05)],
+          colors: [Colors.amber.withValues(alpha: 0.15), Colors.orange.withValues(alpha: 0.05)],
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Row(children: [
@@ -63,9 +63,9 @@ class _PremiumCardState extends State<PremiumCard> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.blue.withOpacity(0.2)),
+            border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Row(children: [
@@ -84,7 +84,7 @@ class _PremiumCardState extends State<PremiumCard> {
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'باتش التفعيل...',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
                     filled: true, fillColor: Colors.black26,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -123,9 +123,9 @@ class _PremiumCardState extends State<PremiumCard> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.green.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green.withOpacity(0.2)),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Row(children: [
@@ -168,9 +168,9 @@ class _PremiumCardState extends State<PremiumCard> {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.25),
+            color: Colors.black.withValues(alpha: 0.25),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
           child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [

@@ -39,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     fontWeight: FontWeight.bold, letterSpacing: 2)),
             const SizedBox(height: 8),
             Text('حيث تُصنع البدايات',
-                style: TextStyle(color: Colors.teal.withOpacity(0.7), fontSize: 16)),
+                style: TextStyle(color: Colors.teal.withValues(alpha: 0.7), fontSize: 16)),
             const SizedBox(height: 32),
             const CircularProgressIndicator(color: Colors.teal),
           ],

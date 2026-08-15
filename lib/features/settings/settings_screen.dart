@@ -134,10 +134,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 12),
             // ── PRO ──
             Card(
-              color: Colors.amber.withOpacity(0.08),
+              color: Colors.amber.withValues(alpha: 0.08),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.amber.withOpacity(0.3)),
+                side: BorderSide(color: Colors.amber.withValues(alpha: 0.3)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -236,7 +236,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
+                          color: Colors.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Column(

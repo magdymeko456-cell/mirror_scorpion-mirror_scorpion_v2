@@ -247,7 +247,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF1B2838),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
+                  border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -285,7 +285,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF1B2838),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.greenAccent.withOpacity(0.3)),
+                  border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,9 +317,9 @@ class _DocumentScreenState extends State<DocumentScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.1),
+                color: Colors.amber.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
               ),
               child: const Row(
                 children: [
@@ -345,8 +345,8 @@ class _DocumentScreenState extends State<DocumentScreen> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-          color: color.withOpacity(0.05),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+          color: color.withValues(alpha: 0.05),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

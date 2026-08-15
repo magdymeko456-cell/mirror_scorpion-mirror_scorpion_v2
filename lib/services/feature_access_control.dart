@@ -66,7 +66,7 @@ class FeatureAccessControl {
         ),
         content: Text(
           '$featureName متاحة فقط في النسخة البرو.\n\nقم بالترقية للاستمتاع بجميع الميزات!',
-          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
         ),
         actions: [
           TextButton(
@@ -105,7 +105,7 @@ class FeatureAccessControl {
         ),
         content: Text(
           '$featureName متاحة فقط للمستخدم الحالي ولا يمكن مشاركتها.\n\nهذا لحماية حقوق الملكية الفكرية.',
-          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
         ),
         actions: [
           TextButton(

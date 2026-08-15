@@ -58,12 +58,12 @@ class _FloatingBubbleOverlayState extends State<FloatingBubbleOverlay> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.cyanAccent.withOpacity(0.7),
+                      color: Colors.cyanAccent.withValues(alpha: 0.7),
                       width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blueAccent.withOpacity(0.4),
+                        color: Colors.blueAccent.withValues(alpha: 0.4),
                         blurRadius: 15,
                         spreadRadius: 2,
                       ),
@@ -99,7 +99,7 @@ class _FloatingBubbleOverlayState extends State<FloatingBubbleOverlay> {
                 width: 50, height: 50,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.cyanAccent.withOpacity(0.5)),
+                  border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.5)),
                   image: const DecorationImage(
                     image: AssetImage('assets/images/scorpion_icon.jpeg'),
                     fit: BoxFit.cover,
@@ -146,9 +146,9 @@ class _FloatingBubbleOverlayState extends State<FloatingBubbleOverlay> {
           Container(
             width: 50, height: 50,
             decoration: BoxDecoration(
-              color: Colors.blueAccent.withOpacity(0.1),
+              color: Colors.blueAccent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
+              border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
             ),
             child: Icon(icon, color: Colors.cyanAccent, size: 24),
           ),

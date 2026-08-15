@@ -159,7 +159,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.2),
+                    color: Colors.green.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text('🔄 ${_getLangName(_detectedLang)}',
@@ -173,9 +173,9 @@ class _TranslateScreenState extends State<TranslateScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
                 Expanded(child: TextField(
@@ -183,7 +183,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                   style: const TextStyle(color: Colors.white, fontSize: 16),
                   decoration: InputDecoration(
                     hintText: 'اكتب أو استخدم المايك...',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
                     border: InputBorder.none,
                   ),
                   maxLines: null, expands: true, textAlign: TextAlign.right,
@@ -198,7 +198,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                       duration: const Duration(milliseconds: 200),
                       width: 50, height: 50,
                       decoration: BoxDecoration(
-                        color: _isListening ? Colors.red.withOpacity(0.2) : Theme.of(context).primaryColor.withOpacity(0.1),
+                        color: _isListening ? Colors.red.withValues(alpha: 0.2) : Theme.of(context).primaryColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                         border: Border.all(color: _isListening ? Colors.red : Colors.white38, width: 2),
                       ),
@@ -238,9 +238,9 @@ class _TranslateScreenState extends State<TranslateScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.deepPurple.withOpacity(0.3)),
+                border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.3)),
               ),
               child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
                 Expanded(child: TextField(
@@ -248,7 +248,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                   style: TextStyle(color: Colors.green.shade300, fontSize: 16),
                   decoration: InputDecoration(
                     hintText: 'الترجمة...',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
                     border: InputBorder.none,
                   ),
                   maxLines: null, expands: true, textAlign: TextAlign.right,
@@ -276,7 +276,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.white24),
       ),

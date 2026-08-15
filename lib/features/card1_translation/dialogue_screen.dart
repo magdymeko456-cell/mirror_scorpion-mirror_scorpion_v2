@@ -111,7 +111,7 @@ class _DialogueScreenState extends State<DialogueScreen> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  color: Colors.teal.withOpacity(0.1),
+                  color: Colors.teal.withValues(alpha: 0.1),
                   child: const Text('🦂 ميرور سكربيون',
                       style: TextStyle(fontSize: 10, color: Colors.teal),
                       textAlign: TextAlign.center),
@@ -124,9 +124,9 @@ class _DialogueScreenState extends State<DialogueScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
                       ),
                       child: TextField(
                         controller: _sourceCtrl,
@@ -153,9 +153,9 @@ class _DialogueScreenState extends State<DialogueScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
+                            color: Colors.white.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: Colors.green.withOpacity(0.4)),
+                            border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
@@ -179,7 +179,7 @@ class _DialogueScreenState extends State<DialogueScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.amber.shade700.withOpacity(0.2),
+                            color: Colors.amber.shade700.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.swap_horiz, color: Colors.amber, size: 28),
@@ -193,7 +193,7 @@ class _DialogueScreenState extends State<DialogueScreen> {
                         child: Container(
                           width: 60, height: 60,
                           decoration: BoxDecoration(
-                            color: _isListening ? Colors.red.withOpacity(0.2) : Colors.white.withOpacity(0.08),
+                            color: _isListening ? Colors.red.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.08),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: _isListening ? Colors.red : Colors.white38, width: 2,
@@ -211,9 +211,9 @@ class _DialogueScreenState extends State<DialogueScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
+                            color: Colors.white.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: Colors.blue.withOpacity(0.4)),
+                            border: Border.all(color: Colors.blue.withValues(alpha: 0.4)),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
@@ -241,9 +241,9 @@ class _DialogueScreenState extends State<DialogueScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
                       ),
                       child: Column(
                         children: [

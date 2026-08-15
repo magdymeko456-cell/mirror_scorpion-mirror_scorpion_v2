@@ -110,7 +110,7 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
           children: [
             // بطاقة معلومات المطور
             Card(
-              color: Colors.amber.withOpacity(0.1),
+              color: Colors.amber.withValues(alpha: 0.1),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(
@@ -153,7 +153,7 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: "ألصق معرف الجهاز هنا...",
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
                 filled: true,
                 fillColor: Colors.black26,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -193,8 +193,8 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? Colors.amber.withOpacity(0.2)
-                              : Colors.white.withOpacity(0.05),
+                              ? Colors.amber.withValues(alpha: 0.2)
+                              : Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isSelected ? Colors.amber : Colors.white24,
@@ -242,7 +242,7 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
             // الكود المولد
             if (_generatedCodeController.text.isNotEmpty)
               Card(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Column(
@@ -297,7 +297,7 @@ class _KeyGeneratorScreenState extends State<KeyGeneratorScreen> {
               ),
               const SizedBox(height: 8),
               ..._generatedKeys.map((key) => Card(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     child: ListTile(
                       dense: true,
                       leading: const Icon(Icons.vpn_key, color: Colors.amber, size: 20),

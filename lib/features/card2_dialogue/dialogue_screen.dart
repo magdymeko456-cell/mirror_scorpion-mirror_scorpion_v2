@@ -200,7 +200,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
                     decoration: BoxDecoration(
                       color: const Color(0xFF1B2838),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.green.withOpacity(0.4)),
+                      border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -234,7 +234,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
                     decoration: BoxDecoration(
                       color: const Color(0xFF1B2838),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                      border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -280,7 +280,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
                       boxShadow: [
                         BoxShadow(
                           color: (_isListening ? Colors.redAccent : Colors.greenAccent)
-                              .withOpacity(0.3 + _pulseController.value * 0.3),
+                              .withValues(alpha: 0.3 + _pulseController.value * 0.3),
                           blurRadius: 20 + _pulseController.value * 15,
                           spreadRadius: 3 + _pulseController.value * 5,
                         ),
@@ -310,7 +310,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
               decoration: BoxDecoration(
                 color: const Color(0xFF1B2838),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.green.withOpacity(0.3)),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
               ),
               child: Column(
                 children: [
@@ -333,7 +333,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: 0.2),
                       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
                     ),
                     child: Row(
@@ -388,7 +388,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
               decoration: BoxDecoration(
                 color: const Color(0xFF1B2838),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
               ),
               child: Column(
                 children: [
@@ -412,7 +412,7 @@ class _DialogueTranslationScreenState extends State<DialogueTranslationScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
                       ),
                       child: Row(

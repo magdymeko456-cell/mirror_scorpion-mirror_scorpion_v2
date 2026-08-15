@@ -53,7 +53,7 @@ class _AboutAppScreenState extends State<AboutAppScreen> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
@@ -78,7 +78,7 @@ class _AboutAppScreenState extends State<AboutAppScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: [Colors.blue.shade400, Colors.purple.shade600]),
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 20)],
+        boxShadow: [BoxShadow(color: Colors.blue.withValues(alpha: 0.3), blurRadius: 20)],
       ),
       child: const Center(child: Icon(Icons.language, size: 60, color: Colors.white)),
     );
@@ -94,7 +94,7 @@ class _AboutAppScreenState extends State<AboutAppScreen> {
         const SizedBox(height: 8),
         Text(
           'Mirror Scorpion Translate v2.0',
-          style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.6)),
+          style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.6)),
         ),
       ],
     );
@@ -106,9 +106,9 @@ class _AboutAppScreenState extends State<AboutAppScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,9 +138,9 @@ class _AboutAppScreenState extends State<AboutAppScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [Colors.pink.withOpacity(0.1), Colors.red.withOpacity(0.1)]),
+          gradient: LinearGradient(colors: [Colors.pink.withValues(alpha: 0.1), Colors.red.withValues(alpha: 0.1)]),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.red.withOpacity(0.3)),
+          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,7 +159,7 @@ class _AboutAppScreenState extends State<AboutAppScreen> {
               'إلى كل من علمني معنى الحب والعطاء، إلى كل من كان سبباً في ابتسامتي.\n\n'
               'أنتم الإلهام الذي يدفعني للأمام، وأنتم السبب في كل إنجاز أحققه. شكراً لكم من قلب امتلأ بالحب والامتنان.\n\n'
               '🌟 هذا العمل ثمرة محبتكم وتشجيعكم 🌟',
-              style: TextStyle(fontSize: 14, height: 1.8, color: Colors.white.withOpacity(0.9), fontStyle: FontStyle.italic),
+              style: TextStyle(fontSize: 14, height: 1.8, color: Colors.white.withValues(alpha: 0.9), fontStyle: FontStyle.italic),
               textAlign: TextAlign.center,
               textDirection: TextDirection.rtl,
             ),
@@ -175,9 +175,9 @@ class _AboutAppScreenState extends State<AboutAppScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,7 +209,7 @@ class _AboutAppScreenState extends State<AboutAppScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6))),
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.6))),
           Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
         ],
       ),

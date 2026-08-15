@@ -91,9 +91,9 @@ class _SettingsAndProScreenState extends State<SettingsAndProScreen> {
           ),
           const SizedBox(height: 25),
           Card(
-            color: Colors.green.withOpacity(0.08),
+            color: Colors.green.withValues(alpha: 0.08),
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.green.withOpacity(0.3))),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.green.withValues(alpha: 0.3))),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -111,7 +111,7 @@ class _SettingsAndProScreenState extends State<SettingsAndProScreen> {
                       child: Text("01017341250\n01031680816\n01558203456", style: TextStyle(fontSize: 14, height: 1.4)),
                     ),
                   ),
-                  Divider(color: Colors.green.withOpacity(0.2)),
+                  Divider(color: Colors.green.withValues(alpha: 0.2)),
                   const ListTile(
                     leading: Icon(Icons.email, color: Colors.blue, size: 26),
                     title: Text("البريد الإلكتروني الرسمي"),
@@ -128,9 +128,9 @@ class _SettingsAndProScreenState extends State<SettingsAndProScreen> {
           ),
           const SizedBox(height: 8),
           Card(
-            color: Colors.amber.withOpacity(0.05),
+            color: Colors.amber.withValues(alpha: 0.05),
             elevation: 3,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.amber.withOpacity(0.3))),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.amber.withValues(alpha: 0.3))),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(

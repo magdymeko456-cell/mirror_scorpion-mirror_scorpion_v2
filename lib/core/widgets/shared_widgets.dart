@@ -30,9 +30,9 @@ class LanguageSelector extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -69,7 +69,7 @@ class SpeakerButton extends StatelessWidget {
       color: Theme.of(context).colorScheme.primary,
       onPressed: onPressed,
       style: IconButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
         minimumSize: Size(size, size),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -94,8 +94,8 @@ class MicButton extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           color: isListening
-              ? Colors.red.withOpacity(0.2)
-              : Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              ? Colors.red.withValues(alpha: 0.2)
+              : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
           shape: BoxShape.circle,
           border: Border.all(
             color: isListening ? Colors.red : Theme.of(context).colorScheme.primary,
@@ -125,7 +125,7 @@ class CopyButton extends StatelessWidget {
       color: Theme.of(context).colorScheme.primary,
       onPressed: onPressed,
       style: IconButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
         minimumSize: const Size(40, 40),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -146,7 +146,7 @@ class ShareButton extends StatelessWidget {
       color: Theme.of(context).colorScheme.primary,
       onPressed: onPressed,
       style: IconButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
         minimumSize: const Size(40, 40),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),

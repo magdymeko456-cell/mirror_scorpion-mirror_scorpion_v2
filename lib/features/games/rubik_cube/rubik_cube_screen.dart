@@ -253,7 +253,7 @@ class _RubikCubeScreenState extends State<RubikCubeScreen>
       child: Container(
         width: 44, height: 44,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
+          color: color.withValues(alpha: 0.2),
           border: Border.all(color: color, width: 2),
           borderRadius: BorderRadius.circular(10),
         ),
@@ -334,9 +334,9 @@ class _RubikPainter extends CustomPainter {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            color.withOpacity(0.9),
-            color.withOpacity(1.0),
-            color.withOpacity(0.8),
+            color.withValues(alpha: 0.9),
+            color.withValues(alpha: 1.0),
+            color.withValues(alpha: 0.8),
           ],
         ).createShader(path.getBounds());
       
@@ -344,7 +344,7 @@ class _RubikPainter extends CustomPainter {
       
       // Border (Black plastic frame effect)
       canvas.drawPath(path, Paint()
-        ..color = Colors.black.withOpacity(0.8)
+        ..color = Colors.black.withValues(alpha: 0.8)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.0);
         
@@ -352,7 +352,7 @@ class _RubikPainter extends CustomPainter {
       final shinePath = Path()..moveTo(p.corners[0].dx + 2, p.corners[0].dy + 2)
         ..lineTo(p.corners[1].dx - 2, p.corners[1].dy + 2);
       canvas.drawPath(shinePath, Paint()
-        ..color = Colors.white.withOpacity(0.2)
+        ..color = Colors.white.withValues(alpha: 0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5);
     }

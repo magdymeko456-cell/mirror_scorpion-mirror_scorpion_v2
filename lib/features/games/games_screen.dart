@@ -21,7 +21,7 @@ class GamesScreen extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       onTap: () => ScaffoldMessenger.of(c).showSnackBar(SnackBar(content: Text('🎮 $t قريباً!'))),
       child: Padding(padding: const EdgeInsets.all(16), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: cl.withOpacity(0.15), shape: BoxShape.circle), child: Icon(ic, size: 36, color: cl)),
+        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: cl.withValues(alpha: 0.15), shape: BoxShape.circle), child: Icon(ic, size: 36, color: cl)),
         const SizedBox(height: 12), Text(t, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
         const SizedBox(height: 4), Text(sub, style: TextStyle(fontSize: 11, color: Colors.grey.shade600), textAlign: TextAlign.center),
       ])),

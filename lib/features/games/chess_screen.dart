@@ -90,7 +90,7 @@ class _ChessScreenState extends State<ChessScreen> {
                     border: Border.all(color: Colors.brown.shade700, width: 3),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -113,7 +113,7 @@ class _ChessScreenState extends State<ChessScreen> {
                         child: Container(
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.yellow.withOpacity(0.6)
+                                ? Colors.yellow.withValues(alpha: 0.6)
                                 : isDark
                                     ? const Color(0xFFB58863)
                                     : const Color(0xFFF0D9B5),
@@ -132,7 +132,7 @@ class _ChessScreenState extends State<ChessScreen> {
                                 shadows: [
                                   Shadow(
                                     blurRadius: 2,
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: Colors.black.withValues(alpha: 0.3),
                                   ),
                                 ],
                               ),
@@ -149,7 +149,7 @@ class _ChessScreenState extends State<ChessScreen> {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text('♟ العب بالنقر على القطعة ثم المربع الهدف',
-              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
           ),
         ],
       ),

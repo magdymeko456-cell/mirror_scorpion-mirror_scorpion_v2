@@ -234,7 +234,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
@@ -258,7 +258,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                   'Hadith • Stories • Inspiration',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -273,13 +273,13 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
       ),
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
-          color: Colors.amber.shade700.withOpacity(0.3),
+          color: Colors.amber.shade700.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(14),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
@@ -325,7 +325,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
         Text(
           'اختر الموسوعة الحديثية',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
@@ -349,8 +349,8 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                     ),
                   ),
                   selected: isSelected,
-                  selectedColor: Colors.amber.shade700.withOpacity(0.3),
-                  backgroundColor: Colors.white.withOpacity(0.08),
+                  selectedColor: Colors.amber.shade700.withValues(alpha: 0.3),
+                  backgroundColor: Colors.white.withValues(alpha: 0.08),
                   side: BorderSide(
                     color: isSelected ? Colors.amber.shade600 : Colors.white24,
                     width: isSelected ? 1.5 : 0.5,
@@ -374,15 +374,15 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF1A3A4A).withOpacity(0.8),
-            const Color(0xFF0F2A38).withOpacity(0.8),
+            const Color(0xFF1A3A4A).withValues(alpha: 0.8),
+            const Color(0xFF0F2A38).withValues(alpha: 0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.amber.shade700.withOpacity(0.2)),
+        border: Border.all(color: Colors.amber.shade700.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.amber.shade900.withOpacity(0.1),
+            color: Colors.amber.shade900.withValues(alpha: 0.1),
             blurRadius: 20,
             spreadRadius: 2,
           ),
@@ -399,7 +399,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.amber.shade700.withOpacity(0.2),
+                    color: Colors.amber.shade700.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -435,13 +435,13 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
               ],
             ),
             const SizedBox(height: 16),
-            Container(height: 1, color: Colors.amber.shade700.withOpacity(0.2)),
+            Container(height: 1, color: Colors.amber.shade700.withValues(alpha: 0.2)),
             const SizedBox(height: 16),
             Text(
               'الحديث رقم ${hadith.hadithNumber}',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.4),
+                color: Colors.white.withValues(alpha: 0.4),
                 fontSize: 11,
               ),
             ),
@@ -451,9 +451,9 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0F2A38).withOpacity(0.5),
+                  color: const Color(0xFF0F2A38).withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                 ),
                 child: Directionality(
                   textDirection: TextDirection.rtl,
@@ -476,7 +476,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                 style: TextStyle(
                   fontSize: 15,
                   height: 1.6,
-                  color: Colors.white.withOpacity(0.85),
+                  color: Colors.white.withValues(alpha: 0.85),
                   fontFamily: 'serif',
                 ),
               ),
@@ -485,7 +485,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -534,12 +534,12 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
         const SizedBox(width: 8),
         Text(
           '$label: ',
-          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
         ),
         Expanded(
           child: Text(
             value,
-            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
           ),
         ),
       ],
@@ -580,8 +580,8 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                       ),
                     ),
                     selected: isSelected,
-                    selectedColor: Colors.purple.shade700.withOpacity(0.3),
-                    backgroundColor: Colors.white.withOpacity(0.08),
+                    selectedColor: Colors.purple.shade700.withValues(alpha: 0.3),
+                    backgroundColor: Colors.white.withValues(alpha: 0.08),
                     side: BorderSide(
                       color: isSelected ? Colors.purple.shade400 : Colors.white24,
                     ),
@@ -650,7 +650,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
         height: 200,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04),
+          color: Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(20),
         ),
         child: const Text('قريباً.. جاري تجميع داتا هذا القسم بمصادرها الموثوقة', style: TextStyle(color: Colors.white54)),
@@ -664,12 +664,12 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF2A1A3A).withOpacity(0.8),
-            const Color(0xFF1A0F28).withOpacity(0.8),
+            const Color(0xFF2A1A3A).withValues(alpha: 0.8),
+            const Color(0xFF1A0F28).withValues(alpha: 0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.purple.shade300.withOpacity(0.2)),
+        border: Border.all(color: Colors.purple.shade300.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -693,7 +693,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.amber.shade700.withOpacity(0.25),
+                      color: Colors.amber.shade700.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -713,15 +713,15 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
             const SizedBox(height: 8),
             Text(
               story.source,
-              style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 11, fontStyle: FontStyle.italic),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 11, fontStyle: FontStyle.italic),
             ),
             const SizedBox(height: 14),
-            Container(height: 1, color: Colors.purple.shade300.withOpacity(0.2)),
+            Container(height: 1, color: Colors.purple.shade300.withValues(alpha: 0.2)),
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.04),
+                color: Colors.white.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Directionality(
@@ -732,7 +732,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                   style: TextStyle(
                     fontSize: _showArabicStory ? 16 : 14,
                     height: 1.7,
-                    color: Colors.white.withOpacity(0.85),
+                    color: Colors.white.withValues(alpha: 0.85),
                     fontFamily: 'sans-serif',
                   ),
                 ),
@@ -743,10 +743,10 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.teal.shade700.withOpacity(0.2), Colors.teal.shade900.withOpacity(0.2)],
+                  colors: [Colors.teal.shade700.withValues(alpha: 0.2), Colors.teal.shade900.withValues(alpha: 0.2)],
                 ),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.teal.shade300.withOpacity(0.2)),
+                border: Border.all(color: Colors.teal.shade300.withValues(alpha: 0.2)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -767,7 +767,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
                     child: Text(
                       _showArabicStory ? story.moralAr : story.moralEn,
                       textAlign: _showArabicStory ? TextAlign.right : TextAlign.left,
-                      style: TextStyle(fontSize: 13, height: 1.5, color: Colors.white.withOpacity(0.8), fontStyle: FontStyle.italic),
+                      style: TextStyle(fontSize: 13, height: 1.5, color: Colors.white.withValues(alpha: 0.8), fontStyle: FontStyle.italic),
                     ),
                   ),
                 ],
@@ -798,10 +798,10 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [const Color(0xFF1E1A3A).withOpacity(0.8), const Color(0xFF100F28).withOpacity(0.8)],
+          colors: [const Color(0xFF1E1A3A).withValues(alpha: 0.8), const Color(0xFF100F28).withValues(alpha: 0.8)],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.deepPurple.shade300.withOpacity(0.2)),
+        border: Border.all(color: Colors.deepPurple.shade300.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -815,7 +815,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
             const SizedBox(height: 8),
             Text(
               'اكتب تفاصيل أو مزاج القصة التي تريدها وسيقوم التطبيق بنسجها لك بشرط خلوها من أي محتوى مسيء.',
-              style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -824,9 +824,9 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
               style: const TextStyle(color: Colors.white, fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'مثال: قصة عن الصبر في مواجهة الصعاب ونهايتها سعيدة...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12),
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 12),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: Colors.white.withValues(alpha: 0.05),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
             ),
@@ -876,7 +876,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -889,7 +889,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: _islamicQuoteMode ? Colors.green.shade700.withOpacity(0.4) : Colors.transparent,
+                  color: _islamicQuoteMode ? Colors.green.shade700.withValues(alpha: 0.4) : Colors.transparent,
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Row(
@@ -914,7 +914,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: !_islamicQuoteMode ? Colors.blue.shade700.withOpacity(0.4) : Colors.transparent,
+                  color: !_islamicQuoteMode ? Colors.blue.shade700.withValues(alpha: 0.4) : Colors.transparent,
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Row(
@@ -943,16 +943,16 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [const Color(0xFF1A3A2A).withOpacity(0.8), const Color(0xFF0F2A1A).withOpacity(0.8)],
+          colors: [const Color(0xFF1A3A2A).withValues(alpha: 0.8), const Color(0xFF0F2A1A).withValues(alpha: 0.8)],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.green.shade300.withOpacity(0.2)),
+        border: Border.all(color: Colors.green.shade300.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Icon(Icons.format_quote, size: 40, color: Colors.green.shade300.withOpacity(0.3)),
+            Icon(Icons.format_quote, size: 40, color: Colors.green.shade300.withValues(alpha: 0.3)),
             const SizedBox(height: 8),
             if (quote.textAr != null)
               Directionality(
@@ -967,12 +967,12 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
             Text(
               quote.text,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, height: 1.5, color: Colors.white.withOpacity(0.85), fontFamily: 'serif', fontStyle: FontStyle.italic),
+              style: TextStyle(fontSize: 16, height: 1.5, color: Colors.white.withValues(alpha: 0.85), fontFamily: 'serif', fontStyle: FontStyle.italic),
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.06), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12)),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1013,11 +1013,11 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, size: 20, color: Colors.green.shade300),
           ),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
+          Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 10)),
         ],
       ),
     );
@@ -1027,10 +1027,10 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.amber.shade900.withOpacity(0.3), Colors.orange.shade900.withOpacity(0.2)],
+          colors: [Colors.amber.shade900.withValues(alpha: 0.3), Colors.orange.shade900.withValues(alpha: 0.2)],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.amber.shade300.withOpacity(0.15)),
+        border: Border.all(color: Colors.amber.shade300.withValues(alpha: 0.15)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1057,13 +1057,13 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
             Text(
               '"Our Lord, give us in this world good and in the Hereafter good and protect us from the torment of the Fire."',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.white.withOpacity(0.6)),
+              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.white.withValues(alpha: 0.6)),
             ),
             const SizedBox(height: 8),
             Text(
               '— Quran 2:201',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11, color: Colors.amber.shade300.withOpacity(0.7), fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 11, color: Colors.amber.shade300.withValues(alpha: 0.7), fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -1079,7 +1079,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
           children: [
             Icon(Icons.bookmarks, size: 18, color: Colors.amber.shade300),
             const SizedBox(width: 8),
-            Text('المحفوظات (${_savedQuotes.length})', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14, fontWeight: FontWeight.w600)),
+            Text('المحفوظات (${_savedQuotes.length})', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 14, fontWeight: FontWeight.w600)),
           ],
         ),
         const SizedBox(height: 12),
@@ -1093,21 +1093,21 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
               return Container(
                 width: 200,
                 margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.06), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white.withOpacity(0.08))),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white.withValues(alpha: 0.08))),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(saved.text, maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.8), fontStyle: FontStyle.italic)),
+                        child: Text(saved.text, maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.8), fontStyle: FontStyle.italic)),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                            child: Text(saved.attribution ?? '', style: TextStyle(fontSize: 9, color: Colors.green.shade300.withOpacity(0.7)), overflow: TextOverflow.ellipsis),
+                            child: Text(saved.attribution ?? '', style: TextStyle(fontSize: 9, color: Colors.green.shade300.withValues(alpha: 0.7)), overflow: TextOverflow.ellipsis),
                           ),
                           GestureDetector(
                             onTap: () => _removeSavedQuote(index),
@@ -1134,7 +1134,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
           const SizedBox(height: 60),
           CircularProgressIndicator(color: Colors.amber.shade300),
           const SizedBox(height: 16),
-          Text(message, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14)),
+          Text(message, style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14)),
         ],
       ),
     );
@@ -1148,7 +1148,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
           const SizedBox(height: 60),
           Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
           const SizedBox(height: 16),
-          Text(message, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14), textAlign: TextAlign.center),
+          Text(message, style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14), textAlign: TextAlign.center),
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: _loadRandomHadith,
@@ -1166,7 +1166,7 @@ class _HadithStoriesScreenState extends State<HadithStoriesScreen>
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
         child: Icon(icon, size: 18, color: Colors.amber.shade300),
       ),
     );

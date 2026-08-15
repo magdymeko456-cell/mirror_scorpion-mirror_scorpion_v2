@@ -79,9 +79,9 @@ class _DocumentScreenState extends State<DocumentScreen> {
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'الصق الرابط أو مسار الملف...',
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),
+                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 13),
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.05),
+                          fillColor: Colors.white.withValues(alpha: 0.05),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,

@@ -41,7 +41,7 @@ class _GamesScreenState extends State<GamesScreen> {
               color: const Color(0xFF1B2838),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.cyanAccent.withOpacity(0.4)),
+                border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.4)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -55,7 +55,7 @@ class _GamesScreenState extends State<GamesScreen> {
                         Text(
                           'تحدي الذكاء الاصطناعي اليومي',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -118,7 +118,7 @@ class _GamesScreenState extends State<GamesScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _isCorrect ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                          color: _isCorrect ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: _isCorrect ? Colors.green : Colors.red),
                         ),
@@ -156,7 +156,7 @@ class _GamesScreenState extends State<GamesScreen> {
               backgroundColor: const Color(0xFF1B2838),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amberAccent.withOpacity(0.3)),
+                border: Border.all(color: Colors.amberAccent.withValues(alpha: 0.3)),
               ),
             ).primaryElevatedButton(
               onPressed: () {
@@ -182,7 +182,7 @@ class _GamesScreenState extends State<GamesScreen> {
               backgroundColor: const Color(0xFF1B2838),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.greenAccent.withOpacity(0.3)),
+                border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.3)),
               ),
             ).primaryElevatedButton(
               onPressed: () {

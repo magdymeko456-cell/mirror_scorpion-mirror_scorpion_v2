@@ -66,7 +66,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
       ),
       body: Column(
         children: [
-          Container(width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12), color: Colors.teal.withOpacity(0.05),
+          Container(width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12), color: Colors.teal.withValues(alpha: 0.05),
             child: const Text('🦂 Mirror Scorpion', style: TextStyle(fontSize: 10, color: Colors.teal), textAlign: TextAlign.center)),
           if (_status.isNotEmpty)
             Padding(padding: const EdgeInsets.all(8), child: Text(_status, style: TextStyle(color: _status.contains('✅') ? Colors.green : Colors.orange))),

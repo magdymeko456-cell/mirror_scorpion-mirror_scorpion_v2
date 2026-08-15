@@ -97,7 +97,7 @@ class _RubikScreenState extends State<RubikScreen> with SingleTickerProviderStat
         color: color,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white24, width: 1),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 6)],
+        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 6)],
       ),
     );
   }
@@ -109,7 +109,7 @@ class _RubikCubePainter extends CustomPainter {
     final paint = Paint()..style = PaintingStyle.fill;
     final strokePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..color = Colors.white.withOpacity(0.3)
+      ..color = Colors.white.withValues(alpha: 0.3)
       ..strokeWidth = 1.5;
 
     final cx = size.width / 2;

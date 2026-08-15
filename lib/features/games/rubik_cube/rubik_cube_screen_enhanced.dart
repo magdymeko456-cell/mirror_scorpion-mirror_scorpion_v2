@@ -69,7 +69,7 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
@@ -92,7 +92,7 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
                   'Enhanced Rubik\'s Cube',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -111,7 +111,7 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.purple.withOpacity(0.3),
+              color: Colors.purple.withValues(alpha: 0.3),
               blurRadius: 20,
               spreadRadius: 2,
             ),
@@ -144,12 +144,12 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
                   color: Colors.grey.shade800,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     width: 2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(2, 2),
                     ),
@@ -176,8 +176,8 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: cube.isSolved() 
-              ? Colors.green.withOpacity(0.1) 
-              : Colors.orange.withOpacity(0.1),
+              ? Colors.green.withValues(alpha: 0.1) 
+              : Colors.orange.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: cube.isSolved() ? Colors.green : Colors.orange,
@@ -194,7 +194,7 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
                   'الحالة',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -215,7 +215,7 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
                   'عدد الحركات',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -248,7 +248,7 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 12),
@@ -266,11 +266,11 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected 
-                        ? Colors.purple.withOpacity(0.3) 
-                        : Colors.white.withOpacity(0.05),
+                        ? Colors.purple.withValues(alpha: 0.3) 
+                        : Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: isSelected ? Colors.purple : Colors.white.withOpacity(0.2),
+                      color: isSelected ? Colors.purple : Colors.white.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Text(
@@ -392,9 +392,9 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,7 +404,7 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
               ),
             ),
             const SizedBox(height: 12),
@@ -412,7 +412,7 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
               Text(
                 'لا توجد حركات بعد',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                 ),
               )
             else
@@ -422,7 +422,7 @@ class _RubikCubeScreenEnhancedState extends State<RubikCubeScreenEnhanced> {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.2),
+                      color: Colors.blue.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(

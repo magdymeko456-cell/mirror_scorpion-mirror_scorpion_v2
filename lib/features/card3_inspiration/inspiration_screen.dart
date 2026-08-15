@@ -62,7 +62,7 @@ class _InspirationScreenState extends State<InspirationScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-            color: Colors.teal.withOpacity(0.05),
+            color: Colors.teal.withValues(alpha: 0.05),
             child: const Text('🦂 Mirror Scorpion', style: TextStyle(fontSize: 10, color: Colors.teal), textAlign: TextAlign.center),
           ),
           Expanded(

@@ -64,7 +64,7 @@ class _ChessScreenState extends State<ChessScreen> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
@@ -87,7 +87,7 @@ class _ChessScreenState extends State<ChessScreen> {
                   'Professional Chess Game',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -106,7 +106,7 @@ class _ChessScreenState extends State<ChessScreen> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.blue.withOpacity(0.3),
+              color: Colors.blue.withValues(alpha: 0.3),
               blurRadius: 20,
               spreadRadius: 2,
             ),
@@ -146,9 +146,9 @@ class _ChessScreenState extends State<ChessScreen> {
               child: Container(
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.amber.withOpacity(0.7)
+                      ? Colors.amber.withValues(alpha: 0.7)
                       : isValidMove
-                          ? Colors.green.withOpacity(0.5)
+                          ? Colors.green.withValues(alpha: 0.5)
                           : isLight
                               ? Colors.grey.shade300
                               : Colors.grey.shade700,
@@ -200,9 +200,9 @@ class _ChessScreenState extends State<ChessScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -213,14 +213,14 @@ class _ChessScreenState extends State<ChessScreen> {
                   'الدور الحالي',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: game.isWhiteTurn ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.2),
+                    color: game.isWhiteTurn ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -239,7 +239,7 @@ class _ChessScreenState extends State<ChessScreen> {
                   'الحركات الصحيحة',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 8),

@@ -184,7 +184,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1B2838),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.amber.withOpacity(0.25)),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.25)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title,

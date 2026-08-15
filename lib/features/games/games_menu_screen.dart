@@ -63,11 +63,11 @@ class GamesMenuScreen extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
-          colors: [color.withOpacity(0.15), Colors.transparent],
+          colors: [color.withValues(alpha: 0.15), Colors.transparent],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -82,8 +82,8 @@ class GamesMenuScreen extends StatelessWidget {
                 height: 80,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: color.withOpacity(0.1),
-                  border: Border.all(color: color.withOpacity(0.4), width: 2),
+                  color: color.withValues(alpha: 0.1),
+                  border: Border.all(color: color.withValues(alpha: 0.4), width: 2),
                 ),
                 child: Icon(icon, size: 40, color: color),
               ),
@@ -102,7 +102,7 @@ class GamesMenuScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, color: color.withOpacity(0.5), size: 20),
+              Icon(Icons.arrow_forward_ios, color: color.withValues(alpha: 0.5), size: 20),
               const SizedBox(width: 20),
             ],
           ),

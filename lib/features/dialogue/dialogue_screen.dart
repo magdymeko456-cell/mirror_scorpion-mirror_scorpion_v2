@@ -84,10 +84,10 @@ class _DialogueScreenState extends State<DialogueScreen> {
       child: SafeArea(child: Column(children: [
         const SizedBox(height: 16),
         Expanded(flex: 3, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Container(
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.blue.withOpacity(0.3))),
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.blue.withValues(alpha: 0.3))),
           child: Padding(padding: const EdgeInsets.all(12), child: TextField(
             controller: _sourceController, style: const TextStyle(color: Colors.white, fontSize: 16),
-            decoration: InputDecoration(hintText: 'النص الأصلي...', hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)), border: InputBorder.none),
+            decoration: InputDecoration(hintText: 'النص الأصلي...', hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)), border: InputBorder.none),
             maxLines: null, expands: true, textAlign: TextAlign.right
           ))
         ))),
@@ -95,12 +95,12 @@ class _DialogueScreenState extends State<DialogueScreen> {
         Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Row(children: [
           Expanded(child: _buildLangSelector(_sourceLang, (v) => setState(() => _sourceLang = v!))),
           const SizedBox(width: 8),
-          GestureDetector(onTap: _swapLanguages, child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.amber.shade700.withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.swap_horiz, color: Colors.amber, size: 28))),
+          GestureDetector(onTap: _swapLanguages, child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.amber.shade700.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.swap_horiz, color: Colors.amber, size: 28))),
           const SizedBox(width: 8),
           GestureDetector(
             onTapDown: (_) => _startListening(), onTapUp: (_) => _stopListening(),
             child: Container(width: 56, height: 56,
-              decoration: BoxDecoration(color: _isListening ? Colors.red.withOpacity(0.2) : Colors.white.withOpacity(0.08), shape: BoxShape.circle, border: Border.all(color: _isListening ? Colors.red : Colors.white38, width: 2)),
+              decoration: BoxDecoration(color: _isListening ? Colors.red.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.08), shape: BoxShape.circle, border: Border.all(color: _isListening ? Colors.red : Colors.white38, width: 2)),
               child: Icon(_isListening ? Icons.mic : Icons.mic_none, color: _isListening ? Colors.red : Colors.white70, size: 28))
           ),
           const SizedBox(width: 8),
@@ -112,12 +112,12 @@ class _DialogueScreenState extends State<DialogueScreen> {
           style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)), padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12))
         )),
         Expanded(flex: 3, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Container(
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.green.withOpacity(0.3))),
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.green.withValues(alpha: 0.3))),
           child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
             Expanded(child: TextField(
               controller: _targetController,
               style: TextStyle(color: Colors.green.shade300, fontSize: 16),
-              decoration: InputDecoration(hintText: 'الترجمة...', hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)), border: InputBorder.none),
+              decoration: InputDecoration(hintText: 'الترجمة...', hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)), border: InputBorder.none),
               maxLines: null, expands: true, textAlign: TextAlign.right, readOnly: true
             )),
             Row(mainAxisAlignment: MainAxisAlignment.end, children: [
@@ -132,7 +132,7 @@ class _DialogueScreenState extends State<DialogueScreen> {
 
   Widget _buildLangSelector(String value, ValueChanged<String?> onChanged) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.white24)),
+    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.white24)),
     child: DropdownButtonHideUnderline(child: DropdownButton<String>(
       value: value, dropdownColor: const Color(0xFF1B2838), style: const TextStyle(color: Colors.white, fontSize: 12),
       isExpanded: true,

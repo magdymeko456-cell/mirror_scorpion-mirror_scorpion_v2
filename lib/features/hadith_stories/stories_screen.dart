@@ -65,7 +65,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
         backgroundColor: const Color(0
 decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.tealAccent.withOpacity(0.25)),
+            border: Border.all(color: Colors.tealAccent.withValues(alpha: 0.25)),
           ),
           child: Column(children: [
             Icon(ic, size: 34, color: Colors.tealAccent),
