@@ -119,14 +119,12 @@ class OverlayService extends ChangeNotifier {
       if (clipboardData?.text != null) return clipboardData!.text!;
     } catch (e) {
       debugPrint('Clipboard error: $e');
-# ─── 5. تحديث overlay_service.dart (متابعة) ─────────────────────────
 
   String addSignatureToTranslation(String translated) {
     if (translated.contains('Mirror Scorpion')) return translated;
     return '$translated\n\n— Mirror Scorpion 🦂';
   }
 
-  Future getSpiritualSupport() async {
     final text = await translateFromClipboard();
     if (text.isNotEmpty) {
       return AIService.recommendMode(text);
@@ -134,7 +132,6 @@ class OverlayService extends ChangeNotifier {
     return "استعن بالله، فأنت في حفظه.";
   }
 
-  Future<String> translateFromClipboard() async {
     try {
       final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
       if (clipboardData?.text != null) return clipboardData!.text!;

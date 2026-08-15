@@ -54,7 +54,7 @@ class _DialogueScreenState extends State<DialogueScreen> {
     if (!available) return;
     setState(() => _isListening = true);
     await _speech.listen(
-      onResult: (r) => _sourceCtrl.text = r.recognizedWords),
+      onResult: (r) => _sourceCtrl.text = r.recognizedWords,
       partialResults: true,
     );
   }

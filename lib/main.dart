@@ -39,7 +39,8 @@ Locale _deviceLocale() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await LanguageService().init();
+  final langService = LanguageService();
+  await langService.init();
   await BackgroundService().initialize();
   await LanguageDownloadService().initialize();
   runApp(
@@ -49,7 +50,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => DatabaseService()),
         ChangeNotifierProvider(create: (_) => FloatingBubbleService()),
         ChangeNotifierProvider(create: (_) => PremiumVerificationService()),
-        ChangeNotifierProvider(create: (_) => LanguageService()),
+        ChangeNotifierProvider.value(value: langService),
         ChangeNotifierProvider(create: (_) => BackgroundService()),
         ChangeNotifierProvider(create: (_) => LanguageDownloadService()),
       ],
