@@ -435,7 +435,7 @@ class AILanguageMerger extends ChangeNotifier {
 
 /// 🏗️ هيكل الكتلة اللغوية
 class LanguageCluster {
-  final String name;
+  final String key;
   final String icon;
   final Map<String, String> languages;
   final Map<String, String> normalizeMap;
